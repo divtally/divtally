@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Hidden reference view (filename starts with _ so it's not in the gallery).
+     It exercises EVERY part of bpc core.js and is the worked example for builders. -->
+<meta name="bpc-title" content="Reference">
+<meta name="bpc-tagline" content="Plain worked example of the core API (not a design).">
+<meta name="bpc-accent" content="#888888">
+<title>bpc · reference view</title>
+<style>
+  :root{--bg:#0b0d12;--panel:#141821;--bd:#252b38;--fg:#e8ecf4;--mut:#8b93a7;--ac:#7c5cff;--ok:#48d597;--warn:#ffb454;--bad:#ff6b6b}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 system-ui,Segoe UI,Roboto,Arial}
+  .wrap{max-width:980px;margin:0 auto;padding:24px}
+  h1{font-size:20px;margin:0 0 12px}
+  form{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  input#url{flex:1 1 320px;min-width:240px;padding:9px 11px;background:#0e121b;border:1px solid var(--bd);border-radius:8px;color:var(--fg)}
+  select,button{padding:9px 11px;background:#0e121b;border:1px solid var(--bd);border-radius:8px;color:var(--fg)}
+  button{cursor:pointer}
+  button#go{background:var(--ac);border-color:var(--ac);color:#fff;font-weight:600}
+  label.chk{display:inline-flex;gap:6px;align-items:center;color:var(--mut)}
+  #status{margin:14px 0;color:var(--mut);min-height:20px}
+  #recent .rb{display:inline-flex;gap:8px;border:1px solid var(--bd);border-radius:8px;padding:6px 10px;margin:4px 6px 4px 0;cursor:pointer;background:var(--panel)}
+  .meta{margin:14px 0;padding:12px;border:1px solid var(--bd);border-radius:10px;background:var(--panel)}
+  .pobbox{margin-top:10px}
+  textarea.pob{width:100%;height:46px;background:#0e121b;color:var(--mut);border:1px solid var(--bd);border-radius:6px;font:11px/1.4 monospace;white-space:pre;padding:6px}
+  table{width:100%;border-collapse:collapse;margin-top:10px}
+  th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--bd)}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  tr.off{opacity:.4}
+  .badge{font-size:11px;padding:1px 7px;border-radius:99px;border:1px solid var(--bd)}
+  .badge.high{color:var(--ok);border-color:var(--ok)} .badge.medium{color:var(--warn);border-color:var(--warn)}
+  .badge.low{color:var(--bad);border-color:var(--bad)} .badge.none{color:var(--mut)}
+  .bpc-cur{height:1em;vertical-align:-.15em} .bpc-exsub{color:var(--mut)} .bpc-dash{color:var(--mut)}
+  .note{color:var(--mut);font-size:12px}
+  .totals{margin-top:14px;padding:12px;border:1px solid var(--ac);border-radius:10px}
+  .reaffix{font-size:11px;margin-left:6px;color:var(--mut);border:1px solid var(--bd);border-radius:5px;background:#1c2230;cursor:pointer}
+  #picker{position:fixed;inset:auto 0 0 0;background:var(--panel);border-top:2px solid var(--ac);padding:16px;max-height:70vh;overflow:auto}
+  #picker .afx{display:grid;grid-template-columns:22px 1fr 80px 80px;gap:8px;align-items:center;padding:5px 0;border-top:1px solid var(--bd)}
+  #picker .mm{width:100%;padding:4px;background:#0e121b;border:1px solid var(--bd);border-radius:5px;color:var(--fg);text-align:right}
+  #picker .afx.no{opacity:.5}
+  .err{color:var(--bad);padding:10px;border:1px solid var(--bad);border-radius:8px}
+</style></head>
+<body><div class="wrap">
+  <h1>Build Price Checker <span style="color:var(--mut);font-size:12px">· reference view</span></h1>
+  <form id="f">
+    <input id="url" placeholder="poe.ninja link, PoB code, or pobb.in link" spellcheck="false">
+    <select id="league"><option value="">League: auto</option></select>
+    <select id="liststatus"></select>
+    <label class="chk"><input type="checkbox" id="advanced"> advanced</label>
+    <label class="chk"><input type="checkbox" id="refresh"> fresh pull</label>
+    <button id="go" type="submit">Estimate</button>
+  </form>
+  <div id="recent"></div>
+  <div id="status"></div>
+  <div id="out"></div>
+  <div id="picker" hidden></div>
+</div>
+<script src="/assets/sample.js"></script>
+<script src="/assets/core.js"></script>
+<script>
+const $=s=>document.querySelector(s), E=bpc.esc;
+
+// ---- controls ----
+(function(){
+  const sel=$('#liststatus');
+  sel.innerHTML=bpc.STATUS_ORDER.map(o=>`<option value="${o}">${E(bpc.STATUS_LABEL[o])}</option>`).join('');
+})();
+function syncControls(){ $('#advanced').checked=bpc.state.advanced; $('#liststatus').value=bpc.state.status;
+  if([...$('#league').options].some(o=>o.value===bpc.state.league)) $('#league').value=bpc.state.league; }
+$('#f').addEventListener('submit',e=>{e.preventDefault(); const u=$('#url').value.trim(); if(u) bpc.startUrl(u);});
+$('#advanced').addEventListener('change',e=>bpc.setControl('advanced',e.target.checked));
+$('#liststatus').addEventListener('change',e=>bpc.setControl('status',e.target.value));
+$('#league').addEventListener('change',e=>bpc.setControl('league',e.target.value));
+$('#refresh').addEventListener('change',e=>bpc.setControl('refresh',e.target.checked));
+
+// ---- side data ----
+bpc.on('leagues',ls=>{ $('#league').innerHTML='<option value="">League: auto</option>'+ls.map(l=>`<option>${E(l)}</option>`).join(''); syncControls(); });
+bpc.on('recent',bs=>{ $('#recent').innerHTML=bs.slice(0,8).map(b=>`<span class="rb" data-k="${E(b.key)}">${E(b.character||'?')} · ${E(b.char_class||'')} ${b.level||''}</span>`).join(''); });
+$('#recent').addEventListener('click',e=>{ const rb=e.target.closest('.rb'); if(rb) bpc.startCache(rb.dataset.k); });
+
+// ---- status / progress ----
+bpc.on('phase',p=>{ if(p==='loading') $('#status').textContent='starting…'; });
+bpc.on('progress',m=>{ if(['queued','running','loading'].includes(bpc.state.phase)) $('#status').textContent=m||'working…'; });
+bpc.on('done',()=>{ $('#status').textContent=(bpc.state.searches!=null?bpc.state.searches+' trade searches used.':'done'); });
+bpc.on('error',m=>{ $('#status').textContent=''; $('#out').innerHTML=`<div class="err">${E(m)}</div>`; });
+
+// ---- render table on items, fill on priced, recompute on totals ----
+bpc.on('items',()=>render());
+bpc.on('priced',()=>render());
+bpc.on('totals',()=>{ const t=bpc.totals(); const el=$('#tot'); if(el) el.innerHTML=
+  `min ${bpc.priceHTML(t.min)} · median ${bpc.priceHTML(t.median)} · high ${bpc.priceHTML(t.high)} <span class="note">(${t.included}/${t.priced} included)</span>`; });
+bpc.on('enabled',()=>render());
+
+function render(){
+  const s=bpc.state; if(!s.meta){ return; }
+  const m=s.meta;
+  let h=`<div class="meta"><b>${E(m.character)}</b> — ${E(m['class'])} lvl ${m.level} · League ${E(m.league)}`;
+  if(m.divine_to_exalted) h+=` · 1 ${bpc.curImg('div')} = ${bpc.nfmt(Math.round(m.divine_to_exalted),0)} ${bpc.curImg('ex')}`;
+  if(m.pob_code) h+=`<div class="pobbox"><button id="pobcopy">copy PoB</button><textarea class="pob" readonly>${E(m.pob_code)}</textarea></div>`;
+  h+=`</div>`;
+  for(const grp of bpc.itemsByGroup()){
+    h+=`<h3>${E(grp.title)}</h3><table><thead><tr><th></th><th>Item</th><th class="num">min</th><th class="num">median</th><th class="num">high</th><th>conf</th></tr></thead><tbody>`;
+    for(const it of grp.items){
+      const k=String(it.index), p=s.priced[k], on=!!s.enabled[k];
+      const cnt=it.count>1?` ×${it.count}`:'';
+      const re=(s.advanced&&it.category==='rare')?`<button class="reaffix" data-k="${E(k)}">edit affixes</button>`:'';
+      if(!p){ h+=`<tr data-k="${E(k)}"><td></td><td>${E(it.name)}${cnt}${re}</td><td class="num" colspan="4" style="color:var(--mut)">…</td></tr>`; continue; }
+      const priced=p.exalted.median!=null;
+      h+=`<tr data-k="${E(k)}" class="${on?'':'off'}">
+        <td>${priced?`<input type="checkbox" class="inc" data-k="${E(k)}" ${on?'checked':''}>`:''}</td>
+        <td>${p.trade_url?`<a href="${E(p.trade_url)}" target="_blank" rel="noopener">${E(it.name)}</a>`:E(it.name)}${cnt}${re}
+            ${p.note?`<div class="note">${E(p.note)}</div>`:''}</td>
+        <td class="num">${bpc.priceHTML(p.exalted.min)}</td>
+        <td class="num">${bpc.priceHTML(p.exalted.median)}</td>
+        <td class="num">${bpc.priceHTML(p.exalted.high)}</td>
+        <td><span class="badge ${E(p.confidence)}">${E(p.confidence)}</span></td></tr>`;
+    }
+    h+=`</tbody></table>`;
+  }
+  const t=bpc.totals();
+  h+=`<div class="totals"><b>Total</b> <span id="tot">min ${bpc.priceHTML(t.min)} · median ${bpc.priceHTML(t.median)} · high ${bpc.priceHTML(t.high)} <span class="note">(${t.included}/${t.priced} included)</span></span></div>`;
+  $('#out').innerHTML=h;
+}
+$('#out').addEventListener('change',e=>{ const cb=e.target.closest('.inc'); if(cb) bpc.setEnabled(cb.dataset.k, cb.checked); });
+$('#out').addEventListener('click',e=>{
+  if(e.target.id==='pobcopy'){ const ta=$('#out .pob'); ta.select(); navigator.clipboard&&navigator.clipboard.writeText(ta.value); e.target.textContent='copied!'; setTimeout(()=>e.target.textContent='copy PoB',1200); }
+  const re=e.target.closest('.reaffix'); if(re) bpc.reopenRare(re.dataset.k);
+});
+
+// ---- advanced picker ----
+bpc.on('rare',info=>{
+  const box=$('#picker');
+  if(!info){ box.hidden=true; box.innerHTML=''; return; }
+  const r=info.rare; let usePseudo=!!(r.pseudo&&r.pseudo.length);
+  function rowsHTML(){
+    let h='';
+    r.affixes.forEach(a=>{ if(usePseudo&&a.resist) return; h+=affixRow(a); });
+    if(usePseudo) r.pseudo.forEach(p=>h+=affixRow(p));
+    return h;
+  }
+  function affixRow(a){
+    if(!a.searchable) return `<div class="afx no"><div></div><div>${E(a.text)} <span class="note">${E(a.reason||'')}</span></div><div></div><div></div></div>`;
+    const attr=a.kind==='equip'?`data-equip="${E(a.key)}"`:`data-sid="${E(a.stat_id)}"`;
+    return `<div class="afx" ${attr}><input type="checkbox" class="acb" checked><div>${E(a.text)}</div>
+      <input class="mm amin" value="${a.value!=null?E(a.value):''}"><input class="mm amax"></div>`;
+  }
+  function draw(){
+    box.innerHTML=`<b>Rare ${info.index+1} of ${info.total}: ${E(r.name)}</b> <span class="note">${E(r.scope)}${info.redo?' · (re-submit to replace)':''}</span>
+      ${(r.pseudo&&r.pseudo.length)?`<label class="chk"><input type="checkbox" id="pseu" ${usePseudo?'checked':''}> combine resistances</label>`:''}
+      <div id="afxs">${rowsHTML()}</div>
+      <div style="margin-top:10px;display:flex;gap:8px">
+        ${info.index>0?'<button id="pb">← Back</button>':''}
+        <button id="ps">${info.redo?'Re-search':'Search this item'}</button>
+        <button id="pk">Skip (don't price)</button></div>`;
+    box.hidden=false;
+    const pe=$('#pseu'); if(pe) pe.onchange=()=>{ usePseudo=pe.checked; $('#afxs').innerHTML=rowsHTML(); };
+    const pb=$('#pb'); if(pb) pb.onclick=()=>bpc.backRare();
+    $('#ps').onclick=()=>{
+      const filters=[],equip=[];
+      box.querySelectorAll('.afx[data-sid]').forEach(d=>{ if(d.querySelector('.acb').checked) filters.push({stat_id:d.dataset.sid,min:num(d.querySelector('.amin').value),max:num(d.querySelector('.amax').value)}); });
+      box.querySelectorAll('.afx[data-equip]').forEach(d=>{ if(d.querySelector('.acb').checked) equip.push({key:d.dataset.equip,min:num(d.querySelector('.amin').value),max:num(d.querySelector('.amax').value)}); });
+      bpc.submitRare(info.key,{filters,equip});
+    };
+    $('#pk').onclick=()=>bpc.skipRare(info.key);
+  }
+  draw();
+});
+function num(s){ s=(s||'').trim(); if(!s) return null; const n=Number(s); return isNaN(n)?null:n; }
+
+// ---- boot: ?mock loads the demo build with no backend ----
+if(location.search.indexOf('mock')>=0){ bpc.init({mock:true}); syncControls(); }
+else { bpc.init(); }
+</script>
+</body></html>

@@ -1,0 +1,157 @@
+<!doctype html>
+<!-- bpc-title: (hidden) Extension test harness
+     Local harness to test the "PoE2 Trade Bridge" browser extension WITHOUT the full public
+     site. Served at http://127.0.0.1:8765/v/_exttest (the extension's content script matches
+     127.0.0.1:8765). It speaks the same window.postMessage protocol the public site will use,
+     so it validates the page <-> content-script <-> service-worker -> trade API path end to end. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Trade Bridge - extension test harness</title>
+<style>
+  :root { color-scheme: dark; }
+  body { max-width: 820px; margin: 32px auto; padding: 0 18px; font: 14px/1.5 system-ui, Segoe UI, sans-serif;
+         background: #14161b; color: #d7dae0; }
+  h1 { font-size: 18px; color: #c9a24a; margin-bottom: 2px; }
+  .sub { color: #8b919c; margin-bottom: 18px; }
+  #det { padding: 8px 12px; border-radius: 8px; margin-bottom: 16px; font-weight: 600; }
+  #det.on { background: #14301b; color: #6fcf7f; border: 1px solid #2c5a36; }
+  #det.off { background: #341818; color: #e06b5b; border: 1px solid #5a2c2c; }
+  #det.wait { background: #2a2e37; color: #c9ccd3; }
+  textarea { width: 100%; box-sizing: border-box; height: 120px; resize: vertical; background: #0f1116;
+             color: #d7dae0; border: 1px solid #2a2e37; border-radius: 8px; padding: 10px; font: 12px ui-monospace, monospace; }
+  .hint { color: #8b919c; font-size: 12px; margin: 6px 0 10px; }
+  button { background: #c9a24a; color: #1a1308; border: 0; border-radius: 8px; padding: 9px 16px;
+           font-weight: 700; cursor: pointer; }
+  button:hover { filter: brightness(1.08); }
+  button.ghost { background: #2a2e37; color: #e7e9ee; font-weight: 500; }
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  th, td { text-align: left; padding: 7px 9px; border-bottom: 1px solid #23262e; font-size: 13px; vertical-align: top; }
+  th { color: #8b919c; font-weight: 600; }
+  .price { color: #f0d27a; font-weight: 700; }
+  .err { color: #e06b5b; }
+  .muted { color: #8b919c; }
+  code { background: #0f1116; padding: 1px 5px; border-radius: 4px; }
+</style>
+</head>
+<body>
+  <h1>Trade Bridge &mdash; extension test harness</h1>
+  <div class="sub">Validates the browser extension end to end (page &rarr; content script &rarr; service worker &rarr; live trade API, from <b>your</b> IP).</div>
+
+  <div id="det" class="wait">checking for the extension&hellip;</div>
+
+  <div class="hint">Paste one or more PoE2 trade links (the <code>?q=</code> links the app generates) &mdash; <b>one per line</b>. The easiest source: open your build in the local app, click an item's trade button, copy that URL here. You can also paste raw <code>{"league":"&hellip;","query":{&hellip;}}</code> JSON.</div>
+  <textarea id="in" placeholder="https://www.pathofexile.com/trade2/search/poe2/Runes%20of%20Aldur?q=%7B...%7D&#10;https://www.pathofexile.com/trade2/search/poe2/Runes%20of%20Aldur?q=%7B...%7D"></textarea>
+  <div style="margin-top:10px; display:flex; gap:10px;">
+    <button id="go">Price via extension</button>
+    <button id="clear" class="ghost">clear</button>
+  </div>
+
+  <table id="results" hidden><thead><tr><th>#</th><th>league</th><th>cheapest</th><th>listings</th><th>notes</th></tr></thead><tbody></tbody></table>
+
+<script>
+(function () {
+  "use strict";
+  var det = document.getElementById("det");
+  var pending = {};            // reqId -> callback
+  var seq = 0;
+  function rid() { return "r" + (++seq) + "-" + Date.now(); }
+
+  // ---- talk to the extension over window.postMessage (same protocol as the public site) ----
+  window.addEventListener("message", function (ev) {
+    if (ev.source !== window) return;
+    var d = ev.data;
+    if (!d || d.source !== "bpc-ext") return;
+    if (d.type === "hello" || d.type === "pong") { markDetected(d.version); return; }
+    if (d.type === "price-result" && pending[d.reqId]) {
+      var cb = pending[d.reqId]; delete pending[d.reqId];
+      cb(d.error ? { error: d.error } : { results: d.results || [] });
+    }
+  });
+  function send(type, extra) {
+    var msg = Object.assign({ source: "bpc-page", type: type, reqId: rid() }, extra || {});
+    window.postMessage(msg, window.location.origin);
+    return msg.reqId;
+  }
+
+  var detected = false;
+  function markDetected(version) {
+    if (detected) return; detected = true;
+    det.className = "on"; det.innerHTML = "&#9679; extension detected" + (version ? " (v" + version + ")" : "");
+  }
+  // ping; if no reply within 1.2s, assume not installed
+  var pingId = send("ping");
+  pending[pingId] = function () {};
+  setTimeout(function () {
+    if (!detected) { det.className = "off"; det.innerHTML = "&#9679; extension NOT detected &mdash; load it (chrome://extensions &rarr; Load unpacked &rarr; the <code>extension</code> folder), then reload this page."; }
+  }, 1200);
+
+  // ---- parse pasted links / JSON into {league, query} ----
+  function parseLine(text) {
+    text = text.trim();
+    if (!text) return null;
+    if (/^https?:\/\//i.test(text)) {
+      var u = new URL(text);
+      var m = u.pathname.match(/\/poe2\/([^/?]+)/i);
+      var q = u.searchParams.get("q");
+      if (!q) throw new Error("no ?q= in URL");
+      var o = JSON.parse(q);
+      return { league: m ? decodeURIComponent(m[1]) : "", query: o.query || o };
+    }
+    var p = JSON.parse(text);
+    return { league: p.league || "", query: p.query || p };
+  }
+
+  var tbody = document.querySelector("#results tbody");
+  function render(rows) {
+    tbody.innerHTML = "";
+    rows.forEach(function (row, i) {
+      var tr = document.createElement("tr");
+      var cheapest = row.error ? '<span class="err">error</span>'
+        : (row.amount == null ? '<span class="muted">no buyout</span>'
+           : '<span class="price">' + row.amount + " " + (row.currency || "") + "</span>");
+      tr.innerHTML = "<td>" + (i + 1) + "</td><td>" + (row.league || "?") + "</td><td>" + cheapest
+        + "</td><td>" + (row.total != null ? row.total : "-") + "</td><td class='muted'>" + (row.error || "") + "</td>";
+      tbody.appendChild(tr);
+    });
+    document.getElementById("results").hidden = rows.length === 0;
+  }
+
+  document.getElementById("go").addEventListener("click", function () {
+    var lines = document.getElementById("in").value.split("\n");
+    var parsed = [], errors = [];
+    lines.forEach(function (ln, i) {
+      try { var p = parseLine(ln); if (p) parsed.push({ key: String(i), league: p.league, query: p.query }); }
+      catch (e) { errors.push({ key: String(i), league: "", error: "parse: " + e.message }); }
+    });
+    if (!parsed.length && !errors.length) { render([]); return; }
+    if (!detected) { render(parsed.concat(errors).map(function (p) { return Object.assign({ error: "extension not detected" }, p); })); return; }
+
+    // group by league (one price request per league)
+    var byLeague = {};
+    parsed.forEach(function (p) { (byLeague[p.league] = byLeague[p.league] || []).push(p); });
+    render([{ league: "", total: null, error: "", muted: true, amount: null, currency: "searching..." }]);
+
+    var all = [];
+    var leagues = Object.keys(byLeague);
+    var done = 0;
+    if (!leagues.length) { render(errors); return; }
+    leagues.forEach(function (lg) {
+      var qs = byLeague[lg].map(function (p) { return { key: p.key, query: p.query }; });
+      var id = send("price", { league: lg, queries: qs });
+      pending[id] = function (resp) {
+        if (resp.error) { byLeague[lg].forEach(function (p) { all.push({ league: lg, error: resp.error }); }); }
+        else {
+          (resp.results || []).forEach(function (r) { all.push(Object.assign({ league: lg }, r)); });
+        }
+        if (++done === leagues.length) { render(all.concat(errors)); }
+      };
+    });
+  });
+  document.getElementById("clear").addEventListener("click", function () {
+    document.getElementById("in").value = ""; render([]);
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "PoE2 Build Price Checker - Trade Bridge",
+  "version": "0.1.0",
+  "description": "Prices rares/uniques for the PoE2 Build Price Checker using YOUR browser + YOUR IP, so the public website never hits GGG's trade rate limits or risks a ban.",
+  "permissions": ["storage"],
+  "host_permissions": ["https://www.pathofexile.com/*"],
+  "browser_specific_settings": { "gecko": { "id": "bpc-trade-bridge@buildpricechecker" } },
+  "background": { "service_worker": "background.js", "scripts": ["background.js"] },
+  "action": { "default_popup": "popup.html", "default_title": "PoE2 Trade Bridge" },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://127.0.0.1:8765/*",
+        "http://localhost:8765/*",
+        "https://*.pages.dev/*",
+        "https://*.vercel.app/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ]
+}

@@ -1,0 +1,801 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="bpc-title" content="Ledger">
+<meta name="bpc-tagline" content="Your build, itemized on thermal receipt paper with a running subtotal that tallies as it prices.">
+<meta name="bpc-accent" content="#e0b341">
+<meta name="bpc-vibe" content="receipt">
+<meta name="bpc-order" content="1">
+<title>The Exilarch's Ledger · bpc</title>
+<style>
+  /* ===== The Exilarch's Ledger — a thermal receipt cost estimator ===== */
+  :root{
+    --paper:#f4efe2;     /* warm off-white receipt stock */
+    --paper-edge:#ede6d4;
+    --ink:#1a1712;       /* solid dot-matrix ink */
+    --ink-faint:#6b6253; /* faded ink = low confidence */
+    --ink-ghost:#a99f8b; /* barely-printed */
+    --void:#b8392f;      /* red VOID stamp */
+    --gold:#e0b341;      /* total band + currency */
+    --gold-deep:#b8862a;
+    --desk-1:#241f1a;
+    --desk-2:#15110d;
+    --paper-w:430px;
+    --mono: ui-monospace,"Courier Prime","Cascadia Mono","DejaVu Sans Mono",Consolas,"Courier New",monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    min-height:100vh;
+    color:var(--ink);
+    font-family:var(--mono);
+    font-size:13px;line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    font-variant-numeric:tabular-nums;
+    /* dark felt/wood desk so the paper sits on a surface */
+    background:
+      radial-gradient(120% 80% at 50% -10%, #2c2620 0%, rgba(44,38,32,0) 55%),
+      repeating-linear-gradient(94deg, rgba(0,0,0,0.10) 0 2px, rgba(255,255,255,0.012) 2px 7px),
+      linear-gradient(160deg, var(--desk-1), var(--desk-2));
+    padding:34px 16px 90px;
+  }
+  a{color:inherit}
+
+  /* ===== the receipt stack (curled prior receipts peek behind) ===== */
+  .stage{position:relative;width:var(--paper-w);max-width:100%;margin:0 auto}
+  .curl{
+    position:absolute;left:0;right:0;top:0;height:60px;
+    background:var(--paper-edge);
+    border-radius:2px;
+    box-shadow:0 6px 18px rgba(0,0,0,.45);
+    z-index:0;
+  }
+  .curl::after{ /* faint print line so it reads as paper */
+    content:"";position:absolute;left:18px;right:18px;top:14px;height:1px;
+    background:repeating-linear-gradient(90deg,var(--ink-ghost) 0 3px,transparent 3px 7px);
+    opacity:.5;
+  }
+  .curl.c1{transform:translate(8px,-14px) rotate(-1.4deg);filter:brightness(.93)}
+  .curl.c2{transform:translate(-9px,-9px) rotate(1.1deg);filter:brightness(.88)}
+  .curl.c3{transform:translate(4px,-5px) rotate(-.4deg);filter:brightness(.96)}
+
+  /* ===== the main receipt paper ===== */
+  .receipt{
+    position:relative;z-index:2;
+    background:var(--paper);
+    color:var(--ink);
+    padding:26px 22px 20px;
+    box-shadow:0 18px 50px rgba(0,0,0,.55), 0 2px 0 rgba(0,0,0,.2);
+    /* print-roller streaks + paper grain */
+    background-image:
+      repeating-linear-gradient(90deg, rgba(0,0,0,0.020) 0 1px, transparent 1px 4px),
+      radial-gradient(140% 60% at 50% 0%, rgba(0,0,0,0.03), transparent 60%);
+  }
+  /* torn top + bottom edges via zig-zag clip */
+  .torn-top{
+    position:absolute;left:0;right:0;top:-9px;height:10px;z-index:3;
+    background:var(--paper);
+    -webkit-mask:linear-gradient(135deg,transparent 50%,#000 50%) 0 0/12px 12px repeat-x;
+            mask:linear-gradient(135deg,transparent 50%,#000 50%) 0 0/12px 12px repeat-x;
+  }
+  .torn-bot{
+    position:relative;z-index:3;height:11px;margin:0 -22px -20px;
+    background:var(--paper);
+    -webkit-mask:linear-gradient(45deg,transparent 50%,#000 50%) 0 100%/12px 12px repeat-x;
+            mask:linear-gradient(45deg,transparent 50%,#000 50%) 0 100%/12px 12px repeat-x;
+  }
+
+  /* ===== header (store / register lines) ===== */
+  .store{text-align:center;margin-bottom:4px}
+  .store .logo{font-size:15px;font-weight:700;letter-spacing:.05em}
+  .store .sub{font-size:11px;color:var(--ink-faint);letter-spacing:.18em}
+  .store .reg{font-size:11px;color:var(--ink);margin-top:8px}
+  .store .reg b{font-weight:700}
+  .store .when{font-size:10.5px;color:var(--ink-faint);margin-top:2px}
+
+  .rule{border:none;border-top:1px dashed var(--ink);opacity:.6;margin:10px 0}
+  .rule.solid{border-top:1px solid var(--ink);opacity:.8}
+
+  /* ===== the dot-matrix input form clipped to the paper top ===== */
+  form.till{margin:6px 0 2px}
+  .field{display:flex;gap:6px;align-items:stretch}
+  input#url{
+    flex:1 1 auto;min-width:0;
+    font:inherit;font-size:12px;
+    background:#fbf8ef;color:var(--ink);
+    border:1px dashed var(--ink);border-radius:0;
+    padding:8px 9px;
+    box-shadow:inset 0 1px 2px rgba(0,0,0,.06);
+  }
+  input#url::placeholder{color:var(--ink-ghost)}
+  button{font:inherit;cursor:pointer;color:var(--ink)}
+  button.key{
+    background:#fbf8ef;border:1px solid var(--ink);border-radius:0;
+    padding:8px 12px;font-size:11px;font-weight:700;letter-spacing:.06em;
+    box-shadow:2px 2px 0 var(--ink);
+    transition:transform .05s ease, box-shadow .05s ease;
+    text-transform:uppercase;
+  }
+  button.key:hover{background:#fff}
+  button.key:active{transform:translate(2px,2px);box-shadow:0 0 0 var(--ink)}
+  button.key.go{background:var(--gold);border-color:var(--gold-deep);box-shadow:2px 2px 0 var(--gold-deep)}
+  button.key.go:active{box-shadow:0 0 0 var(--gold-deep)}
+
+  .controls{display:flex;flex-wrap:wrap;gap:7px 12px;align-items:center;margin-top:9px;font-size:11px}
+  .controls label{display:inline-flex;gap:5px;align-items:center;color:var(--ink-faint)}
+  .controls select{
+    font:inherit;font-size:11px;background:#fbf8ef;color:var(--ink);
+    border:1px dashed var(--ink);border-radius:0;padding:4px 5px;max-width:165px;
+  }
+  /* hand-ticked check box drawn in CSS */
+  .tick{appearance:none;-webkit-appearance:none;width:14px;height:14px;flex:0 0 auto;
+    border:1px solid var(--ink);background:#fbf8ef;display:inline-block;position:relative;cursor:pointer;border-radius:0}
+  .tick:checked::after{content:"X";position:absolute;inset:-3px 0 0 0;text-align:center;font-weight:700;font-size:13px;color:var(--ink)}
+
+  /* ===== status / progress / error ===== */
+  #status{min-height:16px;text-align:center;font-size:11px;color:var(--ink-faint);margin:8px 0 2px;letter-spacing:.04em}
+  .err{border:1px solid var(--void);color:var(--void);padding:9px 10px;margin:8px 0;font-size:12px;text-align:center;letter-spacing:.03em}
+  .err::before{content:"!! ";}
+  .err::after{content:" !!";}
+
+  /* dot-matrix skeleton */
+  .skel{font-size:11px;color:var(--ink-ghost);text-align:center;letter-spacing:.3em;padding:6px 0}
+  .skel span{animation:blink 1s steps(2,start) infinite}
+  .skel span:nth-child(2){animation-delay:.12s}
+  .skel span:nth-child(3){animation-delay:.24s}
+  .skel span:nth-child(4){animation-delay:.36s}
+  .skel span:nth-child(5){animation-delay:.48s}
+  @keyframes blink{0%,49%{opacity:.25}50%,100%{opacity:1}}
+
+  /* ===== sections ===== */
+  .section{margin-top:6px}
+  .cap{
+    font-variant:small-caps;font-size:12px;letter-spacing:.12em;color:var(--ink);
+    display:flex;align-items:center;gap:8px;margin:12px 0 2px;font-weight:700;
+  }
+  .cap .ttl{white-space:nowrap}
+  .cap .fill{flex:1 1 auto;border-bottom:1px dashed var(--ink);opacity:.55;transform:translateY(-3px)}
+  .cap .voidall{
+    font-variant:normal;font-size:10px;letter-spacing:.04em;color:var(--ink-faint);
+    background:none;border:1px dotted var(--ink-faint);padding:1px 5px;border-radius:0;text-transform:none;
+  }
+  .cap .voidall:hover{color:var(--void);border-color:var(--void)}
+
+  /* ===== a printed line item ===== */
+  .line{
+    position:relative;
+    padding:3px 0 4px;
+    cursor:pointer;
+    /* print reveal */
+    animation:print .26s ease both;
+  }
+  @keyframes print{from{clip-path:inset(0 0 100% 0);opacity:.4}to{clip-path:inset(0 0 0 0);opacity:1}}
+  .row{display:flex;align-items:baseline;gap:0;min-width:0}
+  .nm{
+    flex:0 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .nm .cnt{color:var(--ink-faint);font-size:11px}
+  .leader{flex:1 1 auto;min-width:8px;align-self:stretch;position:relative;margin:0 4px}
+  .leader::after{
+    content:"";position:absolute;left:0;right:0;bottom:3px;
+    border-bottom:1px dotted var(--ink);opacity:.55;
+  }
+  .pr{flex:0 0 auto;white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums}
+
+  /* confidence = ink density (no colored badges) */
+  .line.cf-high  .nm,.line.cf-high  .pr{color:var(--ink)}
+  .line.cf-medium .nm,.line.cf-medium .pr{color:#3c352a}
+  .line.cf-low   .nm,.line.cf-low   .pr{color:var(--ink-faint)}
+  .line.cf-none  .nm{color:var(--ink-faint)}
+  .line.unpriced .pr{color:var(--ink-ghost);font-style:italic;font-size:11px}
+
+  .subline{font-size:11px;color:var(--ink-faint);padding-left:14px;display:flex;align-items:baseline}
+  .subline .sfill{flex:1 1 auto}
+  .subnote{font-size:10.5px;color:var(--ink-faint);padding-left:14px;font-style:italic}
+  .tradelink{font-size:10px;color:var(--ink-faint);text-decoration:underline dotted;margin-left:6px}
+  .tradelink:hover{color:var(--ink)}
+  .editfx{
+    font-size:10px;color:var(--ink-faint);background:none;border:1px dotted var(--ink-faint);
+    padding:0 4px;margin-left:6px;border-radius:0;text-transform:none;letter-spacing:0;
+  }
+  .editfx:hover{color:var(--ink);border-color:var(--ink)}
+
+  /* VOID stamp + strike-through */
+  .line.void{cursor:pointer}
+  .line.void .nm,.line.void .pr{color:var(--ink-ghost);text-decoration:line-through;text-decoration-color:var(--void)}
+  .line.void .leader::after{opacity:.25}
+  .stamp{
+    position:absolute;right:30px;top:50%;
+    transform:translateY(-50%) rotate(-12deg) scale(0);
+    color:var(--void);border:2px solid var(--void);
+    font-weight:700;font-size:13px;letter-spacing:.14em;padding:1px 7px;border-radius:3px;
+    opacity:.92;pointer-events:none;
+    mix-blend-mode:multiply;
+  }
+  .line.void .stamp{animation:stamp .32s cubic-bezier(.2,1.4,.5,1) forwards}
+  @keyframes stamp{0%{transform:translateY(-50%) rotate(40deg) scale(2.2);opacity:0}60%{opacity:.95}100%{transform:translateY(-50%) rotate(-12deg) scale(1);opacity:.92}}
+
+  /* currency orb chips read on light paper */
+  .bpc-cur{height:.9em;vertical-align:-.12em;margin:0 1px;
+    background:rgba(0,0,0,.05);border-radius:3px;padding:1px;mix-blend-mode:multiply}
+  .bpc-exsub{color:var(--ink-faint);font-size:.92em}
+  .bpc-dash{color:var(--ink-ghost)}
+
+  /* ===== footer totals ===== */
+  .totbox{margin-top:14px}
+  .totrow{display:flex;align-items:baseline;font-size:12px;padding:2px 0}
+  .totrow .tl{flex:0 0 auto;font-variant:small-caps;letter-spacing:.08em;color:var(--ink-faint)}
+  .totrow .td{flex:1 1 auto;border-bottom:1px dotted var(--ink);opacity:.5;margin:0 4px;transform:translateY(-3px)}
+  .totrow .tv{flex:0 0 auto;text-align:right}
+  .totband{
+    margin:8px -22px;padding:9px 22px;
+    background:linear-gradient(90deg,rgba(224,179,65,.18),rgba(224,179,65,.32),rgba(224,179,65,.18));
+    border-top:2px solid var(--gold-deep);border-bottom:2px solid var(--gold-deep);
+    display:flex;align-items:baseline;
+  }
+  .totband .glabel{font-size:16px;font-weight:700;letter-spacing:.1em;flex:0 0 auto}
+  .totband .gspace{flex:1 1 auto}
+  .totband .gval{font-size:17px;font-weight:700;text-align:right;flex:0 0 auto}
+  .voided-note{font-size:10.5px;color:var(--void);text-align:right;margin-top:1px;font-style:italic;min-height:13px}
+  .itemcount{text-align:center;font-size:11px;letter-spacing:.1em;color:var(--ink-faint);margin-top:8px}
+
+  /* odometer count-up roll */
+  .odo{display:inline-block;overflow:hidden;vertical-align:bottom}
+  .odo.rolling{animation:odoflash .25s ease}
+  @keyframes odoflash{0%{filter:blur(.5px);opacity:.55}100%{filter:blur(0);opacity:1}}
+
+  /* ===== PoB barcode footer ===== */
+  .pob{margin-top:14px;text-align:center}
+  .pob .lbl{font-size:10px;letter-spacing:.16em;color:var(--ink-faint);font-variant:small-caps}
+  .barcode{
+    height:42px;margin:6px auto 3px;max-width:300px;
+    background-repeat:no-repeat;background-size:100% 100%;
+    image-rendering:pixelated;
+  }
+  .pob .code{font-size:9px;color:var(--ink-ghost);word-break:break-all;line-height:1.3;max-height:26px;overflow:hidden;margin:2px 6px 0}
+  .pob .copy{
+    margin-top:6px;font-size:10px;letter-spacing:.06em;background:#fbf8ef;border:1px solid var(--ink);
+    padding:3px 10px;box-shadow:2px 2px 0 var(--ink);
+  }
+  .pob .copy:active{transform:translate(2px,2px);box-shadow:0 0 0 var(--ink)}
+
+  .thanks{text-align:center;font-variant:small-caps;letter-spacing:.22em;font-size:12px;margin-top:14px;color:var(--ink)}
+  .footsig{text-align:center;font-size:9px;color:var(--ink-ghost);margin-top:3px;letter-spacing:.1em}
+
+  /* ===== RARE ITEM SLIP — the advanced affix picker (second receipt) ===== */
+  #slipwrap{position:fixed;inset:0;z-index:60;display:none;align-items:flex-start;justify-content:center;
+    padding:28px 14px;overflow:auto;background:rgba(10,8,6,.62);backdrop-filter:blur(1.5px)}
+  #slipwrap.open{display:flex}
+  .slip{
+    position:relative;width:380px;max-width:100%;background:var(--paper);color:var(--ink);
+    padding:22px 20px 16px;box-shadow:0 22px 60px rgba(0,0,0,.6);
+    background-image:repeating-linear-gradient(90deg,rgba(0,0,0,.02) 0 1px,transparent 1px 4px);
+    animation:slipup .34s cubic-bezier(.2,.9,.3,1) both;
+  }
+  @keyframes slipup{from{transform:translateY(36px);opacity:.2}to{transform:translateY(0);opacity:1}}
+  .slip.tear{animation:tearoff .4s ease forwards}
+  @keyframes tearoff{
+    0%{clip-path:inset(0 0 0 0);transform:translateY(0) rotate(0)}
+    35%{clip-path:inset(0 0 30% 0);transform:translateY(-2px) rotate(-.4deg)}
+    100%{clip-path:inset(0 0 102% 0);transform:translateY(-30px) rotate(-1.4deg);opacity:0}
+  }
+  .slip .torn-top{top:-9px}
+  .slip .slipbot{height:11px;margin:14px -20px -16px;background:var(--paper);
+    -webkit-mask:linear-gradient(45deg,transparent 50%,#000 50%) 0 100%/12px 12px repeat-x;
+            mask:linear-gradient(45deg,transparent 50%,#000 50%) 0 100%/12px 12px repeat-x;}
+  .slip h2{font-size:13px;text-align:center;margin:0;letter-spacing:.1em;font-variant:small-caps;font-weight:700}
+  .slip .scope{text-align:center;font-size:10.5px;color:var(--ink-faint);margin:2px 0 0;font-style:italic}
+  .slip .progress{text-align:center;font-size:10px;color:var(--ink-ghost);letter-spacing:.1em;margin-top:3px}
+  .slip .reslbl{display:flex;align-items:center;gap:6px;justify-content:center;font-size:11px;color:var(--ink-faint);margin:8px 0 2px}
+
+  .afx{display:grid;grid-template-columns:16px 1fr 52px 52px;gap:7px;align-items:center;
+    padding:5px 0;border-top:1px dashed var(--ink);opacity:1}
+  .afx:first-of-type{border-top:none}
+  .afx .atxt{font-size:11px;min-width:0;overflow:hidden;text-overflow:ellipsis}
+  .afx.no{opacity:.55}
+  .afx.no .atxt{font-style:italic}
+  .afx .reason{display:block;font-size:9.5px;color:var(--ink-faint)}
+  .afx .qty{width:100%;font:inherit;font-size:10.5px;text-align:right;background:#fbf8ef;
+    border:1px solid var(--ink);border-radius:0;padding:2px 3px}
+  .afx .qty::placeholder{color:var(--ink-ghost)}
+  .qtyhdr{display:grid;grid-template-columns:16px 1fr 52px 52px;gap:7px;font-size:9px;
+    color:var(--ink-ghost);letter-spacing:.08em;text-transform:uppercase;margin-bottom:1px}
+  .qtyhdr span:nth-child(3),.qtyhdr span:nth-child(4){text-align:right}
+
+  .slip .acts{display:flex;gap:6px;margin-top:13px}
+  .slip .acts button{flex:1 1 auto;font-size:10.5px;padding:7px 4px;background:#fbf8ef;border:1px solid var(--ink);
+    box-shadow:2px 2px 0 var(--ink);letter-spacing:.03em;text-transform:uppercase;font-weight:700}
+  .slip .acts button:active{transform:translate(2px,2px);box-shadow:0 0 0 var(--ink)}
+  .slip .acts button.search{background:var(--gold);border-color:var(--gold-deep);box-shadow:2px 2px 0 var(--gold-deep)}
+  .slip .acts button.search:active{box-shadow:0 0 0 var(--gold-deep)}
+
+  /* keyboard print-cursor */
+  .line.cursor{outline:1px dotted var(--ink);outline-offset:2px}
+  .line.cursor::before{content:"\25B8";position:absolute;left:-12px;top:3px;color:var(--gold-deep);font-size:11px}
+
+  /* ===== motion off ===== */
+  @media (prefers-reduced-motion: reduce){
+    .line,.slip,.slip.tear,.stamp,.line.void .stamp,.odo.rolling,.skel span{animation:none!important}
+    .line.void .stamp{transform:translateY(-50%) rotate(-12deg) scale(1)}
+  }
+
+  /* ===== PRINT: a real clean paper bill ===== */
+  @media print{
+    body{background:#fff;padding:0}
+    .stage{width:auto;margin:0}
+    .curl,form.till,.controls,#status,.recent-wrap,.editfx,.tradelink,.voidall,.pob .copy,#slipwrap{display:none!important}
+    .receipt{box-shadow:none;padding:0 8px}
+    .torn-top,.torn-bot{display:none}
+    .line{animation:none}
+    .stamp{position:static;transform:none;display:inline-block;margin-left:6px;scale:.8}
+    a{text-decoration:none;color:#000}
+  }
+
+  /* ===== recent builds (curled stack) ===== */
+  .recent-wrap{width:var(--paper-w);max-width:100%;margin:18px auto 0}
+  .recent-hd{color:#d8cdb4;font-size:11px;letter-spacing:.14em;font-variant:small-caps;text-align:center;margin-bottom:8px}
+  .recent-hd .all{color:#a99f8b;cursor:pointer;text-decoration:underline dotted;margin-left:8px}
+  .recents{display:flex;flex-direction:column;gap:6px}
+  .rcpt{
+    background:var(--paper);color:var(--ink);padding:7px 12px;font-size:11px;cursor:pointer;
+    box-shadow:0 4px 14px rgba(0,0,0,.4);position:relative;
+    transform-origin:left center;
+    background-image:repeating-linear-gradient(90deg,rgba(0,0,0,.02) 0 1px,transparent 1px 4px);
+  }
+  .rcpt:nth-child(odd){transform:rotate(-.5deg)}
+  .rcpt:nth-child(even){transform:rotate(.6deg)}
+  .rcpt:hover{filter:brightness(1.03);transform:rotate(0) translateX(2px);z-index:3}
+  .rcpt .rn{font-weight:700}
+  .rcpt .rm{color:var(--ink-faint)}
+  .rcpt .rw{float:right;color:var(--ink-ghost);font-size:10px}
+  .rcpt::before{content:"";position:absolute;left:0;top:-5px;height:5px;width:100%;background:var(--paper);
+    -webkit-mask:linear-gradient(135deg,transparent 50%,#000 50%) 0 0/8px 8px repeat-x;mask:linear-gradient(135deg,transparent 50%,#000 50%) 0 0/8px 8px repeat-x}
+</style></head>
+<body>
+
+<div class="stage">
+  <div class="curl c1"></div><div class="curl c2"></div><div class="curl c3"></div>
+  <div class="receipt" id="receipt">
+    <div class="torn-top"></div>
+
+    <!-- store header -->
+    <div class="store">
+      <div class="logo">PATH OF EXILE 2</div>
+      <div class="sub">BUILD COST RECEIPT</div>
+      <div class="reg" id="register">REGISTER #1 &nbsp;·&nbsp; CASHIER: THE EXILARCH</div>
+      <div class="when" id="when"></div>
+    </div>
+
+    <hr class="rule">
+
+    <!-- till / input form -->
+    <form class="till" id="f" autocomplete="off">
+      <div class="field">
+        <input id="url" placeholder="poe.ninja link · PoB code · pobb.in link" spellcheck="false">
+        <button class="key go" id="go" type="submit">Ring up</button>
+      </div>
+      <div class="controls">
+        <label><span>League</span>
+          <select id="league"><option value="">Auto</option></select>
+        </label>
+        <label><span>Listing</span>
+          <select id="liststatus"></select>
+        </label>
+        <label><input type="checkbox" class="tick" id="advanced"> advanced</label>
+        <label><input type="checkbox" class="tick" id="refresh"> fresh pull</label>
+      </div>
+    </form>
+
+    <div id="status"></div>
+
+    <!-- receipt body (rendered by JS) -->
+    <div id="out"></div>
+
+    <div class="torn-bot"></div>
+  </div>
+</div>
+
+<!-- recent builds: a stack of curled prior receipts -->
+<div class="recent-wrap" id="recent-wrap" hidden>
+  <div class="recent-hd">— PRIOR RECEIPTS —<span class="all" id="showall" hidden>show all</span></div>
+  <div class="recents" id="recents"></div>
+</div>
+
+<!-- RARE ITEM SLIP (advanced affix picker) -->
+<div id="slipwrap"><div class="slip" id="slip"></div></div>
+
+<script src="/assets/sample.js"></script>
+<script src="/assets/core.js"></script>
+<script>
+(function(){
+const $=s=>document.querySelector(s), E=bpc.esc;
+const out=$('#out'), statusEl=$('#status');
+let cursorIdx=-1;          // keyboard print-cursor over visible lines
+let recentExpanded=false;
+let RECENT=[];
+
+/* ---------- header date ---------- */
+$('#when').textContent = new Date().toLocaleString('en-US',
+  {year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false})
+  .replace(',',' ');
+
+/* ---------- controls ---------- */
+$('#liststatus').innerHTML = bpc.STATUS_ORDER.map(o=>
+  `<option value="${o}">${E(bpc.STATUS_LABEL[o])}</option>`).join('');
+
+function syncControls(){
+  $('#advanced').checked = bpc.state.advanced;
+  $('#refresh').checked  = bpc.state.refresh;
+  $('#liststatus').value = bpc.state.status;
+  const lg=$('#league');
+  if([...lg.options].some(o=>o.value===bpc.state.league)) lg.value=bpc.state.league;
+}
+
+$('#f').addEventListener('submit',e=>{
+  e.preventDefault();
+  const u=$('#url').value.trim();
+  if(u) bpc.startUrl(u);
+});
+$('#advanced').addEventListener('change',e=>bpc.setControl('advanced',e.target.checked));
+$('#refresh').addEventListener('change',e=>bpc.setControl('refresh',e.target.checked));
+$('#liststatus').addEventListener('change',e=>bpc.setControl('status',e.target.value));
+$('#league').addEventListener('change',e=>bpc.setControl('league',e.target.value));
+
+/* ---------- side data ---------- */
+bpc.on('leagues',ls=>{
+  $('#league').innerHTML='<option value="">Auto</option>'+ls.map(l=>`<option>${E(l)}</option>`).join('');
+  syncControls();
+});
+bpc.on('control',()=>syncControls());
+
+bpc.on('recent',bs=>{ RECENT=bs||[]; renderRecent(); });
+function renderRecent(){
+  const wrap=$('#recent-wrap'), box=$('#recents');
+  if(!RECENT.length){ wrap.hidden=true; return; }
+  wrap.hidden=false;
+  const show = recentExpanded ? RECENT : RECENT.slice(0,5);
+  box.innerHTML = show.map(b=>{
+    const when=b.ts?relTime(b.ts):'';
+    return `<div class="rcpt" data-k="${E(b.key)}">
+      <span class="rw">${E(when)}</span>
+      <span class="rn">${E(b.character||'?')}</span>
+      <span class="rm"> · ${E(b.char_class||'')} ${b.level?('lv'+b.level):''}${b.league?(' · '+E(b.league)):''}</span>
+    </div>`;
+  }).join('');
+  const sa=$('#showall');
+  sa.hidden = RECENT.length<=5;
+  sa.textContent = recentExpanded ? 'show fewer' : ('show all ('+RECENT.length+')');
+}
+function relTime(ts){
+  const t=typeof ts==='number'?(ts<2e10?ts*1000:ts):Date.parse(ts);
+  if(isNaN(t)) return '';
+  const d=(Date.now()-t)/1000;
+  if(d<60) return 'just now';
+  if(d<3600) return Math.floor(d/60)+'m ago';
+  if(d<86400) return Math.floor(d/3600)+'h ago';
+  return Math.floor(d/86400)+'d ago';
+}
+$('#showall').addEventListener('click',e=>{ e.stopPropagation(); recentExpanded=!recentExpanded; renderRecent(); });
+$('#recents').addEventListener('click',e=>{ const r=e.target.closest('.rcpt'); if(r) bpc.startCache(r.dataset.k); });
+
+/* ---------- status / progress / error ---------- */
+bpc.on('phase',p=>{
+  if(p==='loading'){ statusEl.innerHTML='<span class="dotmsg">opening register…</span>'; }
+  if(p==='error'){ statusEl.textContent=''; }
+});
+bpc.on('progress',m=>{
+  if(['loading','queued','running'].includes(bpc.state.phase) && m)
+    statusEl.textContent='» '+m;
+});
+bpc.on('done',()=>{
+  statusEl.textContent = bpc.state.searches!=null
+    ? (bpc.state.searches+' trade searches rung up.') : 'transaction complete.';
+});
+bpc.on('error',m=>{
+  statusEl.textContent='';
+  out.innerHTML=`<div class="err">${E(m||'transaction declined')}</div>`;
+});
+
+/* ---------- render the receipt body ---------- */
+bpc.on('items',render);
+bpc.on('meta',render);
+bpc.on('priced',e=>{ render(); flashOdometer(); });
+bpc.on('enabled',()=>{ render(); flashOdometer(); });
+bpc.on('totals',updateTotals);   // cheap path: just re-tally without full re-render
+
+let _lastMedian=0;
+function flashOdometer(){
+  const t=bpc.totals();
+  if(t.median!==_lastMedian){ _lastMedian=t.median; }
+}
+
+function confClass(p){ return 'cf-'+((p&&p.confidence)||'none'); }
+
+function lineHTML(it){
+  const k=String(it.index), s=bpc.state, p=s.priced[k], on=!!s.enabled[k];
+  const cnt = it.count>1 ? `<span class="cnt"> ×${it.count}</span>` : '';
+  const isRare = s.advanced && it.category==='rare';
+  const re = isRare ? `<button class="editfx" data-k="${E(k)}" title="reprint slip">edit affixes</button>` : '';
+
+  // not yet priced — printing…
+  if(!p){
+    return `<div class="line printing" data-k="${E(k)}">
+      <div class="row"><span class="nm">${E(it.name)}${cnt}</span>
+      <span class="leader"></span><span class="pr unpriced">printing…</span></div></div>`;
+  }
+  const priced = p.exalted.median!=null;
+  const voided = priced && !on;
+  const cls = ['line', confClass(p)];
+  if(!priced) cls.push('unpriced');
+  if(voided) cls.push('void');
+
+  let priceCell;
+  if(priced){
+    priceCell = bpc.priceHTML(p.exalted.median);
+  }else{
+    priceCell = `<span class="bpc-dash">not priced</span>`;
+  }
+
+  const tl = (p.trade_url) ? `<a class="tradelink" href="${E(p.trade_url)}" target="_blank" rel="noopener">trade ↗</a>` : '';
+
+  let h=`<div class="${cls.join(' ')}" data-k="${E(k)}" data-priceable="${priced?1:0}">
+    ${voided?'<span class="stamp">VOID</span>':''}
+    <div class="row">
+      <span class="nm">${E(it.name)}${cnt}</span>
+      <span class="leader"></span>
+      <span class="pr">${priceCell}</span>
+    </div>`;
+
+  // sub-lines: chosen affixes for a rare (receipt modifiers)
+  if(isRare && s.rares[k] && s.rares[k].affixes){
+    s.rares[k].affixes.forEach(a=>{
+      if(a.searchable){
+        h+=`<div class="subline"><span>+ ${E(a.text)}</span><span class="sfill"></span></div>`;
+      }
+    });
+  }
+  if(p.note) h+=`<div class="subnote">${E(p.note)}</div>`;
+  if(tl||re) h+=`<div class="subnote" style="font-style:normal">${tl}${re}</div>`;
+  h+=`</div>`;
+  return h;
+}
+
+function render(){
+  const s=bpc.state;
+  if(!s.meta && !(s.items&&s.items.length)){
+    if(['loading','queued','running'].includes(s.phase))
+      out.innerHTML=`<div class="skel"><span>•</span><span>•</span><span>•</span><span>•</span><span>•</span> ringing up <span>•</span><span>•</span><span>•</span><span>•</span><span>•</span></div>`;
+    return;
+  }
+  const m=s.meta||{};
+  let h='';
+
+  // register/cashier line from meta
+  if(m.character){
+    $('#register').innerHTML =
+      `<b>${E(m.character)}</b> &nbsp;·&nbsp; ${E(m['class']||'')} ${m.level?('LV '+m.level):''}`
+      + (m.league?`<br><span style="color:var(--ink-faint)">${E(m.league)} LEAGUE</span>`:'');
+    if(m.divine_to_exalted){
+      h+=`<div class="itemcount" style="margin:2px 0 0">EXCHANGE RATE &nbsp; 1 ${bpc.curImg('div')} = ${bpc.nfmt(Math.round(m.divine_to_exalted),0)} ${bpc.curImg('ex')}</div>`;
+    }
+  }
+
+  // grouped sections
+  for(const grp of bpc.itemsByGroup()){
+    const anyOn = grp.items.some(it=>s.enabled[String(it.index)]);
+    h+=`<div class="section" data-grp="${E(grp.group)}">
+      <div class="cap"><span class="ttl">— ${E(grp.title.toUpperCase())} —</span><span class="fill"></span>
+        <button class="voidall" data-grp="${E(grp.group)}" data-on="${anyOn?0:1}">${anyOn?'[void all]':'[ring all]'}</button>
+      </div>`;
+    for(const it of grp.items) h+=lineHTML(it);
+    h+=`</div>`;
+  }
+
+  // ===== footer totals =====
+  h+=`<hr class="rule"><div class="totbox" id="totbox"></div>`;
+
+  // ===== PoB barcode footer =====
+  if(m.pob_code){
+    h+=`<div class="pob">
+      <div class="lbl">— PATH OF BUILDING IMPORT —</div>
+      <div class="barcode" id="barcode"></div>
+      <div class="code">${E(m.pob_code.slice(0,180))}${m.pob_code.length>180?'…':''}</div>
+      <button class="copy" id="pobcopy" type="button">⎘ COPY POB CODE</button>
+    </div>`;
+  }
+
+  h+=`<div class="thanks">★ THANK YOU EXILE ★</div>
+      <div class="footsig">no refunds · prices in exalted &amp; divine · est. wraeclast</div>`;
+
+  out.innerHTML=h;
+  if(m.pob_code) paintBarcode(m.pob_code);
+  updateTotals();
+  cursorIdx=-1;
+}
+
+/* totals: itemized subtotal / voided / grand total band */
+function updateTotals(){
+  const box=$('#totbox'); if(!box) return;
+  const t=bpc.totals(), s=bpc.state;
+  // count voided priced items
+  let voided=0, items=0, totItems=0;
+  s.items.forEach(it=>{
+    const k=String(it.index), p=s.priced[k];
+    totItems++;
+    if(p && p.exalted.median!=null){ items++; if(!s.enabled[k]) voided++; }
+  });
+  const gv = bpc.price(t.median);
+  const grand = gv.empty ? '<span class="bpc-dash">—</span>'
+    : (gv.div!=null ? `${gv.divStr} ${bpc.curImg('div')} <span class="bpc-exsub">/ ${gv.exStr} ${bpc.curImg('ex')}</span>`
+                    : `${gv.exStr} ${bpc.curImg('ex')}`);
+
+  box.innerHTML =
+    `<div class="totrow"><span class="tl">subtotal min</span><span class="td"></span><span class="tv">${bpc.priceHTML(t.min)}</span></div>
+     <div class="totrow"><span class="tl">subtotal median</span><span class="td"></span><span class="tv">${bpc.priceHTML(t.median)}</span></div>
+     <div class="totrow"><span class="tl">subtotal high</span><span class="td"></span><span class="tv">${bpc.priceHTML(t.high)}</span></div>
+     ${voided?`<div class="voided-note">VOIDED ${voided} line${voided>1?'s':''}</div>`:`<div class="voided-note"></div>`}
+     <div class="totband">
+       <span class="glabel">TOTAL</span><span class="gspace"></span>
+       <span class="gval"><span class="odo ${box._roll?'rolling':''}" id="grandval">${grand}</span></span>
+     </div>
+     <div class="itemcount">ITEMS ${t.included} / ${t.priced} INCLUDED &nbsp;·&nbsp; ${totItems} ON RECEIPT</div>`;
+
+  // odometer flash on change
+  const gv2=$('#grandval');
+  if(gv2 && box._lastGrand!==undefined && box._lastGrand!==grand){
+    gv2.classList.add('rolling');
+    setTimeout(()=>gv2.classList.remove('rolling'),300);
+  }
+  box._lastGrand=grand;
+}
+
+/* CSS barcode encoding the PoB code (deterministic stripes) */
+function paintBarcode(code){
+  const el=$('#barcode'); if(!el) return;
+  let stops=[], x=0;
+  for(let i=0;i<code.length && x<100;i++){
+    const c=code.charCodeAt(i);
+    const w=0.6 + (c%5)*0.5;          // bar width
+    const dark=(c%2===0);
+    stops.push(`${dark?'#1a1712':'transparent'} ${x.toFixed(2)}% ${(x+w).toFixed(2)}%`);
+    x+=w;
+  }
+  el.style.backgroundImage=`linear-gradient(90deg, ${stops.join(',')})`;
+}
+
+/* ---------- delegated clicks on the receipt body ---------- */
+out.addEventListener('click',e=>{
+  // PoB copy
+  if(e.target.closest('#pobcopy')){
+    const code=(bpc.state.meta&&bpc.state.meta.pob_code)||'';
+    if(navigator.clipboard&&code) navigator.clipboard.writeText(code).catch(()=>{});
+    const b=e.target.closest('#pobcopy'); b.textContent='✓ COPIED'; setTimeout(()=>b.textContent='⎘ COPY POB CODE',1300);
+    return;
+  }
+  // edit affixes (reprint slip)
+  const ef=e.target.closest('.editfx');
+  if(ef){ e.stopPropagation(); bpc.reopenRare(ef.dataset.k); return; }
+  // trade link — let it through
+  if(e.target.closest('.tradelink')) return;
+  // void-all per group
+  const va=e.target.closest('.voidall');
+  if(va){ e.stopPropagation(); bpc.setGroupEnabled(va.dataset.grp, va.dataset.on==='1'); return; }
+  // void / un-void a single line
+  const ln=e.target.closest('.line');
+  if(ln && ln.dataset.priceable==='1'){
+    const k=ln.dataset.k;
+    bpc.setEnabled(k, !bpc.state.enabled[k]);
+  }
+});
+
+/* ---------- keyboard print-cursor ---------- */
+document.addEventListener('keydown',e=>{
+  if($('#slipwrap').classList.contains('open')) return;
+  if(document.activeElement && /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) return;
+  const lines=[...out.querySelectorAll('.line[data-priceable="1"]')];
+  if(!lines.length) return;
+  if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+    e.preventDefault();
+    lines.forEach(l=>l.classList.remove('cursor'));
+    cursorIdx += (e.key==='ArrowDown'?1:-1);
+    if(cursorIdx<0) cursorIdx=lines.length-1;
+    if(cursorIdx>=lines.length) cursorIdx=0;
+    lines[cursorIdx].classList.add('cursor');
+    lines[cursorIdx].scrollIntoView({block:'nearest'});
+  } else if((e.key===' '||e.key==='Enter') && cursorIdx>=0){
+    e.preventDefault();
+    const k=lines[cursorIdx].dataset.k;
+    bpc.setEnabled(k, !bpc.state.enabled[k]);
+  }
+});
+
+/* ============================================================
+   RARE ITEM SLIP — advanced affix picker (rendered ONLY on 'rare')
+   ============================================================ */
+function num(s){ s=(s||'').trim(); if(!s) return null; const n=Number(s); return isNaN(n)?null:n; }
+
+bpc.on('rare',info=>{
+  const wrap=$('#slipwrap'), slip=$('#slip');
+  if(!info){ wrap.classList.remove('open'); slip.innerHTML=''; return; }
+
+  const r=info.rare;
+  let usePseudo = !!(r.pseudo && r.pseudo.length);   // default ON when pseudo present
+
+  function affixRow(a){
+    if(!a.searchable){
+      return `<div class="afx no">
+        <span></span>
+        <span class="atxt">${E(a.text)}<span class="reason">* not on register${a.reason?(' — '+E(a.reason)):''}</span></span>
+        <span></span><span></span></div>`;
+    }
+    const attr = a.kind==='equip' ? `data-equip="${E(a.key)}"` : `data-sid="${E(a.stat_id)}"`;
+    const v = a.value!=null ? E(a.value) : '';
+    return `<div class="afx" ${attr}>
+      <input type="checkbox" class="tick acb" checked>
+      <span class="atxt">${E(a.text)}</span>
+      <input class="qty amin" placeholder="min" value="${v}">
+      <input class="qty amax" placeholder="max">
+    </div>`;
+  }
+  function rowsHTML(){
+    let h='';
+    r.affixes.forEach(a=>{ if(usePseudo && a.resist) return; h+=affixRow(a); });
+    if(usePseudo) r.pseudo.forEach(p=>h+=affixRow(p));
+    return h;
+  }
+
+  slip.className='slip';   // reset any tear animation
+  slip.innerHTML =
+    `<div class="torn-top"></div>
+     <h2>RARE ITEM SLIP</h2>
+     <div class="scope">${E(r.name)} — ${E(r.scope||'')}${info.redo?' · re-submit to replace':''}</div>
+     <div class="progress">ITEM ${info.index+1} OF ${info.total}</div>
+     ${(r.pseudo&&r.pseudo.length)
+        ? `<div class="reslbl"><input type="checkbox" class="tick" id="pseu" ${usePseudo?'checked':''}><label for="pseu">[combine resist]</label></div>`
+        : ''}
+     <div class="qtyhdr"><span></span><span>AFFIX</span><span>MIN</span><span>MAX</span></div>
+     <div id="afxs">${rowsHTML()}</div>
+     <div class="acts">
+       ${info.index>0?'<button id="pPrev" type="button">&lt; Prev</button>':''}
+       <button id="pSearch" class="search" type="button">${info.redo?'Re-total':'Total this item'}</button>
+       <button id="pSkip" type="button">No charge</button>
+     </div>
+     <div class="slipbot"></div>`;
+
+  wrap.classList.add('open');
+
+  const pe=slip.querySelector('#pseu');
+  if(pe) pe.addEventListener('change',()=>{ usePseudo=pe.checked; slip.querySelector('#afxs').innerHTML=rowsHTML(); });
+
+  const pPrev=slip.querySelector('#pPrev');
+  if(pPrev) pPrev.addEventListener('click',()=>bpc.backRare());
+
+  slip.querySelector('#pSearch').addEventListener('click',()=>{
+    const filters=[], equip=[];
+    slip.querySelectorAll('.afx[data-sid]').forEach(d=>{
+      if(d.querySelector('.acb').checked)
+        filters.push({stat_id:d.dataset.sid, min:num(d.querySelector('.amin').value), max:num(d.querySelector('.amax').value)});
+    });
+    slip.querySelectorAll('.afx[data-equip]').forEach(d=>{
+      if(d.querySelector('.acb').checked)
+        equip.push({key:d.dataset.equip, min:num(d.querySelector('.amin').value), max:num(d.querySelector('.amax').value)});
+    });
+    // tear-off animation, then submit (final DOM state is correct regardless)
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(reduce){ bpc.submitRare(info.key,{filters,equip}); return; }
+    slip.classList.add('tear');
+    setTimeout(()=>bpc.submitRare(info.key,{filters,equip}), 260);
+  });
+
+  slip.querySelector('#pSkip').addEventListener('click',()=>bpc.skipRare(info.key));
+});
+
+// click backdrop to dismiss the slip = skip-less close (just back out via back if possible; else leave)
+$('#slipwrap').addEventListener('click',e=>{ /* keep open; require explicit choice */ });
+
+/* ---------- boot ---------- */
+if(location.search.indexOf('mock')>=0){ bpc.init({mock:true}); syncControls(); render(); }
+else { bpc.init(); syncControls(); }
+})();
+</script>
+</body></html>

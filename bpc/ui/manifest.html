@@ -1,0 +1,922 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="bpc-title" content="Cargo Manifest">
+<meta name="bpc-tagline" content="Your build as a boarding-pass itinerary with a barcoded fare total.">
+<meta name="bpc-accent" content="#ff7a45">
+<meta name="bpc-vibe" content="itinerary">
+<meta name="bpc-order" content="4">
+<title>bpc · cargo manifest</title>
+<style>
+  :root{
+    --stone:#ece8e1; --paper:#f6f3ed; --paper2:#efebe3;
+    --ink:#2a2622; --ink2:#5b534a; --ink3:#8a8073;
+    --line:#cbc3b6; --line2:#ddd6c9;
+    --ac:#ff7a45; --ac-d:#e2602f; --ac-soft:#ffe6da;
+    --ok:#3f7a52; --amber:#b07d22; --grey:#8a8073; --bad:#b04632;
+    --rare:#9a8a3a; --unique:#9a6a3c; --magic:#5a6f93; --normal:#7a756c; --rune:#5c7d78; --gem:#6a8a5e;
+    --mono:'SFMono-Regular',ui-monospace,'Cascadia Mono','Consolas','Roboto Mono',monospace;
+    --sans:'Inter Tight','Arial Narrow',system-ui,'Segoe UI',Roboto,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:
+      radial-gradient(1200px 700px at 50% -8%, #dfdacf 0%, transparent 60%),
+      linear-gradient(160deg,#d9d3c7 0%, #cfc8ba 100%);
+    color:var(--ink); font-family:var(--sans);
+    -webkit-font-smoothing:antialiased; min-height:100vh;
+    padding:26px 18px 70px;
+  }
+  .cap{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink3);font-weight:700}
+  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  a{color:var(--ac-d);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* ---------- search-flights bar ---------- */
+  .topbar{max-width:1080px;margin:0 auto 18px;}
+  .brand{display:flex;align-items:center;gap:12px;margin:0 2px 12px;flex-wrap:wrap}
+  .brand .logo{
+    width:34px;height:34px;border-radius:9px;background:linear-gradient(150deg,var(--ac),var(--ac-d));
+    display:grid;place-items:center;color:#fff;font-size:18px;box-shadow:0 4px 12px rgba(226,96,47,.35);
+    flex:0 0 auto;
+  }
+  .brand h1{font-size:19px;margin:0;letter-spacing:.04em;font-weight:800}
+  .brand .sub{font-size:12px;color:var(--ink2);margin-top:1px;letter-spacing:.02em}
+  .brand .spacer{flex:1}
+  .brand .stamp-air{
+    font-family:var(--mono);font-size:11px;color:var(--ink3);border:1px dashed var(--line);
+    border-radius:7px;padding:5px 9px;letter-spacing:.14em;
+  }
+
+  .booking{
+    background:linear-gradient(180deg,#fffdf9,#f3efe7);
+    border:1px solid var(--line);border-radius:16px;
+    box-shadow:0 12px 30px rgba(60,52,40,.14), inset 0 1px 0 #fff;
+    padding:14px;
+  }
+  .booking .field-row{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch}
+  .ff{position:relative;flex:1 1 360px;min-width:240px}
+  .ff .lab{position:absolute;top:7px;left:14px;font-size:9px;letter-spacing:.2em;color:var(--ink3);font-weight:700;text-transform:uppercase;pointer-events:none}
+  .ff input{
+    width:100%;padding:22px 14px 9px;border:1px solid var(--line);border-radius:11px;background:#fff;
+    color:var(--ink);font-size:15px;font-family:var(--mono);
+  }
+  .ff input::placeholder{color:#b7afa2;font-family:var(--sans)}
+  .ff input:focus{outline:none;border-color:var(--ac);box-shadow:0 0 0 3px var(--ac-soft)}
+  .ctl{position:relative}
+  .ctl .lab{position:absolute;top:6px;left:12px;font-size:9px;letter-spacing:.18em;color:var(--ink3);font-weight:700;text-transform:uppercase;pointer-events:none}
+  select.tk{
+    appearance:none;-webkit-appearance:none;
+    padding:21px 30px 8px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;
+    color:var(--ink);font-size:13px;font-family:var(--sans);cursor:pointer;min-width:150px;height:100%;
+    background-image:linear-gradient(45deg,transparent 50%,var(--ink3) 50%),linear-gradient(135deg,var(--ink3) 50%,transparent 50%);
+    background-position:calc(100% - 16px) 60%,calc(100% - 11px) 60%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;
+  }
+  select.tk:focus{outline:none;border-color:var(--ac);box-shadow:0 0 0 3px var(--ac-soft)}
+  .btn-go{
+    border:none;border-radius:11px;background:linear-gradient(150deg,var(--ac),var(--ac-d));color:#fff;
+    font-weight:800;letter-spacing:.08em;text-transform:uppercase;font-size:13px;cursor:pointer;
+    padding:0 22px;display:flex;align-items:center;gap:9px;box-shadow:0 6px 16px rgba(226,96,47,.4);
+  }
+  .btn-go:hover{filter:brightness(1.05)}
+  .btn-go:active{transform:translateY(1px)}
+  .btn-go .ic{font-size:16px}
+  .toggles{display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin-top:11px;padding:0 4px}
+  .swc{display:inline-flex;align-items:center;gap:9px;cursor:pointer;user-select:none}
+  .swc .cap{cursor:pointer}
+  .switch{position:relative;width:38px;height:20px;border-radius:99px;background:#d7cfc1;border:1px solid var(--line);transition:background .18s}
+  .switch::after{content:"";position:absolute;top:1px;left:1px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .18s}
+  .swc input{position:absolute;opacity:0;width:0;height:0}
+  .swc input:checked + .switch{background:var(--ac)}
+  .swc input:checked + .switch::after{transform:translateX(18px)}
+  .swc input:focus-visible + .switch{box-shadow:0 0 0 3px var(--ac-soft)}
+
+  /* ---------- recent tickets ---------- */
+  .recent-wrap{max-width:1080px;margin:16px auto 0}
+  .recent-head{display:flex;align-items:center;gap:10px;margin:0 4px 8px}
+  .recent-head .rule{flex:1;height:1px;background:repeating-linear-gradient(90deg,var(--line) 0 6px,transparent 6px 12px)}
+  .stubs{display:flex;gap:10px;overflow-x:auto;padding:2px 4px 6px}
+  .ministub{
+    flex:0 0 auto;background:linear-gradient(180deg,#fffdf9,#f1ede4);border:1px solid var(--line);
+    border-radius:10px;padding:8px 12px 8px 14px;cursor:pointer;position:relative;min-width:150px;
+    box-shadow:0 3px 9px rgba(60,52,40,.1);transition:transform .12s,box-shadow .12s;
+  }
+  .ministub::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:3px;background:var(--ac)}
+  .ministub:hover{transform:translateY(-2px);box-shadow:0 7px 16px rgba(60,52,40,.18)}
+  .ministub .who{font-weight:800;font-size:13px;letter-spacing:.02em}
+  .ministub .det{font-size:10px;color:var(--ink2);font-family:var(--mono);letter-spacing:.04em;margin-top:2px}
+  .seeall{flex:0 0 auto;align-self:center;background:none;border:1px dashed var(--line);border-radius:10px;
+    color:var(--ink2);font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:9px 12px;cursor:pointer}
+  .seeall:hover{border-color:var(--ac);color:var(--ac-d)}
+
+  /* ---------- status / errors ---------- */
+  .flightstatus{max-width:1080px;margin:18px auto 0}
+  .board{
+    background:#231f1b;border-radius:13px;padding:14px 18px;color:#f1e6d8;display:flex;align-items:center;gap:14px;
+    box-shadow:0 8px 22px rgba(40,32,24,.32);font-family:var(--mono);overflow:hidden;
+  }
+  .board .dot{width:11px;height:11px;border-radius:50%;background:var(--ac);box-shadow:0 0 10px var(--ac);flex:0 0 auto}
+  .board.live .dot{animation:blink 1s steps(2,start) infinite}
+  @keyframes blink{50%{opacity:.25}}
+  .board .txt{font-size:13px;letter-spacing:.06em;flex:1}
+  .board .txt b{color:var(--ac);font-weight:700}
+  .board .splitflap{font-size:11px;letter-spacing:.18em;color:#bca98f;text-transform:uppercase}
+  .errbox{
+    max-width:1080px;margin:18px auto 0;background:#fbeae3;border:1px solid #e3b6a3;border-left:5px solid var(--bad);
+    border-radius:11px;padding:14px 18px;color:#7a2f1c;font-size:13px;display:flex;gap:10px;align-items:flex-start;
+  }
+  .errbox .ic{font-size:18px}
+
+  /* ---------- the ticket ---------- */
+  .ticket-stage{max-width:1080px;margin:22px auto 0;perspective:1400px}
+  .ticket{
+    display:flex;position:relative;border-radius:18px;
+    filter:drop-shadow(0 22px 40px rgba(50,42,32,.26));
+    opacity:0;transform:translateY(26px);
+  }
+  .ticket.in{animation:rise .6s cubic-bezier(.2,.7,.25,1) forwards}
+  @keyframes rise{to{opacity:1;transform:none}}
+
+  /* notch + perforation via gradients so they survive resize */
+  .body, .stub{
+    background:
+      radial-gradient(circle at 14px -1px, transparent 11px, var(--paper) 12px) top left/100% 50% no-repeat,
+      var(--paper);
+    position:relative;
+  }
+  .body{
+    flex:1 1 0%;border-radius:18px 0 0 18px;padding:22px 26px 24px;min-width:0;
+    background:linear-gradient(180deg,#f8f5ef,#efebe2);
+    border:1px solid var(--line);border-right:none;
+  }
+  .stub{
+    flex:0 1 320px;width:320px;min-width:0;max-width:340px;
+    border-radius:0 18px 18px 0;padding:22px 22px 24px;position:relative;
+    background:linear-gradient(180deg,#f4f0e7,#e9e4d9);
+    border:1px solid var(--line);border-left:none;
+    display:flex;flex-direction:column;overflow:hidden;
+  }
+  /* perforation: dashed vertical cut + the two notch circles punched from the backdrop */
+  .perf{
+    position:absolute;top:0;bottom:0;left:-1px;width:2px;
+    background:repeating-linear-gradient(180deg,var(--line) 0 7px,transparent 7px 14px);
+    z-index:3;
+  }
+  .notch{position:absolute;width:22px;height:22px;border-radius:50%;
+    background:linear-gradient(160deg,#d9d3c7,#cfc8ba);box-shadow:inset 0 1px 2px rgba(0,0,0,.18);z-index:4}
+  .notch.t{top:-11px;left:-11px}
+  .notch.b{bottom:-11px;left:-11px}
+
+  /* header */
+  .thead{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;border-bottom:2px solid var(--ink);padding-bottom:14px}
+  .thead .airline{display:flex;align-items:center;gap:11px}
+  .thead .alogo{width:30px;height:30px;border-radius:8px;background:linear-gradient(150deg,var(--ac),var(--ac-d));display:grid;place-items:center;color:#fff;font-size:15px}
+  .thead .anam{font-weight:800;font-size:15px;letter-spacing:.1em;line-height:1}
+  .thead .akind{font-size:9px;letter-spacing:.26em;color:var(--ink3);margin-top:3px;font-weight:700}
+  .thead .flightno{text-align:right}
+  .thead .flightno .num{font-family:var(--mono);font-size:22px;font-weight:700;letter-spacing:.05em;color:var(--ink)}
+
+  .meta-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 18px;margin-top:16px}
+  @media(max-width:640px){.meta-grid{grid-template-columns:repeat(2,1fr)}}
+  .mcell .cap{display:block;margin-bottom:3px}
+  .mcell .val{font-size:16px;font-weight:800;letter-spacing:.01em;line-height:1.15}
+  .mcell .val.mono{font-weight:700}
+  .route{display:flex;align-items:center;gap:10px;margin:18px 0 4px;color:var(--ink2)}
+  .route .pt{font-family:var(--mono);font-weight:700;font-size:13px;color:var(--ink);letter-spacing:.08em}
+  .route .ln{flex:1;height:0;border-top:2px dotted var(--line);position:relative}
+  .route .ln::after{content:"\2708";position:absolute;right:-4px;top:-11px;color:var(--ac);font-size:15px}
+
+  /* terminals / manifest */
+  .terminal{margin-top:18px;border-top:1px solid var(--line2)}
+  .term-head{
+    display:flex;align-items:center;gap:11px;padding:11px 2px 9px;cursor:pointer;user-select:none;
+  }
+  .term-head .gate{
+    font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.1em;color:#fff;background:var(--ink);
+    border-radius:6px;padding:3px 8px;flex:0 0 auto;
+  }
+  .term-head .tname{font-weight:800;letter-spacing:.14em;text-transform:uppercase;font-size:12px}
+  .term-head .tsum{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--ink2);font-variant-numeric:tabular-nums}
+  .term-head .ttog{
+    flex:0 0 auto;font-size:9px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;
+    border:1px solid var(--line);border-radius:6px;padding:4px 8px;color:var(--ink2);background:#fff;cursor:pointer;
+  }
+  .term-head .ttog:hover{border-color:var(--ac);color:var(--ac-d)}
+
+  .leg{
+    display:grid;grid-template-columns:30px 1fr auto;gap:12px;align-items:center;
+    padding:11px 6px;border-top:1px dashed var(--line2);position:relative;
+    transition:opacity .25s, background .15s;
+  }
+  .leg:hover{background:rgba(255,122,69,.05)}
+  .leg.off{opacity:.42}
+  .leg .seatchk{position:relative;width:30px;height:30px}
+  .leg .seatchk input{position:absolute;opacity:0;width:0;height:0}
+  .leg .seatchk .box{
+    position:absolute;inset:0;border:1.5px solid var(--line);border-radius:7px;background:#fff;
+    display:grid;place-items:center;cursor:pointer;transition:.15s;
+  }
+  .leg .seatchk .box::after{content:"\2713";color:#fff;font-size:15px;font-weight:800;opacity:0;transform:scale(.5);transition:.15s}
+  .leg .seatchk input:checked + .box{background:var(--ok);border-color:var(--ok)}
+  .leg .seatchk input:checked + .box::after{opacity:1;transform:none}
+  .leg .seatchk input:focus-visible + .box{box-shadow:0 0 0 3px var(--ac-soft)}
+  .leg .seatchk.nochk .box{visibility:hidden}
+
+  .leg .name{min-width:0}
+  .leg .name .ttl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .leg .name .ttl a, .leg .name .ttl .plain{font-weight:700;font-size:14px;color:var(--ink);letter-spacing:.01em}
+  .rtag{
+    font-size:8.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+    border-radius:4px;padding:2px 6px;color:#fff;flex:0 0 auto;position:relative;top:-1px;
+  }
+  .rtag.unique{background:var(--unique)} .rtag.rare{background:var(--rare)}
+  .rtag.magic{background:var(--magic)} .rtag.normal{background:var(--normal)}
+  .rtag.rune{background:var(--rune)} .rtag.gem{background:var(--gem)} .rtag.currency{background:var(--rune)}
+  .leg .name .slot{font-size:10.5px;color:var(--ink3);font-family:var(--mono);letter-spacing:.06em;margin-top:3px}
+  .leg .name .slot .qty{color:var(--ac-d);font-weight:700}
+  .leg .name .note{font-size:11px;color:var(--ink2);margin-top:3px;font-style:italic}
+  .amend{font-size:10px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--line);border-radius:5px;
+    background:#fff;color:var(--ink2);cursor:pointer;padding:2px 7px;font-weight:700}
+  .amend:hover{border-color:var(--ac);color:var(--ac-d)}
+
+  .fare{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:3px;min-width:150px}
+  .fare .med{font-family:var(--mono);font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .fare .rng{font-family:var(--mono);font-size:10.5px;color:var(--ink3);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .fare .pend{font-family:var(--mono);font-size:12px;color:var(--ink3);letter-spacing:.08em}
+  .conf{font-size:8.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:2px 7px;border-radius:4px;border:1px solid currentColor}
+  .conf.high{color:var(--ok)} .conf.medium{color:var(--amber)} .conf.low{color:var(--bad)} .conf.none{color:var(--grey)}
+
+  /* BOARDED / STANDBY stamps */
+  .stamp{
+    position:absolute;right:148px;top:50%;pointer-events:none;
+    font-family:var(--mono);font-weight:800;letter-spacing:.16em;font-size:13px;
+    padding:3px 10px;border:2.5px solid;border-radius:6px;text-transform:uppercase;
+    opacity:0;transform:translateY(-50%) rotate(-9deg) scale(.6);
+  }
+  @media(max-width:760px){.stamp{right:auto;left:42px}}
+  .stamp.boarded{color:var(--ok);border-color:var(--ok)}
+  .stamp.standby{color:var(--bad);border-color:var(--bad)}
+  .stamp.show{animation:thunk .32s cubic-bezier(.2,1.5,.4,1) forwards}
+  @keyframes thunk{0%{opacity:0;transform:translateY(-50%) rotate(-9deg) scale(1.6)}60%{opacity:1}100%{opacity:.9;transform:translateY(-50%) rotate(-9deg) scale(1)}}
+
+  /* curr orb icons on the paper */
+  .bpc-cur{height:.95em;vertical-align:-.16em;border-radius:50%;background:#e6dccb;padding:1px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+  .bpc-exsub{color:var(--ink3)} .bpc-dash{color:var(--ink3)}
+
+  /* ---------- stub: fare summary + barcode ---------- */
+  .stub .stub-cap{font-size:9px;letter-spacing:.24em;color:var(--ink3);text-transform:uppercase;font-weight:700}
+  .stub .pnr{font-family:var(--mono);font-size:18px;font-weight:700;letter-spacing:.14em;margin-top:2px}
+  .stub .pax{font-size:13px;font-weight:800;margin-top:14px}
+  .stub .paxsub{font-size:11px;color:var(--ink2);font-family:var(--mono);margin-top:1px}
+
+  .faretab{margin-top:18px;border-top:2px solid var(--ink);padding-top:12px}
+  .fareline{display:flex;justify-content:space-between;align-items:baseline;margin:8px 0;font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .fareline .k{font-size:11px;letter-spacing:.08em;color:var(--ink2);text-transform:uppercase}
+  .fareline .v{font-size:13px;font-weight:600}
+  .fareline.dim .k,.fareline.dim .v{color:var(--ink3)}
+  .total-box{margin-top:12px;background:linear-gradient(150deg,var(--ac),var(--ac-d));border-radius:12px;padding:14px 16px;color:#fff;box-shadow:0 8px 18px rgba(226,96,47,.4)}
+  .total-box .tl{font-size:10px;letter-spacing:.22em;text-transform:uppercase;font-weight:700;opacity:.9}
+  .total-box .tv{font-family:var(--mono);font-size:26px;font-weight:800;letter-spacing:.01em;font-variant-numeric:tabular-nums;line-height:1.1;margin-top:3px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .total-box .tv .bpc-cur{background:rgba(255,255,255,.85)}
+  .total-box .tv .bpc-exsub{color:rgba(255,255,255,.82)}
+  .total-box .trange{font-family:var(--mono);font-size:11px;opacity:.92;margin-top:6px;font-variant-numeric:tabular-nums}
+  .total-box .tcount{font-size:10px;letter-spacing:.14em;text-transform:uppercase;margin-top:8px;opacity:.92}
+
+  .barcode-wrap{margin-top:auto;padding-top:18px}
+  .barcode{height:48px;margin-top:4px;background-repeat:repeat-y;background-size:100% 4px;
+    background-image:linear-gradient(90deg,
+      #2a2622 0 2px,transparent 2px 5px,#2a2622 5px 6px,transparent 6px 10px,
+      #2a2622 10px 13px,transparent 13px 14px,#2a2622 14px 15px,transparent 15px 19px,
+      #2a2622 19px 20px,transparent 20px 24px,#2a2622 24px 27px,transparent 27px 28px,
+      #2a2622 28px 29px,transparent 29px 33px,#2a2622 33px 35px,transparent 35px 39px,
+      #2a2622 39px 40px,transparent 40px 44px,#2a2622 44px 47px,transparent 47px 48px,
+      #2a2622 48px 49px,transparent 49px 53px,#2a2622 53px 54px,transparent 54px 58px,
+      #2a2622 58px 61px,transparent 61px 62px,#2a2622 62px 63px,transparent 63px 67px,
+      #2a2622 67px 70px,transparent 70px 71px,#2a2622 71px 72px,transparent 72px 76px);
+    background-position:0 0;background-size:100% 100%;border-radius:2px;
+  }
+  .pob-row{display:flex;gap:8px;align-items:center;margin-top:12px}
+  .pob-code{flex:1 1 0%;min-width:0;font-family:var(--mono);font-size:10px;color:var(--ink3);letter-spacing:.05em;
+    border:1px dashed var(--line);border-radius:7px;padding:7px 9px;background:#fdfbf7;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .copy-btn{flex:0 0 auto;border:1px solid var(--ink);border-radius:7px;background:var(--ink);color:#fff;
+    font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;cursor:pointer;padding:8px 11px}
+  .copy-btn:hover{background:#3a342d}
+  .copy-btn.done{background:var(--ok);border-color:var(--ok)}
+
+  .empty-hint{max-width:1080px;margin:30px auto;text-align:center;color:var(--ink2)}
+  .empty-hint .big{font-size:15px;font-weight:700;letter-spacing:.04em;color:var(--ink)}
+  .empty-hint .sm{font-size:12px;margin-top:6px;font-family:var(--mono)}
+
+  /* ---------- declaration slip (advanced picker) ---------- */
+  .slip-scrim{position:fixed;inset:0;background:rgba(40,33,25,.42);backdrop-filter:blur(2px);
+    opacity:0;pointer-events:none;transition:opacity .25s;z-index:50}
+  .slip-scrim.open{opacity:1;pointer-events:auto}
+  .slip{
+    position:fixed;top:0;right:0;bottom:0;width:min(480px,94vw);z-index:51;
+    background:linear-gradient(180deg,#f7f3ec,#ece7dc);border-left:3px solid var(--ac);
+    box-shadow:-22px 0 50px rgba(40,32,24,.35);
+    transform:translateX(102%);transition:transform .32s cubic-bezier(.2,.7,.25,1);
+    display:flex;flex-direction:column;
+  }
+  .slip.open{transform:none}
+  .slip .perfedge{position:absolute;left:-3px;top:0;bottom:0;width:3px;
+    background:repeating-linear-gradient(180deg,var(--ac) 0 8px,transparent 8px 16px)}
+  .slip-head{padding:20px 22px 14px;border-bottom:2px dashed var(--line)}
+  .slip-head .kicker{display:flex;align-items:center;gap:9px}
+  .slip-head .kicker .cstamp{font-family:var(--mono);font-size:9px;letter-spacing:.2em;color:#fff;background:var(--ac);border-radius:5px;padding:3px 8px;font-weight:700}
+  .slip-head .kicker .pg{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--ink2);letter-spacing:.08em}
+  .slip-head h2{margin:11px 0 2px;font-size:19px;font-weight:800;letter-spacing:.01em}
+  .slip-head .scope{font-size:11px;color:var(--ink2);font-family:var(--mono);letter-spacing:.04em}
+  .slip-head .redo{display:inline-block;margin-top:7px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ac-d);font-weight:700}
+
+  .slip-body{flex:1;overflow:auto;padding:14px 22px}
+  .declare-cap{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink3);font-weight:700;margin:4px 0 8px;display:flex;align-items:center;gap:8px}
+  .declare-cap .rule{flex:1;height:1px;background:repeating-linear-gradient(90deg,var(--line) 0 5px,transparent 5px 10px)}
+
+  .pseudo-tog{display:flex;align-items:center;gap:11px;background:#fff;border:1px solid var(--line);border-radius:11px;padding:11px 13px;margin-bottom:12px}
+  .pseudo-tog .ti{flex:1}
+  .pseudo-tog .ti .t1{font-weight:800;font-size:12px;letter-spacing:.04em}
+  .pseudo-tog .ti .t2{font-size:10.5px;color:var(--ink2);margin-top:2px}
+
+  .dline{
+    display:grid;grid-template-columns:26px 1fr;gap:10px;align-items:start;
+    padding:11px 0;border-top:1px dashed var(--line);
+  }
+  .dline .dchk{position:relative;width:24px;height:24px;margin-top:1px}
+  .dline .dchk input{position:absolute;opacity:0;width:0;height:0}
+  .dline .dchk .box{position:absolute;inset:0;border:1.5px solid var(--line);border-radius:6px;background:#fff;display:grid;place-items:center;cursor:pointer;transition:.15s}
+  .dline .dchk .box::after{content:"\2713";color:#fff;font-size:13px;font-weight:800;opacity:0;transition:.15s}
+  .dline .dchk input:checked + .box{background:var(--ac);border-color:var(--ac)}
+  .dline .dchk input:checked + .box::after{opacity:1}
+  .dline .dchk input:focus-visible + .box{box-shadow:0 0 0 3px var(--ac-soft)}
+  .dline .dmain{min-width:0}
+  .dline .dtext{font-size:13px;font-weight:600;letter-spacing:.01em}
+  .dline .weights{display:flex;gap:8px;margin-top:7px;align-items:center}
+  .weights .wf{position:relative;flex:1}
+  .weights .wf .wl{position:absolute;top:4px;left:9px;font-size:8px;letter-spacing:.16em;color:var(--ink3);font-weight:700;text-transform:uppercase;pointer-events:none}
+  .weights .wf input{width:100%;padding:16px 8px 5px;border:1px solid var(--line);border-radius:8px;background:#fff;font-family:var(--mono);font-size:13px;text-align:right;color:var(--ink);font-variant-numeric:tabular-nums}
+  .weights .wf input:focus{outline:none;border-color:var(--ac);box-shadow:0 0 0 3px var(--ac-soft)}
+  .weights .dash{color:var(--ink3);font-family:var(--mono);font-weight:700;padding-top:8px}
+
+  .dline.cannot{opacity:.62}
+  .dline.cannot .nochip{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--bad);border:1px solid var(--bad);border-radius:4px;padding:2px 6px;display:inline-block;margin-top:6px}
+  .dline.cannot .reason{font-size:11px;color:var(--ink2);margin-top:5px;font-style:italic}
+
+  .pseudo-row .dtext{color:var(--ac-d)}
+  .pseudo-row::before{}
+
+  .slip-foot{padding:14px 22px;border-top:2px dashed var(--line);display:flex;gap:10px;align-items:center;background:#f1ece2}
+  .slip-foot .sb{
+    border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);font-weight:700;
+    font-size:12px;letter-spacing:.04em;cursor:pointer;padding:11px 14px;
+  }
+  .slip-foot .sb:hover{border-color:var(--ac);color:var(--ac-d)}
+  .slip-foot .sb.skip{margin-left:auto}
+  .slip-foot .sb.primary{
+    background:linear-gradient(150deg,var(--ac),var(--ac-d));color:#fff;border:none;font-weight:800;
+    letter-spacing:.06em;text-transform:uppercase;box-shadow:0 6px 14px rgba(226,96,47,.4);flex:1;display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .slip-foot .sb.primary:hover{filter:brightness(1.05)}
+
+  @media (prefers-reduced-motion: reduce){
+    .ticket,.ticket.in{animation:none !important;opacity:1;transform:none}
+    .leg{animation:none !important;opacity:1}
+    .stamp.show{animation:none !important;opacity:.9;transform:translateY(-50%) rotate(-9deg) scale(1)}
+    .slip{transition:none}
+  }
+
+  /* row reveal stagger */
+  .leg.reveal{opacity:0;animation:legin .4s ease forwards}
+  .leg.reveal.off{animation:leginoff .4s ease forwards}
+  @keyframes legin{to{opacity:1}}
+  @keyframes leginoff{to{opacity:.42}}
+
+  /* ---------- mobile: stub stacks below ---------- */
+  @media (max-width:860px){
+    .ticket{flex-direction:column}
+    .body{border-radius:18px 18px 0 0;border-right:1px solid var(--line);border-bottom:none}
+    .stub{flex:1 1 auto;width:auto;max-width:none;border-radius:0 0 18px 18px;border-left:1px solid var(--line);border-top:none}
+    .perf{top:auto;left:0;right:0;bottom:-1px;height:2px;width:auto;
+      background:repeating-linear-gradient(90deg,var(--line) 0 7px,transparent 7px 14px)}
+    .notch.t{top:auto;bottom:-11px;left:-11px}
+    .notch.b{top:auto;bottom:-11px;left:auto;right:-11px}
+    .stamp{right:auto;left:46px}
+  }
+</style></head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="logo">&#9992;</div>
+    <div>
+      <h1>CARGO MANIFEST</h1>
+      <div class="sub">Your build, booked leg-by-leg &mdash; with a barcoded fare total.</div>
+    </div>
+    <div class="spacer"></div>
+    <div class="stamp-air mono">BPC&middot;AIR 04</div>
+  </div>
+
+  <form id="booking" class="booking" autocomplete="off">
+    <div class="field-row">
+      <div class="ff">
+        <span class="lab">Itinerary source</span>
+        <input id="url" placeholder="poe.ninja link, PoB code, or pobb.in link" spellcheck="false" inputmode="url">
+      </div>
+      <div class="ctl">
+        <span class="lab">Destination</span>
+        <select id="league" class="tk"><option value="">Auto (build league)</option></select>
+      </div>
+      <div class="ctl">
+        <span class="lab">Fare class</span>
+        <select id="liststatus" class="tk"></select>
+      </div>
+      <button id="go" class="btn-go" type="submit"><span class="ic">&#9992;</span> Price Fare</button>
+    </div>
+    <div class="toggles">
+      <label class="swc"><input type="checkbox" id="advanced"><span class="switch"></span><span class="cap">Declare affixes (advanced)</span></label>
+      <label class="swc"><input type="checkbox" id="refresh"><span class="switch"></span><span class="cap">Fresh pull</span></label>
+    </div>
+  </form>
+</div>
+
+<div class="recent-wrap" id="recentWrap" hidden>
+  <div class="recent-head">
+    <span class="cap">Recent boarding passes</span>
+    <span class="rule"></span>
+  </div>
+  <div class="stubs" id="recent"></div>
+</div>
+
+<div id="statusHost"></div>
+
+<div class="ticket-stage" id="stage"></div>
+
+<div class="slip-scrim" id="scrim"></div>
+<aside class="slip" id="slip" aria-hidden="true">
+  <div class="perfedge"></div>
+  <div id="slipInner"></div>
+</aside>
+
+<script src="/assets/sample.js"></script>
+<script src="/assets/core.js"></script>
+<script>
+const $=s=>document.querySelector(s), E=bpc.esc;
+const RM = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let recentAll=false;
+
+/* ---- 3-letter codes from build meta (airline grammar) ---- */
+function code3(s){ s=(s||'').toUpperCase().replace(/[^A-Z]/g,''); return (s+'XXX').slice(0,3); }
+function flightNo(m){
+  const a=code3(m.character||'BPC');
+  const n=(((m.level||0)*7 + (String(m['class']||'').length)*13) % 8999 + 1000);
+  return a+' '+n;
+}
+function pnr(m){
+  const base=(code3(m.character)+code3(m['class'])).slice(0,5);
+  const n=((m.level||0)*3 % 90 + 10);
+  return (base+n).toUpperCase();
+}
+
+/* ---- controls ---- */
+(function(){ $('#liststatus').innerHTML=bpc.STATUS_ORDER.map(o=>`<option value="${o}">${E(bpc.STATUS_LABEL[o])}</option>`).join(''); })();
+function syncControls(){
+  $('#advanced').checked=bpc.state.advanced;
+  $('#refresh').checked=!!bpc.state.refresh;
+  $('#liststatus').value=bpc.state.status;
+  if([...$('#league').options].some(o=>o.value===bpc.state.league)) $('#league').value=bpc.state.league;
+}
+$('#booking').addEventListener('submit',e=>{e.preventDefault(); const u=$('#url').value.trim(); if(u) bpc.startUrl(u);});
+$('#advanced').addEventListener('change',e=>bpc.setControl('advanced',e.target.checked));
+$('#liststatus').addEventListener('change',e=>bpc.setControl('status',e.target.value));
+$('#league').addEventListener('change',e=>bpc.setControl('league',e.target.value));
+$('#refresh').addEventListener('change',e=>bpc.setControl('refresh',e.target.checked));
+
+/* ---- side data ---- */
+bpc.on('leagues',ls=>{
+  $('#league').innerHTML='<option value="">Auto (build league)</option>'+ls.map(l=>`<option>${E(l)}</option>`).join('');
+  syncControls();
+});
+bpc.on('recent',renderRecent);
+function renderRecent(bs){
+  const wrap=$('#recentWrap');
+  if(!bs||!bs.length){ wrap.hidden=true; return; }
+  wrap.hidden=false;
+  const show=recentAll?bs:bs.slice(0,5);
+  let h=show.map(b=>`<div class="ministub" data-k="${E(b.key)}">
+      <div class="who">${E(b.character||'Unknown')}</div>
+      <div class="det">${E(b.char_class||'')}${b.level?' &middot; LVL '+b.level:''}</div>
+    </div>`).join('');
+  if(bs.length>5) h+=`<button class="seeall" id="seeall" type="button">${recentAll?'Show less':'All '+bs.length+' ↗'}</button>`;
+  $('#recent').innerHTML=h;
+}
+$('#recent').addEventListener('click',e=>{
+  if(e.target.id==='seeall'){ recentAll=!recentAll; renderRecent(bpc.state.recent); return; }
+  const ms=e.target.closest('.ministub'); if(ms) bpc.startCache(ms.dataset.k);
+});
+
+/* ---- status board ---- */
+function board(txt,live,flap){
+  $('#statusHost').innerHTML=`<div class="flightstatus"><div class="board ${live?'live':''}">
+    <span class="dot"></span><span class="txt">${txt}</span>
+    <span class="splitflap">${E(flap||'')}</span></div></div>`;
+}
+bpc.on('phase',p=>{
+  if(p==='loading') board('<b>CHECKING IN</b> &mdash; locating itinerary&hellip;',true,'Please wait');
+  else if(p==='queued') board('<b>QUEUED AT GATE</b> &mdash; awaiting trade desk&hellip;',true,'Standby');
+  else if(p==='running') board('<b>NOW BOARDING</b> &mdash; pricing legs&hellip;',true,'In progress');
+});
+bpc.on('progress',m=>{ if(['queued','running','loading'].includes(bpc.state.phase)) board('<b>NOW BOARDING</b> &mdash; '+E(m||'working…'),true,'In progress'); });
+bpc.on('done',()=>{
+  const n=bpc.state.searches; board('<b>DEPARTED</b> &mdash; manifest complete.'+(n!=null?' '+n+' trade searches used.':''),false,'On time');
+});
+bpc.on('error',m=>{
+  $('#statusHost').innerHTML=`<div class="errbox"><span class="ic">&#9888;</span><div><b>Flight cancelled.</b><br>${E(m)}</div></div>`;
+});
+
+/* ---- ticket render (structural, NOT on every tick) ---- */
+let mounted=false;
+bpc.on('items',()=>{ mounted=false; buildTicket(); });
+bpc.on('meta',()=>{ if(bpc.state.items&&bpc.state.items.length){ mounted=false; buildTicket(); } });
+
+function buildTicket(){
+  const s=bpc.state, m=s.meta; if(!m||!s.items.length) return;
+  const groups=bpc.itemsByGroup();
+  const gateCodes={equipment:'A',flask:'B',jewel:'C',rune:'D',gem:'E'};
+
+  let legs='';
+  groups.forEach((grp,gi)=>{
+    legs+=`<div class="terminal" data-group="${E(grp.group)}">
+      <div class="term-head" data-group="${E(grp.group)}">
+        <span class="gate">GATE ${gateCodes[grp.group]||'?'}</span>
+        <span class="tname">${E(grp.title)}</span>
+        <span class="tsum" data-tsum="${E(grp.group)}"></span>
+        <button class="ttog" type="button" data-toggle-group="${E(grp.group)}">All standby</button>
+      </div>`;
+    grp.items.forEach(it=>{ legs+=legRow(it); });
+    legs+=`</div>`;
+  });
+
+  const stage=$('#stage');
+  stage.innerHTML=`
+  <div class="ticket" id="ticket">
+    <section class="body">
+      <span class="perf"></span><span class="notch t"></span><span class="notch b"></span>
+      <div class="thead">
+        <div class="airline">
+          <div class="alogo">&#9992;</div>
+          <div><div class="anam">EXALT AIR</div><div class="akind">Build Itinerary &middot; Boarding Pass</div></div>
+        </div>
+        <div class="flightno">
+          <div class="cap">Flight</div>
+          <div class="num">${E(flightNo(m))}</div>
+        </div>
+      </div>
+
+      <div class="meta-grid">
+        <div class="mcell"><span class="cap">Passenger</span><span class="val">${E(m.character||'—')}</span></div>
+        <div class="mcell"><span class="cap">Class</span><span class="val">${E(m['class']||'—')}</span></div>
+        <div class="mcell"><span class="cap">Level</span><span class="val mono">${E(m.level!=null?m.level:'—')}</span></div>
+        <div class="mcell"><span class="cap">Exchange</span><span class="val mono">${m.divine_to_exalted?('1 '+bpc.curImg('div')+' = '+bpc.nfmt(Math.round(m.divine_to_exalted),0)+' '+bpc.curImg('ex')):'—'}</span></div>
+      </div>
+
+      <div class="route">
+        <span class="pt">${E(code3(m.character))}</span>
+        <span class="ln"></span>
+        <span class="pt">${E(code3(m.league))}</span>
+      </div>
+      <div class="cap" style="text-align:center;margin-top:-2px">League: ${E(m.league||'—')}</div>
+
+      <div id="manifest">${legs}</div>
+    </section>
+
+    <aside class="stub">
+      <span class="notch t" style="left:auto;right:auto"></span>
+      <div class="stub-cap">Booking Ref / PNR</div>
+      <div class="pnr">${E(pnr(m))}</div>
+      <div class="pax">${E(m.character||'—')}</div>
+      <div class="paxsub">${E(m['class']||'')} &middot; LVL ${E(m.level!=null?m.level:'?')}</div>
+
+      <div class="faretab" id="faretab"></div>
+
+      <div class="barcode-wrap">
+        <div class="stub-cap">PoB Barcode</div>
+        <div class="barcode"></div>
+        <div id="pobHost"></div>
+      </div>
+    </aside>
+  </div>`;
+
+  const tk=$('#ticket');
+  if(!RM) requestAnimationFrame(()=>tk.classList.add('in')); else tk.classList.add('in');
+  // staggered leg reveal
+  if(!RM){
+    const rows=[...stage.querySelectorAll('.leg')];
+    rows.forEach((r,i)=>{ r.style.opacity='0'; setTimeout(()=>{ r.classList.add('reveal'); },120+i*38); });
+  }
+
+  renderPob();
+  paintAllFares();
+  paintFareTab();
+  mounted=true;
+}
+
+function legRow(it){
+  const s=bpc.state, k=String(it.index), p=s.priced[k], on=!!s.enabled[k];
+  const priced=p&&p.exalted.median!=null;
+  const skipped=p&&p.method==='skipped';
+  const rt=(it.rarity||it.category||'').toLowerCase();
+  const cnt=it.count>1?` <span class="qty">×${it.count}</span>`:'';
+  const isRare=s.advanced&&it.category==='rare';
+  return `<div class="leg ${on?'':'off'}" data-k="${E(k)}" data-cat="${E(it.category)}">
+    <div class="seatchk ${priced?'':'nochk'}">
+      ${priced?`<input type="checkbox" class="inc" data-k="${E(k)}" ${on?'checked':''} aria-label="board ${E(it.name)}"><span class="box"></span>`:''}
+    </div>
+    <div class="name">
+      <div class="ttl">
+        <span class="plain leg-name" data-k="${E(k)}">${E(it.name)}</span>
+        <span class="rtag ${E(rt)}">${E(it.rarity||it.category||'')}</span>
+        ${isRare?`<button class="amend" type="button" data-amend="${E(k)}">amend</button>`:''}
+      </div>
+      <div class="slot">${E(it.slot||grpLabel(it.group))}${cnt}</div>
+      <div class="note" data-note="${E(k)}"></div>
+    </div>
+    <div class="fare" data-fare="${E(k)}"></div>
+    <div class="stamp boarded" data-stamp-b="${E(k)}">Boarded</div>
+    <div class="stamp standby" data-stamp-s="${E(k)}">Standby</div>
+  </div>`;
+}
+function grpLabel(g){ return ({equipment:'Equipment',flask:'Flask',jewel:'Jewel',rune:'Rune',gem:'Gem'})[g]||''; }
+
+/* ---- fare cell painter (granular; no structural rerender) ---- */
+function paintFare(k){
+  const s=bpc.state, cell=document.querySelector(`[data-fare="${cssEsc(k)}"]`); if(!cell) return;
+  const leg=cell.closest('.leg'); const it=s.items.find(x=>String(x.index)===String(k));
+  const p=s.priced[k];
+  const noteEl=document.querySelector(`[data-note="${cssEsc(k)}"]`);
+  // refresh the name link (trade url may appear)
+  refreshName(k,it,p);
+  if(!p){
+    cell.innerHTML=`<span class="pend">··· awaiting</span>`;
+    if(noteEl) noteEl.textContent='';
+    return;
+  }
+  const priced=p.exalted.median!=null;
+  if(noteEl) noteEl.textContent=p.note||'';
+  if(!priced){
+    cell.innerHTML=`<span class="pend">${p.method==='skipped'?'standby (skipped)':'not priced'}</span>
+      <span class="conf ${E(p.confidence)}">${E(p.confidence)}</span>`;
+  } else {
+    cell.innerHTML=`<span class="med">${bpc.priceHTML(p.exalted.median)}</span>
+      <span class="rng">${bpc.priceHTML(p.exalted.min)} &ndash; ${bpc.priceHTML(p.exalted.high)}</span>
+      <span class="conf ${E(p.confidence)}">${E(p.confidence)}</span>`;
+  }
+  // checkbox visibility may have changed (e.g. skip)
+  const sc=leg.querySelector('.seatchk');
+  if(sc){
+    const hasChk=sc.querySelector('.inc');
+    if(priced && !hasChk){
+      sc.classList.remove('nochk');
+      sc.innerHTML=`<input type="checkbox" class="inc" data-k="${E(k)}" ${s.enabled[k]?'checked':''}><span class="box"></span>`;
+    } else if(!priced && hasChk){
+      sc.classList.add('nochk'); sc.innerHTML='';
+    }
+  }
+  reflectRow(k);
+}
+function refreshName(k,it,p){
+  const el=document.querySelector(`.leg-name[data-k="${cssEsc(k)}"]`); if(!el||!it) return;
+  if(p&&p.trade_url){
+    if(el.tagName!=='A'){
+      const a=document.createElement('a'); a.className='leg-name'; a.dataset.k=String(k);
+      a.href=p.trade_url; a.target='_blank'; a.rel='noopener'; a.textContent=it.name;
+      el.replaceWith(a);
+    }
+  }
+}
+function paintAllFares(){ bpc.state.items.forEach(it=>paintFare(String(it.index))); }
+
+/* ---- reflect enabled state + stamps ---- */
+function reflectRow(k){
+  const leg=document.querySelector(`.leg[data-k="${cssEsc(k)}"]`); if(!leg) return;
+  const s=bpc.state, p=s.priced[k], priced=p&&p.exalted.median!=null;
+  const on=!!s.enabled[k];
+  const cb=leg.querySelector('.inc'); if(cb) cb.checked=on;
+  leg.classList.toggle('off',priced && !on);
+  const bs=leg.querySelector(`[data-stamp-b="${cssEsc(k)}"]`);
+  const ss=leg.querySelector(`[data-stamp-s="${cssEsc(k)}"]`);
+  if(!priced){ if(bs)bs.classList.remove('show'); if(ss)ss.classList.remove('show'); return; }
+  if(on){ if(ss)ss.classList.remove('show'); stamp(bs); }
+  else  { if(bs)bs.classList.remove('show'); stamp(ss); }
+}
+function stamp(el){ if(!el) return; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); }
+
+/* ---- fare summary (stub) with count-up ---- */
+let curTotal=0;
+function paintFareTab(){
+  const t=bpc.totals(), m=bpc.state.meta;
+  const excluded = excludedSum();
+  const subtotal = t.median + excluded;
+  $('#faretab').innerHTML=`
+    <div class="fareline"><span class="k">Subtotal (priced)</span><span class="v">${bpc.priceHTML(subtotal||null)}</span></div>
+    <div class="fareline dim"><span class="k">Excluded / standby</span><span class="v">− ${bpc.priceHTML(excluded||null)}</span></div>
+    <div class="total-box">
+      <div class="tl">Total Fare &middot; Median</div>
+      <div class="tv" id="totMed">${bpc.priceHTML(t.median||null)}</div>
+      <div class="trange">range ${bpc.priceHTML(t.min||null)} &ndash; ${bpc.priceHTML(t.high||null)}</div>
+      <div class="tcount">${t.included} of ${t.priced} legs boarded</div>
+    </div>`;
+  curTotal=t.median;
+}
+function excludedSum(){
+  const s=bpc.state; let ex=0;
+  s.items.forEach(it=>{ const k=String(it.index),p=s.priced[k];
+    if(p&&p.exalted.median!=null && !s.enabled[k]) ex+=p.exalted.median*(it.count||1); });
+  return ex;
+}
+function updateFareTab(){
+  const t=bpc.totals();
+  const el=$('#totMed'); if(!el){ paintFareTab(); return; }
+  // count-up the median
+  countUp(curTotal,t.median,el);
+  curTotal=t.median;
+  // update the rest immediately
+  const tab=$('#faretab'); if(!tab) return;
+  const excluded=excludedSum(), subtotal=t.median+excluded;
+  tab.querySelector('.fareline .v').innerHTML=bpc.priceHTML(subtotal||null);
+  tab.querySelectorAll('.fareline')[1].querySelector('.v').innerHTML='− '+bpc.priceHTML(excluded||null);
+  tab.querySelector('.trange').innerHTML='range '+bpc.priceHTML(t.min||null)+' &ndash; '+bpc.priceHTML(t.high||null);
+  tab.querySelector('.tcount').textContent=t.included+' of '+t.priced+' legs boarded';
+}
+function countUp(from,to,el){
+  if(RM||from===to){ el.innerHTML=bpc.priceHTML(to||null); return; }
+  const start=performance.now(),dur=700;
+  function step(now){
+    const p=Math.min(1,(now-start)/dur), e=1-Math.pow(1-p,3);
+    const v=from+(to-from)*e;
+    el.innerHTML=bpc.priceHTML(v>0?v:null);
+    if(p<1) requestAnimationFrame(step); else el.innerHTML=bpc.priceHTML(to||null);
+  }
+  requestAnimationFrame(step);
+}
+
+/* group fare summaries */
+function paintGroupSums(){
+  const s=bpc.state;
+  bpc.itemsByGroup().forEach(grp=>{
+    const el=document.querySelector(`[data-tsum="${cssEsc(grp.group)}"]`); if(!el) return;
+    let med=0,inc=0,tot=0;
+    grp.items.forEach(it=>{ const k=String(it.index),p=s.priced[k];
+      if(p&&p.exalted.median!=null){ tot++; if(s.enabled[k]){ inc++; med+=p.exalted.median*(it.count||1);} } });
+    el.innerHTML = tot? (bpc.priceHTML(med||null)+` &middot; ${inc}/${tot}`) : '';
+    // toggle button label
+    const btn=document.querySelector(`[data-toggle-group="${cssEsc(grp.group)}"]`);
+    if(btn) btn.textContent = (inc>0)?'All standby':'Board all';
+  });
+}
+
+/* ---- events: granular updates ---- */
+bpc.on('priced',e=>{
+  if(!mounted){ buildTicket(); return; }
+  (e.keys||[]).forEach(k=>paintFare(k));
+  paintGroupSums();
+});
+bpc.on('totals',()=>{ if(mounted){ updateFareTab(); paintGroupSums(); } });
+bpc.on('enabled',()=>{ if(mounted){
+  // reflect every row (group toggles change many)
+  bpc.state.items.forEach(it=>reflectRow(String(it.index)));
+  updateFareTab(); paintGroupSums();
+}});
+
+/* ---- interactions on the ticket ---- */
+$('#stage').addEventListener('change',e=>{
+  const cb=e.target.closest('.inc'); if(cb) bpc.setEnabled(cb.dataset.k,cb.checked);
+});
+$('#stage').addEventListener('click',e=>{
+  const tg=e.target.closest('[data-toggle-group]');
+  if(tg){
+    const g=tg.dataset.toggleGroup;
+    const on = tg.textContent.trim().toLowerCase().indexOf('board all')>=0;
+    bpc.setGroupEnabled(g,on); return;
+  }
+  const am=e.target.closest('[data-amend]'); if(am){ bpc.reopenRare(am.dataset.amend); return; }
+});
+
+/* ---- PoB copy ---- */
+function renderPob(){
+  const m=bpc.state.meta;
+  const host=$('#pobHost'); if(!host) return;
+  if(!m.pob_code){ host.innerHTML=''; return; }
+  host.innerHTML=`<div class="pob-row">
+    <div class="pob-code" id="pobCode" title="${E(m.pob_code)}">${E(m.pob_code)}</div>
+    <button class="copy-btn" id="pobCopy" type="button">Copy</button>
+  </div>`;
+  $('#pobCopy').addEventListener('click',()=>{
+    const code=m.pob_code, btn=$('#pobCopy');
+    const done=()=>{ btn.textContent='Copied'; btn.classList.add('done'); setTimeout(()=>{btn.textContent='Copy';btn.classList.remove('done');},1300); };
+    if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(code).then(done).catch(fallbackCopy); }
+    else fallbackCopy();
+    function fallbackCopy(){ const ta=document.createElement('textarea'); ta.value=code; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(_){} ta.remove(); done(); }
+  });
+}
+
+/* ---------- DECLARATION SLIP (advanced picker) ---------- */
+/* render ONLY on the rare event, never on state ticks (focus-safe) */
+bpc.on('rare',info=>{
+  const slip=$('#slip'), scrim=$('#scrim'), inner=$('#slipInner');
+  if(!info){
+    slip.classList.remove('open'); scrim.classList.remove('open'); slip.setAttribute('aria-hidden','true');
+    return;
+  }
+  drawSlip(info);
+  scrim.classList.add('open'); slip.classList.add('open'); slip.setAttribute('aria-hidden','false');
+});
+$('#scrim').addEventListener('click',()=>{ /* declaration must be resolved via buttons; ignore scrim click */ });
+
+function drawSlip(info){
+  const r=info.rare, inner=$('#slipInner');
+  let usePseudo=!!(r.pseudo&&r.pseudo.length);
+
+  function affixRowHTML(a){
+    if(a.searchable===false || !a.searchable){
+      return `<div class="dline cannot">
+        <div></div>
+        <div class="dmain">
+          <div class="dtext">${E(a.text)}</div>
+          <span class="nochip">Cannot declare</span>
+          <div class="reason">${E(a.reason||'no trade filter for this mod')}</div>
+        </div></div>`;
+    }
+    const attr=a.kind==='equip'?`data-equip="${E(a.key)}"`:`data-sid="${E(a.stat_id)}"`;
+    const pseudoCls=(a.stat_id&&String(a.stat_id).indexOf('pseudo')===0)?' pseudo-row':'';
+    return `<div class="dline${pseudoCls}" ${attr}>
+      <label class="dchk"><input type="checkbox" class="acb" checked><span class="box"></span></label>
+      <div class="dmain">
+        <div class="dtext">${E(a.text)}</div>
+        <div class="weights">
+          <span class="wf"><span class="wl">Min weight</span><input class="mm amin" value="${a.value!=null?E(a.value):''}" inputmode="decimal"></span>
+          <span class="dash">&ndash;</span>
+          <span class="wf"><span class="wl">Max weight</span><input class="mm amax" inputmode="decimal"></span>
+        </div>
+      </div></div>`;
+  }
+  function rowsHTML(){
+    let h='';
+    r.affixes.forEach(a=>{ if(usePseudo&&a.resist) return; h+=affixRowHTML(a); });
+    if(usePseudo) r.pseudo.forEach(p=>h+=affixRowHTML(p));
+    return h;
+  }
+
+  inner.innerHTML=`
+    <div class="slip-head">
+      <div class="kicker">
+        <span class="cstamp">CUSTOMS</span>
+        <span class="cap">Baggage Declaration</span>
+        <span class="pg">${info.index+1} / ${info.total}</span>
+      </div>
+      <h2>Declare item: ${E(r.name)}</h2>
+      <div class="scope">${E(r.scope||'')}</div>
+      ${info.redo?'<span class="redo">&#8635; Amending declaration &mdash; re-submit to replace fare</span>':''}
+    </div>
+    <div class="slip-body">
+      ${(r.pseudo&&r.pseudo.length)?`
+        <label class="pseudo-tog">
+          <span class="ti"><span class="t1">Combine elemental resistance</span><span class="t2">Declare a single pooled resistance instead of each element.</span></span>
+          <span class="swc" style="pointer-events:none"><input type="checkbox" id="pseu" ${usePseudo?'checked':''}><span class="switch"></span></span>
+        </label>`:''}
+      <div class="declare-cap"><span>Declarable lines</span><span class="rule"></span></div>
+      <div id="dlines">${rowsHTML()}</div>
+    </div>
+    <div class="slip-foot">
+      ${info.index>0?'<button class="sb" id="dPrev" type="button">&larr; Prev</button>':''}
+      <button class="sb primary" id="dGo" type="button"><span>&#9992;</span> ${info.redo?'Re-declare &amp; price':'Declare &amp; price'}</button>
+      <button class="sb skip" id="dSkip" type="button">${info.index<info.total-1?'Nothing to declare →':'Nothing to declare'}</button>
+    </div>`;
+
+  const pe=inner.querySelector('#pseu');
+  if(pe){
+    const lab=pe.closest('.pseudo-tog');
+    lab.addEventListener('click',ev=>{ ev.preventDefault(); pe.checked=!pe.checked; usePseudo=pe.checked; inner.querySelector('#dlines').innerHTML=rowsHTML(); });
+  }
+  const pv=inner.querySelector('#dPrev'); if(pv) pv.onclick=()=>bpc.backRare();
+  inner.querySelector('#dSkip').onclick=()=>bpc.skipRare(info.key);
+  inner.querySelector('#dGo').onclick=()=>{
+    const filters=[],equip=[];
+    inner.querySelectorAll('.dline[data-sid]').forEach(d=>{
+      if(d.querySelector('.acb').checked) filters.push({stat_id:d.dataset.sid,min:num(d.querySelector('.amin').value),max:num(d.querySelector('.amax').value)});
+    });
+    inner.querySelectorAll('.dline[data-equip]').forEach(d=>{
+      if(d.querySelector('.acb').checked) equip.push({key:d.dataset.equip,min:num(d.querySelector('.amin').value),max:num(d.querySelector('.amax').value)});
+    });
+    bpc.submitRare(info.key,{filters,equip});
+  };
+}
+function num(s){ s=(s||'').trim(); if(!s) return null; const n=Number(s); return isNaN(n)?null:n; }
+function cssEsc(s){ return String(s).replace(/["\\]/g,'\\$&'); }
+
+/* ---- boot ---- */
+if(location.search.indexOf('mock')>=0){ bpc.init({mock:true}); syncControls(); buildTicket(); }
+else { bpc.init(); syncControls(); }
+</script>
+</body></html>

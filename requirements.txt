@@ -1,0 +1,5 @@
+# Runtime dependency
+requests>=2.31
+
+# Only needed to re-run the reverse-engineering probes in research/ (not the tool):
+#   playwright>=1.40   (then: python -m playwright install chromium)

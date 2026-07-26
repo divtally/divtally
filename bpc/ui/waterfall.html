@@ -1,0 +1,983 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="bpc-title" content="Budget Waterfall">
+<meta name="bpc-tagline" content="Watch each item stack onto a running budget bar - a data-viz cost cascade.">
+<meta name="bpc-accent" content="#2dd4bf">
+<meta name="bpc-vibe" content="dataviz">
+<meta name="bpc-order" content="6">
+<title>bpc · Budget Waterfall</title>
+<style>
+  :root{
+    --bg:#0c0d10; --surface:#15171c; --surface2:#191c22; --hair:rgba(255,255,255,.08);
+    --hair2:rgba(255,255,255,.045); --fg:#e9edf2; --mut:#8a93a3; --mut2:#5a626f;
+    --ac:#2dd4bf; --bad:#f87171; --amber:#fbbf24;
+    --g-equipment:#2dd4bf; --g-flask:#38bdf8; --g-jewel:#a78bfa; --g-rune:#fbbf24; --g-gem:#34d399;
+    --mono:"SFMono-Regular",ui-monospace,"JetBrains Mono","Cascadia Code",Menlo,Consolas,monospace;
+    --sans:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--bg); color:var(--fg);
+    font:13.5px/1.5 var(--sans);
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  }
+  .tnum{font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1}
+  a{color:inherit}
+  ::selection{background:rgba(45,212,191,.28)}
+  button{font-family:inherit}
+  /* ---------------- shell ---------------- */
+  .app{display:grid; grid-template-columns:204px minmax(0,1fr) 312px; min-height:100vh; gap:0}
+  .rail{border-right:1px solid var(--hair); padding:18px 14px; min-width:0}
+  .rail.right{border-right:none; border-left:1px solid var(--hair); padding:0; display:flex; flex-direction:column}
+  .center{min-width:0; display:flex; flex-direction:column}
+  /* ---------------- toolbar ---------------- */
+  .toolbar{padding:14px 22px 12px; border-bottom:1px solid var(--hair); position:sticky; top:0; background:linear-gradient(180deg,var(--bg) 72%,rgba(12,13,16,0)); z-index:30}
+  .brandline{display:flex; align-items:baseline; gap:10px; margin-bottom:11px}
+  .brand{font-size:14px; font-weight:700; letter-spacing:-.02em; display:flex; align-items:center; gap:8px}
+  .brand .glyph{width:15px; height:15px; flex:none}
+  .brand .sub{color:var(--mut); font-weight:500; font-size:11.5px; letter-spacing:.01em}
+  form{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+  .field{position:relative; flex:1 1 340px; min-width:220px}
+  input#url{width:100%; padding:9px 12px; background:var(--surface); border:1px solid var(--hair); border-radius:8px; color:var(--fg); font:13px/1.4 var(--sans); outline:none; transition:border-color .15s, box-shadow .15s}
+  input#url:focus{border-color:rgba(45,212,191,.5); box-shadow:0 0 0 3px rgba(45,212,191,.1)}
+  input#url::placeholder{color:var(--mut2)}
+  select{padding:8px 26px 8px 10px; background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none' stroke='%238a93a3' stroke-width='1.5'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E") no-repeat right 9px center; border:1px solid var(--hair); border-radius:8px; color:var(--fg); font:12px/1.4 var(--sans); cursor:pointer; outline:none; -webkit-appearance:none; appearance:none}
+  select:focus{border-color:rgba(45,212,191,.45)}
+  .chk{display:inline-flex; gap:6px; align-items:center; color:var(--mut); font-size:12px; cursor:pointer; user-select:none}
+  .chk input{accent-color:var(--ac); cursor:pointer}
+  #go{padding:9px 16px; background:var(--ac); border:1px solid var(--ac); border-radius:8px; color:#04201c; font-weight:700; font-size:12.5px; letter-spacing:.01em; cursor:pointer; transition:filter .15s, transform .05s}
+  #go:hover{filter:brightness(1.08)} #go:active{transform:translateY(1px)}
+  .metaline{margin-top:11px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; color:var(--mut); font-size:12px; min-height:18px}
+  .metaline b{color:var(--fg); font-weight:600}
+  .metaline .dot{width:3px; height:3px; border-radius:50%; background:var(--mut2)}
+  .metaline .rate{font-family:var(--mono); color:var(--fg)}
+  .bpc-cur{height:1em; vertical-align:-.16em; margin:0 1px}
+  .pob-chip{display:inline-flex; align-items:center; gap:6px; padding:3px 8px; border:1px solid var(--hair); border-radius:6px; background:var(--surface); cursor:pointer; color:var(--mut); font-size:11px; transition:border-color .15s,color .15s}
+  .pob-chip:hover{border-color:rgba(45,212,191,.4); color:var(--fg)}
+  .pob-chip svg{width:11px;height:11px}
+  /* ---------------- left rail (recent) ---------------- */
+  .rail h2{font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--mut2); margin:0 0 12px}
+  .recent-item{display:block; width:100%; text-align:left; padding:9px 10px; margin-bottom:6px; background:transparent; border:1px solid var(--hair2); border-radius:8px; color:var(--fg); cursor:pointer; transition:background .15s,border-color .15s}
+  .recent-item:hover{background:var(--surface); border-color:var(--hair)}
+  .recent-item .rc{font-weight:600; font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .recent-item .rm{color:var(--mut); font-size:11px; margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .more-link{margin-top:4px; background:none; border:none; color:var(--ac); cursor:pointer; font-size:11.5px; padding:4px 0}
+  .more-link:hover{text-decoration:underline}
+  .rail-empty{color:var(--mut2); font-size:12px; line-height:1.6}
+  /* ---------------- center: hero waterfall ---------------- */
+  .scroll{flex:1; overflow:auto; padding:18px 22px 60px}
+  .scroll.dim .hero, .scroll.dim .listwrap{filter:saturate(.6) brightness(.7); transition:filter .25s}
+  .panel{background:var(--surface); border:1px solid var(--hair); border-radius:12px}
+  .hero{padding:16px 18px 8px; position:relative; margin-bottom:18px; transition:filter .25s}
+  .hero-head{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:6px}
+  .hero-title{font-size:12.5px; font-weight:600; color:var(--fg); display:flex; align-items:center; gap:8px}
+  .hero-title .hint{color:var(--mut); font-weight:400; font-size:11.5px}
+  .legend{display:flex; gap:10px; flex-wrap:wrap}
+  .lg{display:inline-flex; align-items:center; gap:5px; font-size:11px; color:var(--mut); cursor:pointer; user-select:none; padding:2px 4px; border-radius:5px; transition:background .12s,color .12s}
+  .lg:hover{background:var(--surface2)}
+  .lg .sw{width:9px; height:9px; border-radius:2px}
+  .lg.muted{opacity:.4; text-decoration:line-through}
+  #wf{width:100%; display:block; user-select:none; touch-action:none}
+  #wf text{font-family:var(--mono); fill:var(--mut)}
+  .wf-empty{display:flex; flex-direction:column; align-items:center; justify-content:center; height:200px; color:var(--mut2); gap:8px; text-align:center}
+  .wf-empty .big{font-size:13px; color:var(--mut)}
+  /* tooltip */
+  #tip{position:fixed; pointer-events:none; z-index:200; background:#0a0b0e; border:1px solid var(--hair); border-radius:9px; padding:9px 11px; font-size:12px; box-shadow:0 8px 30px rgba(0,0,0,.5); opacity:0; transform:translateY(4px); transition:opacity .12s, transform .12s; max-width:240px}
+  #tip.on{opacity:1; transform:translateY(0)}
+  #tip .tt{font-weight:600; margin-bottom:5px; display:flex; align-items:center; gap:6px}
+  #tip .tt .sw{width:8px;height:8px;border-radius:2px;flex:none}
+  #tip .tr{display:flex; justify-content:space-between; gap:18px; color:var(--mut); font-size:11.5px; line-height:1.7}
+  #tip .tr b{color:var(--fg); font-weight:600; font-family:var(--mono)}
+  #tip .tnote{color:var(--mut2); font-size:11px; margin-top:5px; max-width:220px}
+  /* ---------------- center: item list ---------------- */
+  .listwrap{transition:filter .25s}
+  .listbar{display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0 2px 10px}
+  .listbar h3{font-size:12.5px; font-weight:600; margin:0; color:var(--fg)}
+  .sortrow{display:inline-flex; gap:2px; background:var(--surface); border:1px solid var(--hair); border-radius:8px; padding:2px}
+  .sortrow button{background:none; border:none; color:var(--mut); font-size:11.5px; padding:5px 10px; border-radius:6px; cursor:pointer; transition:background .12s,color .12s}
+  .sortrow button.act{background:var(--surface2); color:var(--fg); font-weight:600}
+  .sortrow button:hover{color:var(--fg)}
+  .grp{margin-bottom:14px; border:1px solid var(--hair); border-radius:12px; overflow:hidden; background:var(--surface)}
+  .grp-head{display:flex; align-items:center; gap:10px; padding:10px 14px; border-bottom:1px solid var(--hair); background:var(--surface2); cursor:default}
+  .grp-head .bar{width:3px; height:14px; border-radius:2px}
+  .grp-head .gt{font-weight:600; font-size:12.5px}
+  .grp-head .gc{color:var(--mut); font-size:11.5px}
+  .grp-head .gtot{margin-left:auto; font-family:var(--mono); font-size:12px; color:var(--mut)}
+  .grp-head .gtog{margin-left:8px}
+  .grp-head .gtog input{accent-color:var(--ac); cursor:pointer}
+  .row{display:grid; grid-template-columns:26px minmax(120px,1.3fr) minmax(160px,1.6fr) auto; gap:12px; align-items:center; padding:9px 14px; border-bottom:1px solid var(--hair2); transition:opacity .2s, background .12s}
+  .row:last-child{border-bottom:none}
+  .row:hover{background:rgba(255,255,255,.018)}
+  .row.hl{background:rgba(45,212,191,.07)}
+  .row.off{opacity:.36}
+  .row .cb input{accent-color:var(--ac); cursor:pointer; margin:0}
+  .row .nm{min-width:0}
+  .row .nm .nmt{font-weight:550; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:flex; align-items:center; gap:6px}
+  .row .nm a.nmt:hover{color:var(--ac)}
+  .row .nm .cnt{color:var(--mut2); font-weight:600; font-size:11px; font-family:var(--mono)}
+  .row .nm .sub{color:var(--mut); font-size:11px; margin-top:1px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .reaffix{font-size:10.5px; color:var(--mut); border:1px solid var(--hair); border-radius:5px; background:var(--surface2); cursor:pointer; padding:1px 6px; transition:border-color .15s,color .15s}
+  .reaffix:hover{border-color:rgba(45,212,191,.45); color:var(--fg)}
+  /* dumbbell */
+  .dumb{position:relative; height:26px}
+  .dumb svg{width:100%; height:26px; display:block; overflow:visible}
+  .row .price{text-align:right; min-width:0}
+  .row .price .med{font-family:var(--mono); font-size:13px; font-weight:600; white-space:nowrap}
+  .row .price .mm{font-family:var(--mono); font-size:10.5px; color:var(--mut2); white-space:nowrap; margin-top:1px}
+  .row .price .unp{color:var(--mut2); font-size:11.5px; font-style:italic}
+  .badge{display:inline-block; font-size:9.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; padding:1px 6px; border-radius:99px; border:1px solid; vertical-align:1px}
+  .badge.high{color:var(--ac); border-color:rgba(45,212,191,.5)}
+  .badge.medium{color:var(--amber); border-color:rgba(251,191,36,.5)}
+  .badge.low{color:var(--bad); border-color:rgba(248,113,113,.5)}
+  .badge.none{color:var(--mut2); border-color:var(--hair)}
+  /* treemap */
+  #treemap{margin-bottom:18px; padding:14px 16px}
+  #tmsvg{width:100%; display:block}
+  #tmsvg text{font-family:var(--sans)}
+  /* ---------------- right rail: budget + picker ---------------- */
+  .rrInner{padding:18px 16px; overflow:auto; flex:1}
+  .card{background:var(--surface); border:1px solid var(--hair); border-radius:12px; padding:15px 15px 16px; margin-bottom:16px}
+  .card h2{font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--mut2); margin:0 0 12px}
+  .grand{margin-bottom:8px}
+  .grand .gl{color:var(--mut); font-size:11px; text-transform:uppercase; letter-spacing:.08em; font-weight:600}
+  .grand .gv{font-size:30px; font-weight:800; letter-spacing:-.03em; line-height:1.05; margin-top:4px; display:flex; align-items:baseline; gap:6px}
+  .grand .gv .bpc-exsub{font-size:13px; font-weight:500; color:var(--mut)}
+  .grand .gspread{font-family:var(--mono); font-size:11.5px; color:var(--mut); margin-top:6px}
+  .grand .ginc{font-size:11px; color:var(--mut2); margin-top:3px}
+  /* budget meter */
+  .budrow{display:flex; gap:8px; align-items:center; margin:12px 0 14px}
+  .budrow label{font-size:11px; color:var(--mut); white-space:nowrap}
+  .budrow .bwrap{position:relative; flex:1}
+  .budrow input{width:100%; padding:7px 9px; background:var(--surface2); border:1px solid var(--hair); border-radius:7px; color:var(--fg); font:12px/1.3 var(--mono); text-align:right; outline:none}
+  .budrow input:focus{border-color:rgba(45,212,191,.5)}
+  .budrow .unit{position:absolute; left:9px; top:50%; transform:translateY(-50%); color:var(--mut2); font-size:10px; pointer-events:none}
+  .meter{position:relative; height:30px; border-radius:8px; background:var(--surface2); border:1px solid var(--hair); overflow:hidden; margin-bottom:8px}
+  .meter .band{position:absolute; top:0; bottom:0; background:rgba(45,212,191,.14)}
+  .meter .fill{position:absolute; top:0; bottom:0; left:0; background:linear-gradient(90deg,rgba(45,212,191,.55),rgba(45,212,191,.85)); transition:width .5s cubic-bezier(.22,1,.36,1), background .3s}
+  .meter.over .fill{background:linear-gradient(90deg,rgba(248,113,113,.55),rgba(248,113,113,.9))}
+  .meter .tick{position:absolute; top:-2px; bottom:-2px; width:2px; background:var(--ac); box-shadow:0 0 6px rgba(45,212,191,.6); transition:left .4s ease}
+  .meter .tlabel{position:absolute; top:50%; transform:translate(-50%,-50%); font-family:var(--mono); font-size:10px; color:var(--fg); font-weight:700; mix-blend-mode:difference; pointer-events:none}
+  .budnote{font-size:11.5px; color:var(--mut); line-height:1.5}
+  .budnote.over{color:var(--bad); font-weight:600}
+  .budnote.under{color:var(--ac)}
+  /* picker */
+  #picker{display:flex; flex-direction:column; flex:1; min-height:0}
+  #picker.hidden{display:none}
+  .pk-head{padding:14px 16px 12px; border-bottom:1px solid var(--hair); background:var(--surface2)}
+  .pk-kicker{font-size:10px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--ac); margin-bottom:5px; display:flex; align-items:center; gap:7px}
+  .pk-kicker .prog{margin-left:auto; color:var(--mut2); font-weight:600; letter-spacing:.05em}
+  .pk-name{font-size:16px; font-weight:700; letter-spacing:-.01em}
+  .pk-scope{color:var(--mut); font-size:11.5px; margin-top:3px; font-family:var(--mono)}
+  .pk-pseudo{display:flex; align-items:center; gap:8px; margin-top:11px; padding:8px 10px; background:rgba(45,212,191,.06); border:1px solid rgba(45,212,191,.18); border-radius:8px; font-size:11.5px; color:var(--fg)}
+  .pk-pseudo input{accent-color:var(--ac)}
+  .pk-pseudo .ph{color:var(--mut); font-size:10.5px; margin-left:auto}
+  .pk-search{padding:10px 16px 0}
+  .pk-search input{width:100%; padding:7px 10px; background:var(--surface2); border:1px solid var(--hair); border-radius:7px; color:var(--fg); font-size:12px; outline:none}
+  .pk-search input:focus{border-color:rgba(45,212,191,.45)}
+  .pk-list{flex:1; overflow:auto; padding:8px 16px 10px}
+  .afx{padding:9px 0; border-top:1px solid var(--hair2)}
+  .afx:first-child{border-top:none}
+  .afx-top{display:flex; align-items:flex-start; gap:9px}
+  .afx-top input.acb{accent-color:var(--ac); margin-top:2px; cursor:pointer; flex:none}
+  .afx-txt{flex:1; min-width:0; font-size:12.5px; line-height:1.4}
+  .afx-txt .rmark{color:var(--bad); font-size:10px; font-weight:700; margin-left:5px; letter-spacing:.03em}
+  .afx-reason{color:var(--mut2); font-size:11px; font-style:italic; margin-top:2px}
+  .afx-inputs{display:grid; grid-template-columns:1fr 1fr; gap:7px; margin:7px 0 0 25px}
+  .afx-inputs .mw{position:relative}
+  .afx-inputs label{position:absolute; left:7px; top:50%; transform:translateY(-50%); font-size:9.5px; color:var(--mut2); pointer-events:none; text-transform:uppercase; letter-spacing:.05em}
+  .afx-inputs input{width:100%; padding:5px 7px 5px 30px; background:var(--surface2); border:1px solid var(--hair); border-radius:6px; color:var(--fg); font:12px/1.3 var(--mono); text-align:right; outline:none}
+  .afx-inputs input:focus{border-color:rgba(45,212,191,.5)}
+  .afx.no{opacity:.5}
+  .afx.no .afx-txt{color:var(--mut)}
+  .dist{margin:8px 0 0 25px; height:16px; position:relative}
+  .dist svg{width:100%; height:16px; display:block; overflow:visible}
+  .pk-foot{display:flex; gap:8px; padding:12px 16px; border-top:1px solid var(--hair); background:var(--surface2)}
+  .pk-foot button{flex:1; padding:9px 8px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; border:1px solid var(--hair); background:var(--surface); color:var(--fg); transition:filter .15s,border-color .15s,background .15s}
+  .pk-foot button.ghost{flex:0 0 auto; padding:9px 12px; color:var(--mut)}
+  .pk-foot button.ghost:hover{color:var(--fg); border-color:var(--hair)}
+  .pk-foot button.primary{background:var(--ac); border-color:var(--ac); color:#04201c; font-weight:700}
+  .pk-foot button.primary:hover{filter:brightness(1.08)}
+  .pk-foot button.skip:hover{border-color:rgba(248,113,113,.45); color:var(--bad)}
+  /* loading / error */
+  .progress{margin:0 2px 16px; padding:13px 15px; border:1px solid var(--hair); border-radius:10px; background:var(--surface); display:flex; align-items:center; gap:11px; color:var(--mut); font-size:12.5px}
+  .spinner{width:14px; height:14px; border:2px solid var(--hair); border-top-color:var(--ac); border-radius:50%; animation:spin .8s linear infinite; flex:none}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .errbox{margin:0 2px 16px; padding:13px 15px; border:1px solid rgba(248,113,113,.45); border-radius:10px; background:rgba(248,113,113,.07); color:#fca5a5; font-size:12.5px}
+  .splash{display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:50vh; text-align:center; color:var(--mut2); gap:10px; padding:30px}
+  .splash svg{opacity:.5}
+  .splash .st{font-size:14px; color:var(--mut); font-weight:600}
+  .splash .ss{font-size:12px; max-width:340px; line-height:1.6}
+  /* scrollbars */
+  .scroll::-webkit-scrollbar,.rrInner::-webkit-scrollbar,.pk-list::-webkit-scrollbar,.rail::-webkit-scrollbar{width:9px;height:9px}
+  .scroll::-webkit-scrollbar-thumb,.rrInner::-webkit-scrollbar-thumb,.pk-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.09); border-radius:6px; border:2px solid transparent; background-clip:padding-box}
+  .scroll::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.16); background-clip:padding-box}
+  @media(max-width:1100px){
+    .app{grid-template-columns:1fr}
+    .rail{display:none}
+    .rail.right{border-left:none; border-top:1px solid var(--hair)}
+    .rrInner{max-height:none}
+  }
+  @media(prefers-reduced-motion:reduce){
+    *{transition:none !important; animation-duration:.001s !important}
+  }
+</style></head>
+<body>
+<div class="app">
+  <!-- ============ LEFT RAIL : RECENT ============ -->
+  <aside class="rail left">
+    <h2>Recent Builds</h2>
+    <div id="recent"><div class="rail-empty">No recent builds yet. Price one to see it here.</div></div>
+  </aside>
+
+  <!-- ============ CENTER ============ -->
+  <main class="center">
+    <div class="toolbar">
+      <div class="brandline">
+        <span class="brand">
+          <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="#2dd4bf" stroke-width="2.4" stroke-linecap="round"><path d="M3 21h18"/><path d="M5 21V13h3v8M11 21V8h3v13M17 21V4h3v17"/></svg>
+          Budget Waterfall
+        </span>
+        <span class="sub">where does the divine go?</span>
+      </div>
+      <form id="f">
+        <span class="field"><input id="url" placeholder="poe.ninja link, PoB code, or pobb.in link" spellcheck="false" autocomplete="off"></span>
+        <select id="league" title="League"><option value="">League: Auto</option></select>
+        <select id="liststatus" title="Listing status"></select>
+        <label class="chk"><input type="checkbox" id="advanced"> advanced</label>
+        <label class="chk"><input type="checkbox" id="refresh"> fresh pull</label>
+        <button id="go" type="submit">Estimate</button>
+      </form>
+      <div class="metaline" id="metaline"></div>
+    </div>
+
+    <div class="scroll" id="scroll">
+      <div id="status"></div>
+      <div id="body">
+        <div class="splash">
+          <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#2dd4bf" stroke-width="1.6" stroke-linecap="round"><path d="M3 21h18"/><path d="M5 21V13h3v8M11 21V8h3v13M17 21V4h3v17"/></svg>
+          <div class="st">Drop in a build to begin the cascade</div>
+          <div class="ss">Paste a poe.ninja profile link, a Path of Building code, or a pobb.in link. Each item stacks onto a running budget bar so you can watch the total accumulate.</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ============ RIGHT RAIL : BUDGET METER + PICKER ============ -->
+  <aside class="rail right">
+    <div class="rrInner" id="rrInner">
+      <div class="card" id="budgetcard">
+        <h2>Budget Meter</h2>
+        <div class="grand">
+          <div class="gl">Grand Total · median</div>
+          <div class="gv" id="grandval"><span class="bpc-dash">—</span></div>
+          <div class="gspread" id="grandspread"></div>
+          <div class="ginc" id="grandinc"></div>
+        </div>
+        <div class="budrow">
+          <label>Budget</label>
+          <span class="bwrap"><span class="unit">ex</span><input id="budget" type="number" min="0" inputmode="decimal" placeholder="set a cap" class="tnum"></span>
+        </div>
+        <div class="meter" id="meter">
+          <div class="band" id="mband"></div>
+          <div class="fill" id="mfill"></div>
+          <div class="tick" id="mtick" hidden><span class="tlabel" id="mticklbl"></span></div>
+        </div>
+        <div class="budnote" id="budnote">Enter a budget to compare against the median total. The lighter band shows the min..high range.</div>
+      </div>
+    </div>
+    <!-- picker mounts as a full-height column when a rare is open -->
+    <div id="picker" class="hidden"></div>
+  </aside>
+</div>
+<div id="tip"></div>
+
+<script src="/assets/sample.js"></script>
+<script src="/assets/core.js"></script>
+<script>
+"use strict";
+const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s)), E=bpc.esc;
+const RM = window.matchMedia && window.matchMedia("(prefers-reduced-motion:reduce)").matches;
+const GCOL={equipment:"#2dd4bf",flask:"#38bdf8",jewel:"#a78bfa",rune:"#fbbf24",gem:"#34d399"};
+const GLABEL={equipment:"Equipment",flask:"Flasks & Charms",jewel:"Jewels",rune:"Runes / Soul Cores",gem:"Gems"};
+
+/* ---------- view-local state ---------- */
+let mutedGroups={};       // group -> true if folded out of the chart/list
+let sortMode="cascade";   // cascade | cost | spread | confidence
+let showAll=false;
+let budget=null;
+let showTreemap=false;
+let motionLib=null;       // optional motion@latest
+let wfMeta=new Map();     // key -> {x,w,group,name,med,min,high} for hover hit-test
+let lastWfSig="";
+
+/* try to load motion (degrade gracefully) */
+import("https://cdn.jsdelivr.net/npm/motion@latest/+esm").then(m=>{motionLib=m;}).catch(()=>{motionLib=null;});
+
+/* =================== CONTROLS =================== */
+(function(){ $("#liststatus").innerHTML=bpc.STATUS_ORDER.map(o=>`<option value="${o}">${E(bpc.STATUS_LABEL[o])}</option>`).join(""); })();
+function syncControls(){
+  $("#advanced").checked=bpc.state.advanced;
+  $("#liststatus").value=bpc.state.status;
+  if([...$("#league").options].some(o=>o.value===bpc.state.league)) $("#league").value=bpc.state.league;
+}
+$("#f").addEventListener("submit",e=>{e.preventDefault(); const u=$("#url").value.trim(); if(u) bpc.startUrl(u);});
+$("#advanced").addEventListener("change",e=>bpc.setControl("advanced",e.target.checked));
+$("#liststatus").addEventListener("change",e=>bpc.setControl("status",e.target.value));
+$("#league").addEventListener("change",e=>bpc.setControl("league",e.target.value));
+$("#refresh").addEventListener("change",e=>bpc.setControl("refresh",e.target.checked));
+
+/* =================== SIDE DATA =================== */
+bpc.on("leagues",ls=>{
+  $("#league").innerHTML='<option value="">League: Auto</option>'+ls.map(l=>`<option>${E(l)}</option>`).join("");
+  syncControls();
+});
+bpc.on("recent",bs=>{ renderRecent(bs); });
+function renderRecent(bs){
+  const box=$("#recent");
+  if(!bs||!bs.length){ box.innerHTML='<div class="rail-empty">No recent builds yet. Price one to see it here.</div>'; return; }
+  const lim=showAll?bs.length:5;
+  let h=bs.slice(0,lim).map(b=>`<button class="recent-item" data-k="${E(b.key)}">
+      <div class="rc">${E(b.character||"Unknown")}</div>
+      <div class="rm">${E(b.char_class||"")}${b.level?" · lvl "+b.level:""}${b.league?" · "+E(b.league):""}</div>
+    </button>`).join("");
+  if(bs.length>5) h+=`<button class="more-link" id="moretoggle">${showAll?"Show less":"Show all ("+bs.length+")"}</button>`;
+  box.innerHTML=h;
+}
+$("#recent").addEventListener("click",e=>{
+  if(e.target.id==="moretoggle"){ showAll=!showAll; renderRecent(bpc.state.recent); return; }
+  const rb=e.target.closest(".recent-item"); if(rb) bpc.startCache(rb.dataset.k);
+});
+
+/* =================== PHASE / PROGRESS / ERROR =================== */
+bpc.on("phase",p=>{
+  if(p==="loading"){ $("#status").innerHTML=progressHTML("Starting estimate…"); $("#body").innerHTML=""; }
+});
+bpc.on("progress",m=>{
+  if(["queued","running","loading"].includes(bpc.state.phase) && m) $("#status").innerHTML=progressHTML(m);
+});
+bpc.on("done",()=>{ $("#status").innerHTML=""; });
+bpc.on("error",m=>{ $("#status").innerHTML=`<div class="errbox">⚠ ${E(m)}</div>`; });
+function progressHTML(m){ return `<div class="progress"><span class="spinner"></span><span>${E(m)}</span></div>`; }
+
+/* =================== META =================== */
+bpc.on("meta",renderMeta);
+function renderMeta(m){
+  let h=`<b>${E(m.character)}</b><span class="dot"></span>${E(m["class"]||"")}${m.level?" · lvl "+m.level:""}<span class="dot"></span>${E(m.league||"")}`;
+  if(m.divine_to_exalted) h+=`<span class="dot"></span><span class="rate">1 ${bpc.curImg("div")} = ${bpc.nfmt(Math.round(m.divine_to_exalted),0)} ${bpc.curImg("ex")}</span>`;
+  if(m.pob_code) h+=`<span class="pob-chip" id="pobchip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg><span id="poblabel">Copy PoB code</span></span>`;
+  $("#metaline").innerHTML=h;
+  const chip=$("#pobchip");
+  if(chip) chip.onclick=()=>{
+    if(navigator.clipboard) navigator.clipboard.writeText(m.pob_code).catch(()=>{});
+    const l=$("#poblabel"); if(l){ l.textContent="Copied!"; setTimeout(()=>l.textContent="Copy PoB code",1300); }
+  };
+}
+
+/* =================== STRUCTURE / RENDER =================== */
+bpc.on("items",()=>{ renderBody(); scheduleCharts(); });
+bpc.on("priced",()=>{ renderBody(); scheduleCharts(); });
+bpc.on("enabled",()=>{ renderBody(); scheduleCharts(); });
+bpc.on("totals",()=>{ scheduleCharts(); renderBudget(); });
+
+/* debounce chart redraws so we don't animate every poll tick */
+let chartTimer=null;
+function scheduleCharts(){ if(chartTimer) return; chartTimer=setTimeout(()=>{ chartTimer=null; drawWaterfall(); drawTreemap(); renderBudget(); },RM?0:80); }
+
+/* ---- pull the priced, enabled, non-muted items in a sortable order ---- */
+function pricedRows(){
+  const s=bpc.state, rows=[];
+  s.items.forEach(it=>{
+    const k=String(it.index), p=s.priced[k];
+    if(!p||p.exalted.median==null) return;
+    const c=it.count||1;
+    rows.push({k,it,p,group:it.group,
+      med:p.exalted.median*c, min:(p.exalted.min!=null?p.exalted.min:p.exalted.median)*c,
+      high:(p.exalted.high!=null?p.exalted.high:p.exalted.median)*c,
+      enabled:!!s.enabled[k], muted:!!mutedGroups[it.group], conf:p.confidence});
+  });
+  return rows;
+}
+const CONFRANK={high:3,medium:2,low:1,none:0};
+function sortRows(rows,mode){
+  const r=rows.slice();
+  if(mode==="cost") r.sort((a,b)=>b.med-a.med);
+  else if(mode==="spread") r.sort((a,b)=>spreadRatio(b)-spreadRatio(a));
+  else if(mode==="confidence") r.sort((a,b)=>(CONFRANK[b.conf]||0)-(CONFRANK[a.conf]||0)||b.med-a.med);
+  return r; // cascade keeps canonical engine order
+}
+function spreadRatio(r){ return r.med>0 ? (r.high-r.min)/r.med : 0; }
+function isWide(r){ return spreadRatio(r)>=1.1; } // amber when min..high spread is large
+
+/* ============================================================= BODY */
+function renderBody(){
+  const s=bpc.state;
+  if(!s.meta){ return; }
+  if(!s.items.length){ return; }
+
+  // preserve focus on budget input across rerenders
+  let h="";
+
+  // HERO waterfall shell (svg drawn separately)
+  h+=`<section class="panel hero" id="hero">
+    <div class="hero-head">
+      <div class="hero-title">Cost cascade <span class="hint" id="herohint"></span></div>
+      <div class="legend" id="legend"></div>
+    </div>
+    <div id="wfmount"></div>
+  </section>`;
+
+  // treemap (toggle appears for 15+ priced items)
+  h+=`<section class="panel" id="treemap" style="display:none"><div id="tmmount"></div></section>`;
+
+  // LIST
+  h+=`<div class="listwrap">
+    <div class="listbar">
+      <h3>Items</h3>
+      <div class="sortrow" id="sortrow">
+        <button data-m="cascade" class="${sortMode==="cascade"?"act":""}">Cascade</button>
+        <button data-m="cost" class="${sortMode==="cost"?"act":""}">Cost</button>
+        <button data-m="spread" class="${sortMode==="spread"?"act":""}">Spread</button>
+        <button data-m="confidence" class="${sortMode==="confidence"?"act":""}">Confidence</button>
+      </div>
+    </div>
+    <div id="groups"></div>
+  </div>`;
+
+  $("#body").innerHTML=h;
+  renderLegend();
+  renderGroups();
+  // hero hint
+  const t=bpc.totals();
+  $("#herohint").textContent=t.priced?`${t.included} of ${t.priced} items · click a step to exclude`:"";
+}
+
+function renderLegend(){
+  const present={}; bpc.state.items.forEach(it=>{ if(bpc.isPriced(it)) present[it.group]=true; });
+  const order=["equipment","flask","jewel","rune","gem"].filter(g=>present[g]);
+  $("#legend").innerHTML=order.map(g=>`<span class="lg ${mutedGroups[g]?"muted":""}" data-g="${g}"><span class="sw" style="background:${GCOL[g]}"></span>${E(GLABEL[g])}</span>`).join("");
+}
+$("#body").addEventListener("click",e=>{
+  const lg=e.target.closest(".lg");
+  if(lg){ const g=lg.dataset.g; mutedGroups[g]=!mutedGroups[g]; renderLegend(); renderBody(); scheduleCharts(); return; }
+  const sb=e.target.closest("#sortrow button");
+  if(sb){ sortMode=sb.dataset.m; renderBody(); scheduleCharts(); return; }
+  const re=e.target.closest(".reaffix");
+  if(re){ bpc.reopenRare(re.dataset.k); return; }
+});
+$("#body").addEventListener("change",e=>{
+  const inc=e.target.closest(".inc"); if(inc){ bpc.setEnabled(inc.dataset.k,inc.checked); return; }
+  const gt=e.target.closest(".gtog input"); if(gt){ bpc.setGroupEnabled(gt.dataset.g,gt.checked); return; }
+});
+
+/* ---- GROUPS + ROWS with dumbbell range bars ---- */
+function renderGroups(){
+  const s=bpc.state;
+  const groups=bpc.itemsByGroup();
+  // global axis max = most expensive single (count-adjusted) high across priced+enabled-or-not
+  let axisMax=0;
+  pricedRows().forEach(r=>{ if(!r.muted) axisMax=Math.max(axisMax,r.high); });
+  if(axisMax<=0) axisMax=1;
+
+  let h="";
+  groups.forEach(grp=>{
+    const col=GCOL[grp.group]||"#888";
+    // group total (enabled, priced)
+    let gtot=0, anyPriced=false, allOn=true, anyOn=false;
+    grp.items.forEach(it=>{
+      const k=String(it.index), p=s.priced[k];
+      if(p&&p.exalted.median!=null){ anyPriced=true; const c=it.count||1;
+        if(s.enabled[k]){ gtot+=p.exalted.median*c; anyOn=true; } else allOn=false; }
+    });
+    const muted=!!mutedGroups[grp.group];
+    h+=`<div class="grp" data-g="${grp.group}" style="${muted?"opacity:.45":""}">
+      <div class="grp-head">
+        <span class="bar" style="background:${col}"></span>
+        <span class="gt">${E(grp.title)}</span>
+        <span class="gc">${grp.items.length} item${grp.items.length>1?"s":""}</span>
+        <span class="gtot">${anyPriced?bpc.priceHTML(gtot):""}</span>
+        <label class="chk gtog" title="Toggle whole group"><input type="checkbox" data-g="${grp.group}" ${anyOn&&allOn?"checked":""}></label>
+      </div>`;
+
+    // rows in chosen sort order, scoped to this group
+    let rowsForGrp=grp.items.map(it=>{
+      const k=String(it.index), p=s.priced[k];
+      return {k,it,p};
+    });
+    // attach metrics for sorting
+    rowsForGrp=rowsForGrp.map(o=>{
+      const p=o.p, c=o.it.count||1;
+      const priced=p&&p.exalted.median!=null;
+      return Object.assign(o,{
+        priced, med:priced?p.exalted.median*c:0,
+        min:priced&&p.exalted.min!=null?p.exalted.min*c:(priced?p.exalted.median*c:0),
+        high:priced&&p.exalted.high!=null?p.exalted.high*c:(priced?p.exalted.median*c:0),
+        conf:priced?p.confidence:"none"
+      });
+    });
+    if(sortMode==="cost") rowsForGrp.sort((a,b)=>b.med-a.med);
+    else if(sortMode==="spread") rowsForGrp.sort((a,b)=>(b.priced?spreadRatio(b):-1)-(a.priced?spreadRatio(a):-1));
+    else if(sortMode==="confidence") rowsForGrp.sort((a,b)=>(CONFRANK[b.conf]||0)-(CONFRANK[a.conf]||0)||b.med-a.med);
+
+    rowsForGrp.forEach(o=>{
+      h+=rowHTML(o,axisMax,col);
+    });
+    h+=`</div>`;
+  });
+  $("#groups").innerHTML=h;
+}
+
+function rowHTML(o,axisMax,col){
+  const {it,p,k}=o, s=bpc.state;
+  const on=!!s.enabled[k];
+  const cnt=it.count>1?`<span class="cnt">×${it.count}</span>`:"";
+  const re=(s.advanced&&it.category==="rare")?`<button class="reaffix" data-k="${E(k)}">edit affixes</button>`:"";
+  const priced=p&&p.exalted.median!=null;
+  // name cell
+  const nameInner=(priced&&p.trade_url)?`<a class="nmt" href="${E(p.trade_url)}" target="_blank" rel="noopener">${E(it.name)} ${cnt}</a>`
+    :`<span class="nmt">${E(it.name)} ${cnt}</span>`;
+  const sub=(p&&p.note)?`<div class="sub">${E(p.note)}</div>`:"";
+
+  if(!priced){
+    const reason=(p&&p.note)?E(p.note):"not priced";
+    return `<div class="row off" data-k="${E(k)}">
+      <span class="cb"></span>
+      <span class="nm">${nameInner}${re?'<div class="sub">'+re+'</div>':""}<div class="sub">${reason}</div></span>
+      <span class="dumb"></span>
+      <span class="price"><span class="unp">not priced</span></span>
+    </div>`;
+  }
+
+  const wide=isWide(o);
+  const dumb=dumbbellSVG(o,axisMax,col,wide);
+  const badge=`<span class="badge ${E(o.conf)}">${E(o.conf)}</span>`;
+  return `<div class="row ${on?"":"off"}" data-k="${E(k)}" data-wfk="${E(k)}">
+    <span class="cb"><input type="checkbox" class="inc" data-k="${E(k)}" ${on?"checked":""}></span>
+    <span class="nm">${nameInner}${re?'<div class="sub">'+re+'</div>':""}${sub}</span>
+    <span class="dumb">${dumb}</span>
+    <span class="price">
+      <div class="med">${bpc.priceHTML(p.exalted.median*(it.count||1))}</div>
+      <div class="mm">${o.min!=null?bpc.nfmt(o.min<10?o.min:Math.round(o.min),o.min<10?1:0):"·"} – ${o.high!=null?bpc.nfmt(o.high<10?o.high:Math.round(o.high),o.high<10?1:0):"·"} ex · ${badge}</div>
+    </span>
+  </div>`;
+}
+
+/* dumbbell: thin track to global max, whiskers min..high, dot at median; amber if wide */
+function dumbbellSVG(o,axisMax,col,wide){
+  const W=200,H=26,padR=4,padL=2,cy=13,trackY=13;
+  const usable=W-padL-padR;
+  const sx=v=>padL+Math.max(0,Math.min(1,v/axisMax))*usable;
+  const xm=sx(o.min), xx=sx(o.high), xmed=sx(o.med);
+  const tc=wide?"var(--amber)":col;
+  const tdim="rgba(255,255,255,.08)";
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="range">
+    <line x1="${padL}" y1="${trackY}" x2="${W-padR}" y2="${trackY}" stroke="${tdim}" stroke-width="1"/>
+    <line x1="${xm.toFixed(1)}" y1="${trackY}" x2="${xx.toFixed(1)}" y2="${trackY}" stroke="${tc}" stroke-width="3.4" stroke-linecap="round" opacity="${wide?.85:.7}"/>
+    <line x1="${xm.toFixed(1)}" y1="${cy-4}" x2="${xm.toFixed(1)}" y2="${cy+4}" stroke="${tc}" stroke-width="1.4" opacity=".8"/>
+    <line x1="${xx.toFixed(1)}" y1="${cy-4}" x2="${xx.toFixed(1)}" y2="${cy+4}" stroke="${tc}" stroke-width="1.4" opacity=".8"/>
+    <circle class="ddot" cx="${xmed.toFixed(1)}" cy="${cy}" r="4.4" fill="${tc}" stroke="#0c0d10" stroke-width="1.5"/>
+  </svg>`;
+}
+
+/* =================== HERO WATERFALL (SVG) =================== */
+function drawWaterfall(){
+  const mount=$("#wfmount"); if(!mount) return;
+  const rowsAll=sortRows(pricedRows().filter(r=>!r.muted), sortMode);
+  const rows=rowsAll.filter(r=>r.enabled);
+
+  if(!rows.length){
+    mount.innerHTML=`<div class="wf-empty"><div class="big">Nothing included yet</div><div>Toggle items back in or pick a build to watch the budget cascade build up.</div></div>`;
+    wfMeta.clear(); return;
+  }
+
+  // dimensions
+  const cw=mount.clientWidth||760;
+  const padL=8, padR=64, padT=14, padB=40;
+  const n=rows.length;
+  const total=rows.reduce((s,r)=>s+r.med,0);
+  const slotMin=26;
+  const innerW=Math.max(cw-padL-padR, n*slotMin+60);
+  const plotH=200;
+  const H=plotH+padT+padB;
+  // bars: include a TOTAL bar at end -> n+1 slots, small gaps
+  const slots=n+1;
+  const gap=Math.min(12, innerW*0.012);
+  const bw=(innerW-gap*(slots-1))/slots;
+  const yMax=total*1.06 || 1;
+  const sy=v=>padT+plotH-(v/yMax)*plotH;
+
+  // gridlines (nice steps)
+  const grid=niceTicks(yMax,4);
+  let gridSVG="";
+  grid.forEach(g=>{
+    const y=sy(g).toFixed(1);
+    gridSVG+=`<line x1="${padL}" y1="${y}" x2="${padL+innerW}" y2="${y}" stroke="rgba(255,255,255,.05)"/>`;
+    gridSVG+=`<text x="${padL+innerW+6}" y="${y}" dominant-baseline="middle" font-size="9.5">${fmtTick(g)}</text>`;
+  });
+  // divine axis (right side, if rate known)
+  const dr=bpc.divRate();
+  let divSVG="";
+  if(dr){
+    grid.forEach(g=>{
+      const y=sy(g).toFixed(1);
+      const dv=g/dr;
+      if(dv>=0.1) divSVG+=`<text x="${padL+innerW+40}" y="${y}" dominant-baseline="middle" font-size="9" fill="#5a626f">${dv<10?dv.toFixed(1):Math.round(dv)}d</text>`;
+    });
+  }
+
+  // build steps
+  let running=0;
+  let barsSVG="", lineSVG="", labelSVG="";
+  const linePts=[];
+  wfMeta.clear();
+  rows.forEach((r,i)=>{
+    const x=padL+i*(bw+gap);
+    const yTop=sy(running+r.med), yBot=sy(running);
+    const h=Math.max(1,yBot-yTop);
+    const col=GCOL[r.group]||"#888";
+    barsSVG+=`<rect class="wfbar" data-k="${E(r.k)}" x="${x.toFixed(1)}" y="${yTop.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="2" fill="${col}" fill-opacity=".82" style="${RM?"":"transform-box:fill-box;transform-origin:bottom;"}"/>`;
+    // connector
+    if(i>0){ const px=padL+(i-1)*(bw+gap)+bw; barsSVG+=`<line x1="${px.toFixed(1)}" y1="${yBot.toFixed(1)}" x2="${x.toFixed(1)}" y2="${yBot.toFixed(1)}" stroke="rgba(255,255,255,.18)" stroke-dasharray="2 2"/>`; }
+    running+=r.med;
+    linePts.push([x+bw/2, sy(running)]);
+    // value label above bar (only if room)
+    if(bw>=22){
+      labelSVG+=`<text x="${(x+bw/2).toFixed(1)}" y="${(yTop-5).toFixed(1)}" text-anchor="middle" font-size="9" fill="#8a93a3">${fmtTick(r.med)}</text>`;
+    }
+    wfMeta.set(r.k,{x,w:bw,group:r.group,name:r.it.name,med:r.med,min:r.min,high:r.high,running});
+  });
+  // TOTAL bar (solid teal, full height)
+  const tx=padL+n*(bw+gap);
+  const tyTop=sy(total), tyBot=sy(0);
+  barsSVG+=`<rect x="${tx.toFixed(1)}" y="${tyTop.toFixed(1)}" width="${bw.toFixed(1)}" height="${(tyBot-tyTop).toFixed(1)}" rx="2" fill="url(#totgrad)"/>`;
+  labelSVG+=`<text x="${(tx+bw/2).toFixed(1)}" y="${(tyTop-5).toFixed(1)}" text-anchor="middle" font-size="9.5" fill="#2dd4bf" font-weight="700">${fmtTick(total)}</text>`;
+  labelSVG+=`<text x="${(tx+bw/2).toFixed(1)}" y="${(padT+plotH+13).toFixed(1)}" text-anchor="middle" font-size="9" fill="#2dd4bf" font-weight="700">TOTAL</text>`;
+
+  // running total polyline (left to right)
+  if(linePts.length){
+    const d="M "+linePts.map(p=>p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" L ");
+    lineSVG=`<path d="${d}" fill="none" stroke="#2dd4bf" stroke-width="1.6" stroke-opacity=".7" stroke-dasharray="${RM?"0":"1400"}" stroke-dashoffset="${RM?"0":"1400"}" id="wfline"/>`;
+    linePts.forEach(p=>{ lineSVG+=`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="1.8" fill="#2dd4bf"/>`; });
+  }
+
+  // baseline axis
+  const baseY=sy(0).toFixed(1);
+  const axis=`<line x1="${padL}" y1="${baseY}" x2="${padL+innerW}" y2="${baseY}" stroke="rgba(255,255,255,.18)"/>`;
+
+  const svg=`<svg id="wf" viewBox="0 0 ${padL+innerW+padR} ${H}" preserveAspectRatio="xMinYMin meet" style="min-width:${padL+innerW+padR}px">
+    <defs><linearGradient id="totgrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2dd4bf"/><stop offset="1" stop-color="#14b8a6"/></linearGradient></defs>
+    ${gridSVG}${divSVG}${axis}${barsSVG}${lineSVG}${labelSVG}
+  </svg>`;
+  mount.innerHTML=svg;
+
+  // animations (FLIP-ish via motion if present; else CSS/inline)
+  if(!RM){
+    const bars=mount.querySelectorAll(".wfbar");
+    if(motionLib&&motionLib.animate){
+      bars.forEach((b,i)=>{ motionLib.animate(b,{scaleY:[0,1]},{duration:.5,delay:i*0.03,easing:[.22,1,.36,1]}); });
+      const ln=mount.querySelector("#wfline"); if(ln) motionLib.animate(ln,{strokeDashoffset:[1400,0]},{duration:.9,delay:.15,easing:"ease-out"});
+    } else {
+      bars.forEach((b,i)=>{ b.animate([{transform:"scaleY(0)"},{transform:"scaleY(1)"}],{duration:450,delay:i*28,easing:"cubic-bezier(.22,1,.36,1)",fill:"backwards"}); });
+      const ln=mount.querySelector("#wfline"); if(ln) ln.animate([{strokeDashoffset:1400},{strokeDashoffset:0}],{duration:900,delay:150,easing:"ease-out",fill:"forwards"});
+    }
+  } else {
+    const ln=mount.querySelector("#wfline"); if(ln){ ln.setAttribute("stroke-dasharray","0"); ln.setAttribute("stroke-dashoffset","0"); }
+  }
+}
+
+/* hover wiring on the waterfall + cross-highlight to rows */
+const tip=$("#tip");
+document.addEventListener("mousemove",e=>{
+  const bar=e.target.closest&&e.target.closest(".wfbar");
+  clearRowHL();
+  if(!bar){ tip.classList.remove("on"); return; }
+  const k=bar.getAttribute("data-k"); const m=wfMeta.get(k); if(!m){ tip.classList.remove("on"); return; }
+  // highlight matching row
+  const row=document.querySelector('.row[data-wfk="'+CSS.escape(k)+'"]'); if(row) row.classList.add("hl");
+  const col=GCOL[m.group]||"#888";
+  tip.innerHTML=`<div class="tt"><span class="sw" style="background:${col}"></span>${E(m.name)}</div>
+    <div class="tr"><span>median</span><b>${fmtFull(m.med)}</b></div>
+    <div class="tr"><span>min</span><b>${fmtFull(m.min)}</b></div>
+    <div class="tr"><span>high</span><b>${fmtFull(m.high)}</b></div>
+    <div class="tnote">click to exclude · running total ${fmtFull(m.running)} ex</div>`;
+  tip.classList.add("on");
+  positionTip(e);
+},true);
+function positionTip(e){
+  const pad=14, w=tip.offsetWidth||200, h=tip.offsetHeight||80;
+  let x=e.clientX+pad, y=e.clientY+pad;
+  if(x+w>window.innerWidth-8) x=e.clientX-w-pad;
+  if(y+h>window.innerHeight-8) y=e.clientY-h-pad;
+  tip.style.left=x+"px"; tip.style.top=y+"px";
+}
+function clearRowHL(){ const r=document.querySelector(".row.hl"); if(r) r.classList.remove("hl"); }
+/* click a step -> exclude (the signature re-flow) */
+document.addEventListener("click",e=>{
+  const bar=e.target.closest&&e.target.closest(".wfbar");
+  if(bar){ const k=bar.getAttribute("data-k"); if(k){ bpc.setEnabled(k,false); tip.classList.remove("on"); } }
+});
+
+/* =================== TREEMAP (optional, 15+ items) =================== */
+function drawTreemap(){
+  const sec=$("#treemap"); if(!sec) return;
+  const rows=pricedRows().filter(r=>!r.muted&&r.enabled);
+  const showable=rows.length>=15;
+  if(!showable){ sec.style.display="none"; return; }
+  sec.style.display="block";
+  const mount=$("#tmmount");
+  if(!showTreemap){
+    mount.innerHTML=`<div class="hero-head"><div class="hero-title">Treemap <span class="hint">${rows.length} items — area = median cost</span></div>
+      <button class="reaffix" id="tmtoggle" style="font-size:11px;padding:4px 10px">Show treemap</button></div>`;
+    return;
+  }
+  const cw=mount.clientWidth||720, H=240;
+  const items=rows.slice().sort((a,b)=>b.med-a.med).map(r=>({k:r.k,name:r.it.name,val:r.med,group:r.group}));
+  const rects=squarify(items, 0,0,cw,H);
+  let svg=`<div class="hero-head"><div class="hero-title">Treemap <span class="hint">${items.length} items — area = median cost</span></div>
+    <button class="reaffix" id="tmtoggle" style="font-size:11px;padding:4px 10px">Hide treemap</button></div>
+    <svg id="tmsvg" viewBox="0 0 ${cw} ${H}">`;
+  rects.forEach(rc=>{
+    const col=GCOL[rc.group]||"#888";
+    svg+=`<g><rect x="${rc.x+1}" y="${rc.y+1}" width="${Math.max(0,rc.w-2)}" height="${Math.max(0,rc.h-2)}" rx="3" fill="${col}" fill-opacity=".78"/>`;
+    if(rc.w>54&&rc.h>26){
+      svg+=`<text x="${rc.x+7}" y="${rc.y+16}" font-size="11" font-weight="600" fill="#04201c">${E(clip(rc.name,Math.floor(rc.w/7)))}</text>`;
+      svg+=`<text x="${rc.x+7}" y="${rc.y+30}" font-size="10" fill="rgba(4,32,28,.8)" font-family="var(--mono)">${fmtTick(rc.val)} ex</text>`;
+    }
+    svg+=`</g>`;
+  });
+  svg+=`</svg>`;
+  mount.innerHTML=svg;
+}
+$("#body").addEventListener("click",e=>{ if(e.target&&e.target.id==="tmtoggle"){ showTreemap=!showTreemap; drawTreemap(); } });
+function clip(s,n){ return s.length>n?s.slice(0,Math.max(1,n-1))+"…":s; }
+/* simple squarified treemap */
+function squarify(items,x,y,w,h){
+  const total=items.reduce((s,i)=>s+i.val,0)||1;
+  const out=[]; let area={x,y,w,h};
+  let remaining=items.slice();
+  // normalize values to area
+  const scale=(area.w*area.h)/total;
+  remaining=remaining.map(i=>Object.assign({},i,{a:i.val*scale}));
+  while(remaining.length){
+    const horizontal=area.w>=area.h;
+    const side=horizontal?area.h:area.w;
+    let row=[], best=Infinity;
+    for(let i=0;i<remaining.length;i++){
+      const test=row.concat(remaining[i]);
+      const w2=worst(test,side);
+      if(w2<=best){ row=test; best=w2; } else break;
+    }
+    const rowArea=row.reduce((s,i)=>s+i.a,0);
+    const thick=rowArea/side;
+    let off=horizontal?area.y:area.x;
+    row.forEach(it=>{
+      const len=it.a/thick;
+      if(horizontal) out.push({x:area.x,y:off,w:thick,h:len,name:it.name,val:it.val,group:it.group,k:it.k});
+      else out.push({x:off,y:area.y,w:len,h:thick,name:it.name,val:it.val,group:it.group,k:it.k});
+      off+=len;
+    });
+    if(horizontal){ area={x:area.x+thick,y:area.y,w:area.w-thick,h:area.h}; }
+    else{ area={x:area.x,y:area.y+thick,w:area.w,h:area.h-thick}; }
+    remaining=remaining.slice(row.length);
+  }
+  return out;
+}
+function worst(row,side){
+  if(!row.length) return Infinity;
+  const s=row.reduce((a,i)=>a+i.a,0);
+  const mx=Math.max.apply(null,row.map(i=>i.a)), mn=Math.min.apply(null,row.map(i=>i.a));
+  const s2=s*s, side2=side*side;
+  return Math.max((side2*mx)/s2,(s2)/(side2*mn));
+}
+
+/* =================== BUDGET METER =================== */
+$("#budget").addEventListener("input",e=>{
+  const v=parseFloat(e.target.value);
+  budget=(isFinite(v)&&v>0)?v:null;
+  renderBudget();
+});
+function renderBudget(){
+  const t=bpc.totals();
+  const gv=$("#grandval"), gs=$("#grandspread"), gi=$("#grandinc");
+  if(!gv) return;
+  if(!t.priced||t.median<=0){
+    gv.innerHTML='<span class="bpc-dash">—</span>'; gs.textContent=""; gi.textContent="";
+  } else {
+    countUp(gv, t.median);
+    gs.innerHTML=`range ${bpc.priceHTML(t.min)} — ${bpc.priceHTML(t.high)}`;
+    gi.textContent=`${t.included} of ${t.priced} items included`;
+  }
+  // meter scaling: axis = max(high, budget)*1.05
+  const axis=Math.max(t.high||0, budget||0, 1)*1.05;
+  const pct=v=>Math.max(0,Math.min(100,(v/axis)*100));
+  const meter=$("#meter"), fill=$("#mfill"), band=$("#mband"), tick=$("#mtick"), tlbl=$("#mticklbl"), note=$("#budnote");
+  if(t.median>0){
+    fill.style.width=pct(t.median)+"%";
+    band.style.left=pct(t.min)+"%"; band.style.width=Math.max(0,pct(t.high)-pct(t.min))+"%";
+  } else { fill.style.width="0%"; band.style.width="0%"; }
+  if(budget!=null){
+    tick.hidden=false; tick.style.left=pct(budget)+"%";
+    tlbl.textContent=fmtTick(budget);
+    const over=t.median>budget;
+    meter.classList.toggle("over",over);
+    if(over){
+      note.className="budnote over";
+      note.innerHTML=`Over budget by <b>${fmtFull(t.median-budget)} ex</b> — trim the widest steps in the cascade.`;
+    } else {
+      const head=budget-t.median;
+      note.className="budnote under";
+      note.innerHTML=`Under budget — <b>${fmtFull(head)} ex</b> of headroom at the median.`+
+        (t.high>budget?` <span style="color:var(--mut)">(high estimate would exceed it)</span>`:``);
+    }
+  } else {
+    tick.hidden=true; meter.classList.remove("over");
+    note.className="budnote";
+    note.innerHTML=`Enter a budget to compare against the median total. The lighter band shows the min..high range.`;
+  }
+}
+/* count-up on the grand total */
+let cuRaf=null, cuCur=0;
+function countUp(el, target){
+  if(RM){ el.innerHTML=bpc.priceHTML(target); return; }
+  cancelAnimationFrame(cuRaf);
+  const from=cuCur||0, t0=performance.now(), dur=550;
+  function step(now){
+    const k=Math.min(1,(now-t0)/dur), e=1-Math.pow(1-k,3);
+    const val=from+(target-from)*e; cuCur=val;
+    el.innerHTML=bpc.priceHTML(val);
+    if(k<1) cuRaf=requestAnimationFrame(step); else cuCur=target;
+  }
+  cuRaf=requestAnimationFrame(step);
+}
+
+/* =================== ADVANCED PICKER (right rail) =================== */
+let pickerOpen=false;
+bpc.on("rare",info=>{
+  const box=$("#picker");
+  if(!info){
+    box.classList.add("hidden"); box.innerHTML=""; pickerOpen=false;
+    $("#scroll").classList.remove("dim"); $("#budgetcard").style.display="";
+    return;
+  }
+  pickerOpen=true;
+  $("#scroll").classList.add("dim");           // dim waterfall to focus the picker
+  $("#budgetcard").style.display="none";       // give the panel the rail
+  box.classList.remove("hidden");
+  drawPicker(box,info);
+});
+
+function drawPicker(box,info){
+  const r=info.rare;
+  let usePseudo=!!(r.pseudo&&r.pseudo.length);
+  let query="";
+
+  function affixRowHTML(a){
+    if(!a.searchable){
+      return `<div class="afx no"><div class="afx-top"><input type="checkbox" class="acb" disabled>
+        <div class="afx-txt">${E(a.text)}<div class="afx-reason">${E(a.reason||"can't be searched")}</div></div></div></div>`;
+    }
+    const attr=a.kind==="equip"?`data-equip="${E(a.key)}"`:`data-sid="${E(a.stat_id)}"`;
+    const rmark=a.resist?`<span class="rmark">RES</span>`:"";
+    const v=a.value!=null?E(a.value):"";
+    return `<div class="afx srch" ${attr} data-txt="${E((a.text||"").toLowerCase())}">
+      <div class="afx-top">
+        <input type="checkbox" class="acb" checked>
+        <div class="afx-txt">${E(a.text)}${rmark}</div>
+      </div>
+      ${distHint(a)}
+      <div class="afx-inputs">
+        <div class="mw"><label>min</label><input class="amin" type="number" inputmode="decimal" value="${v}"></div>
+        <div class="mw"><label>max</label><input class="amax" type="number" inputmode="decimal"></div>
+      </div>
+    </div>`;
+  }
+  // tiny inline distribution hint: a track with the rolled value marked
+  function distHint(a){
+    if(a.value==null) return "";
+    const lo=0, hi=Math.max(a.value*1.6, a.value+5);
+    const p=Math.max(4,Math.min(96,((a.value-lo)/(hi-lo))*100));
+    return `<div class="dist"><svg viewBox="0 0 100 16" preserveAspectRatio="none">
+      <line x1="2" y1="11" x2="98" y2="11" stroke="rgba(255,255,255,.1)" stroke-width="1.4" stroke-linecap="round"/>
+      <line x1="${p}" y1="6" x2="${p}" y2="11" stroke="#2dd4bf" stroke-width="1.4"/>
+      <circle cx="${p}" cy="11" r="2.6" fill="#2dd4bf"/>
+      <text x="${p}" y="4" text-anchor="middle" font-size="6" fill="#8a93a3" font-family="var(--mono)">rolled ${E(a.value)}</text>
+    </svg></div>`;
+  }
+  function listHTML(){
+    let h="";
+    r.affixes.forEach(a=>{ if(usePseudo&&a.resist) return; h+=affixRowHTML(a); });
+    if(usePseudo) r.pseudo.forEach(p=>h+=affixRowHTML(p));
+    return h;
+  }
+
+  box.innerHTML=`
+    <div class="pk-head">
+      <div class="pk-kicker"><span>◆ Pricing Rare</span><span class="prog">${info.index+1} / ${info.total}</span></div>
+      <div class="pk-name">${E(r.name)}</div>
+      <div class="pk-scope">${E(r.scope||"")}${info.redo?" · re-submit to replace":""}</div>
+      ${(r.pseudo&&r.pseudo.length)?`<label class="pk-pseudo"><input type="checkbox" id="pseu" ${usePseudo?"checked":""}> Combine resistances (pseudo-total) <span class="ph">recommended</span></label>`:""}
+    </div>
+    <div class="pk-search"><input id="afxq" placeholder="filter affixes…" autocomplete="off"></div>
+    <div class="pk-list" id="afxlist">${listHTML()}</div>
+    <div class="pk-foot">
+      ${info.index>0?`<button class="ghost" id="pkback">← Back</button>`:""}
+      <button class="primary" id="pksearch">${info.redo?"Re-search":"Search this item"}</button>
+      <button class="skip" id="pkskip">Skip</button>
+    </div>`;
+
+  const pe=box.querySelector("#pseu");
+  if(pe) pe.onchange=()=>{ usePseudo=pe.checked; box.querySelector("#afxlist").innerHTML=listHTML(); applyQuery(); };
+  const q=box.querySelector("#afxq");
+  if(q) q.oninput=()=>{ query=q.value.trim().toLowerCase(); applyQuery(); };
+  function applyQuery(){
+    box.querySelectorAll(".afx").forEach(d=>{
+      const t=d.getAttribute("data-txt")||"";
+      d.style.display=(!query||t.indexOf(query)>=0)?"":"none";
+    });
+  }
+  const pb=box.querySelector("#pkback"); if(pb) pb.onclick=()=>bpc.backRare();
+  box.querySelector("#pksearch").onclick=()=>{
+    const filters=[],equip=[];
+    box.querySelectorAll(".afx[data-sid]").forEach(d=>{
+      if(d.querySelector(".acb").checked) filters.push({stat_id:d.dataset.sid,min:num(d.querySelector(".amin").value),max:num(d.querySelector(".amax").value)});
+    });
+    box.querySelectorAll(".afx[data-equip]").forEach(d=>{
+      if(d.querySelector(".acb").checked) equip.push({key:d.dataset.equip,min:num(d.querySelector(".amin").value),max:num(d.querySelector(".amax").value)});
+    });
+    bpc.submitRare(info.key,{filters,equip});
+  };
+  box.querySelector("#pkskip").onclick=()=>bpc.skipRare(info.key);
+}
+function num(s){ s=(s||"").trim(); if(!s) return null; const n=Number(s); return isNaN(n)?null:n; }
+
+/* =================== FORMAT HELPERS =================== */
+function fmtTick(v){
+  if(v>=1000) return (v/1000).toFixed(v>=10000?0:1)+"k";
+  if(v>=100) return Math.round(v).toString();
+  if(v>=10) return Math.round(v).toString();
+  return (Math.round(v*10)/10).toString();
+}
+function fmtFull(v){ return v>=10?bpc.nfmt(Math.round(v),0):bpc.nfmt(v,1); }
+function niceTicks(max,count){
+  if(max<=0) return [0];
+  const step=niceNum(max/count), out=[];
+  for(let v=0; v<=max+1e-9; v+=step) out.push(v);
+  return out;
+}
+function niceNum(x){
+  const exp=Math.floor(Math.log10(x)), f=x/Math.pow(10,exp);
+  let nf; if(f<1.5)nf=1; else if(f<3)nf=2; else if(f<7)nf=5; else nf=10;
+  return nf*Math.pow(10,exp);
+}
+
+/* redraw charts on resize (debounced) */
+let rzTimer=null;
+window.addEventListener("resize",()=>{ if(rzTimer) clearTimeout(rzTimer); rzTimer=setTimeout(()=>{ drawWaterfall(); drawTreemap(); },120); });
+
+/* =================== BOOT =================== */
+if(location.search.indexOf("mock")>=0){ bpc.init({mock:true}); syncControls(); }
+else { bpc.init(); syncControls(); }
+</script>
+</body></html>

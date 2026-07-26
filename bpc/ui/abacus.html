@@ -1,0 +1,1125 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="bpc-title" content="Abacus Terminal">
+<meta name="bpc-tagline" content="A keyboard-first TUI: paste, watch the job log scroll, read prices in a box-drawn table.">
+<meta name="bpc-accent" content="#39d98a">
+<meta name="bpc-vibe" content="terminal">
+<meta name="bpc-order" content="2">
+<title>abacus · exile@trade:~$ bpc</title>
+<style>
+  :root{
+    --bg:#0a0d0c; --bg2:#0c100e; --strut:#0e1311;
+    --grn:#39d98a; --grn-dim:#1f6b48;
+    --fg:#c9d4cf; --mut:#6e7d76; --mut2:#475149;
+    --bd:#1a221d; --bd2:#243029;
+    --rare:#ffff77; --magic:#8888ff; --unique:#af6025; --currency:#aa9e82; --gem:#1ba29b; --normal:#c9d4cf;
+    --hi:#39d98a; --med:#e9c46a; --low:#c97b7b; --none:#5a655d;
+    --err:#ff6b6b;
+    --mono:ui-monospace,"Cascadia Code","JetBrains Mono","SFMono-Regular",Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font:14px/1.55 var(--mono); font-variant-numeric:tabular-nums;
+    overflow:hidden; -webkit-font-smoothing:antialiased;
+  }
+  /* static scanline veil at ~3% */
+  #scan{position:fixed; inset:0; pointer-events:none; z-index:50;
+    background:repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0, rgba(0,0,0,0) 2px, rgba(0,0,0,.03) 3px, rgba(0,0,0,0) 4px);
+    mix-blend-mode:overlay;}
+  #vign{position:fixed; inset:0; pointer-events:none; z-index:49;
+    background:radial-gradient(120% 100% at 50% 0%, rgba(57,217,138,.025), rgba(0,0,0,0) 55%);}
+
+  /* ===== titlebar strut ===== */
+  #strut{height:34px; display:flex; align-items:center; gap:10px; padding:0 12px;
+    background:var(--strut); border-bottom:1px solid var(--bd2); user-select:none; position:relative; z-index:10;}
+  .lamps{display:flex; gap:7px; align-items:center}
+  .lamp{width:11px; height:11px; border-radius:50%; border:1px solid rgba(0,0,0,.4); position:relative; cursor:default;
+    background:#2a322d; transition:background .25s, box-shadow .25s;}
+  .lamp.on{box-shadow:0 0 6px currentColor}
+  .lamp.league{color:#e9c46a}  .lamp.online{color:var(--grn)} .lamp.adv{color:#8888ff}
+  .lamp.on.league{background:#e9c46a} .lamp.on.online{background:var(--grn)} .lamp.on.adv{background:#8888ff}
+  #strutTitle{color:var(--mut); flex:1; text-align:center; font-size:12.5px; letter-spacing:.02em}
+  #strutTitle b{color:var(--grn)}
+  #strutRight{color:var(--mut2); font-size:11px; display:flex; gap:14px}
+  #strutRight .k{color:var(--mut)}
+
+  /* ===== console body ===== */
+  #console{position:absolute; inset:34px 0 0 0; display:flex; flex-direction:column;}
+  #scrollwrap{flex:1; display:flex; min-height:0; position:relative;}
+  #scroll{flex:1; overflow-y:auto; padding:14px 18px 8px 18px; scroll-behavior:smooth;}
+  #scroll::-webkit-scrollbar{width:10px}
+  #scroll::-webkit-scrollbar-track{background:transparent}
+  #scroll::-webkit-scrollbar-thumb{background:var(--bd2); border-radius:0}
+  /* minimap gutter */
+  #minimap{width:14px; flex:none; position:relative; background:var(--bg2); border-left:1px solid var(--bd);}
+  #mmview{position:absolute; left:1px; right:1px; background:rgba(57,217,138,.16); border:1px solid var(--grn-dim);}
+  .mmtick{position:absolute; left:2px; right:2px; height:2px; background:var(--mut2);}
+
+  /* log + content lines */
+  .line{white-space:pre-wrap; word-break:break-word}
+  .pre{white-space:pre; overflow-x:auto}
+  .log{color:var(--fg)}
+  .log .ts{color:var(--mut2)}
+  .log .ok{color:var(--grn)}
+  .log .arrow{color:var(--grn)}
+  .log .dim{color:var(--mut)}
+  .log .warn{color:var(--med)}
+  .log .errln{color:var(--err)}
+  .log .num{color:var(--grn)}
+  .cmdecho{color:var(--mut)}
+  .cmdecho .p{color:var(--grn)}
+  .blank{height:8px}
+  .spin{color:var(--grn)}
+
+  /* rarity colors */
+  .r-unique{color:var(--unique)} .r-rare{color:var(--rare)} .r-magic{color:var(--magic)}
+  .r-currency{color:var(--currency)} .r-rune{color:var(--currency)} .r-gem{color:var(--gem)} .r-normal{color:var(--normal)}
+
+  /* box tables */
+  .tbl{margin:6px 0 2px 0; line-height:1.5}
+  .tbl .box{color:var(--bd2)}
+  .tbl .hdr{color:var(--mut)}
+  .tbl .grpname{color:var(--grn); font-weight:600}
+  .tbl a{color:inherit; text-decoration:none; border-bottom:1px dotted rgba(255,255,255,.18)}
+  .tbl a:hover{border-bottom-color:var(--grn)}
+  .row{cursor:pointer; display:block}
+  .row:hover{background:rgba(57,217,138,.05)}
+  .row.off{opacity:.34}
+  .conf-high{color:var(--hi)} .conf-medium{color:var(--med)} .conf-low{color:var(--low)} .conf-none{color:var(--none)}
+  .cellnum{color:var(--fg)}
+  .cellnum.dash{color:var(--mut2)}
+  .pricewrap{color:var(--fg)}
+  .pricewrap .bpc-exsub{color:var(--mut)}
+  .pricewrap .bpc-dash{color:var(--mut2)}
+  .editlink{color:var(--mut); cursor:pointer; border-bottom:1px dotted var(--mut2)}
+  .editlink:hover{color:var(--grn); border-bottom-color:var(--grn)}
+  .noteline{color:var(--mut); padding-left:2px}
+  .totalbox{font-size:15.5px; line-height:1.6}
+  .totalbox .box{color:var(--grn-dim)}
+  .totalbox .lab{color:var(--grn); font-weight:700}
+  .totalbox .v{color:var(--grn)}
+  .totalbox .inc{color:var(--mut)}
+
+  .bpc-cur{height:1em; vertical-align:-.14em; margin:0 1px}
+
+  /* meta line */
+  .metaline{color:var(--fg)}
+  .metaline .k{color:var(--mut)}
+  .metaline b{color:var(--grn)}
+  .pobline{color:var(--mut)}
+  .pobline .copy{color:var(--grn); cursor:pointer; border-bottom:1px dotted var(--grn-dim)}
+  .pobline .copy:hover{background:rgba(57,217,138,.08)}
+
+  /* recent ls */
+  .lsline{color:var(--fg)}
+  .lsline .b{color:var(--currency); cursor:pointer}
+  .lsline .b:hover{color:var(--grn); text-decoration:underline}
+  .lsmore{color:var(--mut); cursor:pointer}
+  .lsmore:hover{color:var(--grn)}
+
+  /* ===== inline affix picker (box-form) ===== */
+  .picker{margin:10px 0 4px 0; line-height:1.6; white-space:pre; outline:none;}
+  .picker .frame{color:var(--magic)}
+  .picker .ptitle{color:var(--magic); font-weight:600}
+  .picker .pscope{color:var(--mut)}
+  .picker .afxrow{display:block; cursor:pointer}
+  .picker .afxrow.foc{background:rgba(136,136,255,.13); outline:1px solid rgba(136,136,255,.35);}
+  .picker .afxrow.no{opacity:.45; cursor:default}
+  .picker .cbx{color:var(--grn)}
+  .picker .cbx.un{color:var(--mut2)}
+  .picker .atext{color:var(--fg)}
+  .picker .areason{color:var(--mut2)}
+  .picker .lbl{color:var(--mut)}
+  .picker input.mm{
+    width:7ch; background:#070a08; border:1px solid var(--bd2); color:var(--grn);
+    font:inherit; text-align:right; padding:0 4px; border-radius:0; outline:none;}
+  .picker .afxrow.foc input.mm{border-color:var(--magic)}
+  .picker input.mm:focus{border-color:var(--magic); box-shadow:0 0 0 1px rgba(136,136,255,.4)}
+  .picker .pseudorow{color:var(--currency)}
+  .picker .footer{color:var(--mut)}
+  .picker .footer .key{color:var(--magic)}
+  .picker .footer .key.go{color:var(--grn)}
+
+  /* ===== bottom prompt ===== */
+  #promptbar{flex:none; border-top:1px solid var(--bd2); background:var(--bg2);}
+  #hint{font-size:11.5px; color:var(--mut2); padding:3px 18px; border-bottom:1px solid var(--bd); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  #hint b{color:var(--grn-dim)}
+  #hint .kbd{color:var(--mut); border:1px solid var(--bd2); border-radius:3px; padding:0 4px; margin:0 1px}
+  #promptline{display:flex; align-items:center; padding:8px 18px 10px; gap:8px;}
+  #ps1{color:var(--grn); white-space:nowrap; user-select:none}
+  #ps1 .host{color:var(--grn)} #ps1 .path{color:var(--mut)} #ps1 .dollar{color:var(--grn)}
+  #inputwrap{flex:1; position:relative; display:flex; align-items:center}
+  #cmd{flex:1; background:transparent; border:none; outline:none; color:var(--fg); font:inherit; caret-color:transparent; padding:0;}
+  #cmd::placeholder{color:var(--mut2)}
+  #caret{position:absolute; width:.62ch; height:1.15em; background:var(--grn); pointer-events:none;
+    animation:blink 1.06s step-end infinite; box-shadow:0 0 6px rgba(57,217,138,.6);}
+  @keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+  #goBtn{display:none}
+
+  /* ===== Cmd+K fuzzy palette ===== */
+  #palette{position:absolute; left:18px; right:18px; bottom:54px; z-index:40; display:none;
+    background:#070a08; border:1px solid var(--grn-dim); box-shadow:0 0 0 1px rgba(0,0,0,.6),0 8px 40px rgba(0,0,0,.7);}
+  #palette.open{display:block}
+  #palTitle{color:var(--grn); padding:6px 10px; border-bottom:1px solid var(--bd2); font-size:12px;}
+  #palList{max-height:260px; overflow:auto}
+  .palitem{padding:5px 12px; display:flex; gap:12px; cursor:pointer; border-left:2px solid transparent}
+  .palitem .cmd{color:var(--grn); min-width:14ch}
+  .palitem .desc{color:var(--mut)}
+  .palitem.sel{background:rgba(57,217,138,.12); border-left-color:var(--grn)}
+  .palitem mark{background:transparent; color:#fff; font-weight:700}
+
+  @media (max-width:760px){
+    body{font-size:12.5px}
+    #strutRight{display:none}
+    #minimap{display:none}
+  }
+  @media (prefers-reduced-motion: reduce){
+    #caret{animation:none}
+    #scroll{scroll-behavior:auto}
+  }
+</style></head>
+<body>
+<div id="scan"></div><div id="vign"></div>
+
+<div id="strut">
+  <div class="lamps">
+    <span class="lamp league on" id="lampLeague" title="league"></span>
+    <span class="lamp online on" id="lampOnline" title="listing status"></span>
+    <span class="lamp adv on" id="lampAdv" title="advanced affix mode"></span>
+  </div>
+  <div id="strutTitle"><b>exile@trade</b>:~$ bpc</div>
+  <div id="strutRight">
+    <span id="srLeague"><span class="k">league</span> auto</span>
+    <span id="srStatus"><span class="k">status</span> online</span>
+    <span id="srAdv"><span class="k">adv</span> on</span>
+  </div>
+</div>
+
+<div id="console">
+  <div id="scrollwrap">
+    <div id="scroll"></div>
+    <div id="minimap"><div id="mmview"></div></div>
+  </div>
+
+  <div id="promptbar">
+    <div id="palette">
+      <div id="palTitle">▸ command palette — ↑↓ select · Enter run · Esc close</div>
+      <div id="palList"></div>
+    </div>
+    <div id="hint"></div>
+    <div id="promptline">
+      <span id="ps1"><span class="host">exile@trade</span><span class="path">:~</span><span class="dollar">$</span></span>
+      <span id="inputwrap">
+        <input id="cmd" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
+               placeholder="paste a poe.ninja link / PoB code / pobb.in link, or type a command (try: help)">
+        <span id="caret"></span>
+      </span>
+      <button id="goBtn">run</button>
+    </div>
+  </div>
+</div>
+
+<script src="/assets/sample.js"></script>
+<script src="/assets/core.js"></script>
+<script>
+"use strict";
+const E = bpc.esc, $ = s=>document.querySelector(s);
+const scroll = $('#scroll'), cmd = $('#cmd'), caret = $('#caret');
+const RM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- column geometry for box tables ---------- */
+const COL = { inc:3, item:30, min:10, med:10, high:10, conf:4 };
+const H = '─'.repeat(COL.inc+2)+'┬'+'─'.repeat(COL.item+2)+'┬'+'─'.repeat(COL.min+2)+'┬'+'─'.repeat(COL.med+2)+'┬'+'─'.repeat(COL.high+2)+'┬'+'─'.repeat(COL.conf+2);
+function pad(s,w,align){ s=String(s); if(s.length>w) s=s.slice(0,w-1)+'…'; const g=w-s.length; return align==='r'?' '.repeat(g)+s:s+' '.repeat(g); }
+function rarClass(it){
+  const c=(it.category||'').toLowerCase();
+  if(c==='unique') return 'r-unique'; if(c==='rare') return 'r-rare'; if(c==='magic') return 'r-magic';
+  if(c==='gem') return 'r-gem'; if(c==='rune'||c==='currency') return 'r-currency'; return 'r-normal';
+}
+/* plain-ex string for table cells (no orb icons inside box columns) */
+function exCell(ex){
+  if(ex==null) return null;
+  const p=bpc.price(ex); if(p.empty) return null;
+  return p.div!=null ? (p.divStr+'d') : (p.exStr+'ex');
+}
+
+/* ---------- scrollback rendering ---------- */
+/* The scrollback is a list of blocks. Log blocks are appended (and typed out).
+   The "results" block (meta+tables+totals) is a single element re-rendered in place. */
+let resultsEl = null;     // the live results block
+let pobCode = '';
+function appendLine(html, cls){
+  const d=document.createElement('div');
+  d.className='line '+(cls||'');
+  d.innerHTML=html;
+  scroll.appendChild(d);
+  autoscroll(); scheduleMinimap();
+  return d;
+}
+function appendBlank(){ const d=document.createElement('div'); d.className='blank'; scroll.appendChild(d); }
+let pinned=true;
+scroll.addEventListener('scroll',()=>{ pinned = scroll.scrollHeight - scroll.scrollTop - scroll.clientHeight < 40; scheduleMinimap(); });
+function autoscroll(){ if(pinned) scroll.scrollTop = scroll.scrollHeight; }
+
+/* ---------- typed job log ---------- */
+let logQueue=[], logBusy=false;
+function logLine(html, cls){
+  if(RM){ appendLine(html, 'log '+(cls||'')); return; }
+  logQueue.push({html, cls:'log '+(cls||'')});
+  if(!logBusy) drainLog();
+}
+function drainLog(){
+  if(!logQueue.length){ logBusy=false; return; }
+  logBusy=true;
+  const {html,cls}=logQueue.shift();
+  appendLine(html, cls);
+  setTimeout(drainLog, 42);
+}
+function ts(){ const d=new Date(); return d.toTimeString().slice(0,8); }
+function logJob(msg, kind){
+  const c = kind==='err' ? 'errln' : kind==='warn' ? 'warn' : '';
+  logLine('<span class="ts">'+ts()+'</span> <span class="arrow">&gt;</span> <span class="'+c+'">'+msg+'</span>');
+}
+
+/* ---------- minimap ---------- */
+let mmRaf=0;
+function scheduleMinimap(){ if(mmRaf) return; mmRaf=requestAnimationFrame(()=>{mmRaf=0; drawMinimap();}); }
+function drawMinimap(){
+  const mm=$('#minimap'), view=$('#mmview');
+  const sh=scroll.scrollHeight, ch=scroll.clientHeight, h=mm.clientHeight;
+  if(sh<=ch){ view.style.top='0'; view.style.height=h+'px'; return; }
+  const vh=Math.max(14, h*ch/sh), vt=(scroll.scrollTop/(sh-ch))*(h-vh);
+  view.style.top=vt+'px'; view.style.height=vh+'px';
+}
+window.addEventListener('resize', scheduleMinimap);
+$('#minimap').addEventListener('mousedown',e=>{
+  const mm=$('#minimap'), r=mm.getBoundingClientRect();
+  const frac=(e.clientY-r.top)/r.height;
+  scroll.scrollTop = frac*(scroll.scrollHeight-scroll.clientHeight);
+});
+
+/* ====================================================================== */
+/*  RESULTS BLOCK (meta + box tables + totals)                            */
+/* ====================================================================== */
+function ensureResults(){
+  if(resultsEl && resultsEl.isConnected) return resultsEl;
+  resultsEl=document.createElement('div');
+  resultsEl.id='results';
+  scroll.appendChild(resultsEl);
+  return resultsEl;
+}
+function renderResults(){
+  const s=bpc.state; if(!s.meta) return;
+  const el=ensureResults();
+  const m=s.meta; pobCode=m.pob_code||'';
+  let h='';
+
+  /* --- meta line --- */
+  h+='<div class="metaline">'
+   + '<span class="k">char</span> <b>'+E(m.character)+'</b> '
+   + '<span class="k">·</span> '+E(m['class'])+' <span class="k">lvl</span> '+m.level
+   + ' <span class="k">·</span> <span class="k">league</span> '+E(m.league);
+  if(m.divine_to_exalted) h+=' <span class="k">·</span> 1 '+bpc.curImg('div')+' = '+bpc.nfmt(Math.round(m.divine_to_exalted),0)+' '+bpc.curImg('ex');
+  h+='</div>';
+  if(pobCode){
+    h+='<div class="pobline">  pob-import-code ['+pobCode.length+' chars]  <span class="copy" data-act="pob">[copy]</span></div>';
+  }
+  h+='<div class="blank"></div>';
+
+  /* --- box tables per group --- */
+  for(const grp of bpc.itemsByGroup()){
+    h+='<div class="tbl pre">';
+    // group header line with name embedded in top border
+    const label=' '+grp.title+' ';
+    const topInner='─'.repeat(COL.inc+2)+'┬'+'─'.repeat(COL.item+2)+'┬'+'─'.repeat(COL.min+2)+'┬'+'─'.repeat(COL.med+2)+'┬'+'─'.repeat(COL.high+2)+'┬'+'─'.repeat(COL.conf+2);
+    h+='<div><span class="box">┌'+topInner+'┐</span></div>';
+    h+='<div><span class="box">│</span> <span class="grpname">'+pad(grp.title.toUpperCase(), totalWidth(), 'l')+'</span> <span class="box">│</span></div>';
+    h+='<div><span class="box">├'+H+'┤</span></div>';
+    // column header
+    h+='<div><span class="box">│</span> <span class="hdr">'+pad('INC',COL.inc)+'</span> '
+      +'<span class="box">│</span> <span class="hdr">'+pad('ITEM',COL.item)+'</span> '
+      +'<span class="box">│</span> <span class="hdr">'+pad('MIN',COL.min,'r')+'</span> '
+      +'<span class="box">│</span> <span class="hdr">'+pad('MED',COL.med,'r')+'</span> '
+      +'<span class="box">│</span> <span class="hdr">'+pad('HIGH',COL.high,'r')+'</span> '
+      +'<span class="box">│</span> <span class="hdr">'+pad('C',COL.conf)+'</span> <span class="box">│</span></div>';
+    h+='<div><span class="box">├'+H+'┤</span></div>';
+
+    grp.items.forEach((it,idx)=>{
+      const k=String(it.index), p=s.priced[k], on=!!s.enabled[k];
+      const priced = p && p.exalted.median!=null;
+      const cntName = it.name + (it.count>1?(' ×'+it.count):'');
+      const isRareAdv = s.advanced && it.category==='rare';
+      const rownum = idx+1;
+      // INC marker: [x]/[ ] for priced, [-] skipped/unpriced
+      let inc;
+      if(!p) inc='<span class="spin">'+spinGlyph()+'</span> ';
+      else if(!priced) inc='<span class="conf-none">[-]</span>';
+      else inc='<span class="cbx">['+(on?'x':' ')+']</span>';
+
+      const nameHTML='<span class="'+rarClass(it)+'">'+E(pad(cntName,COL.item))+'</span>';
+
+      let minS,medS,highS,confS;
+      if(!p){ minS=pad('…',COL.min,'r'); medS=pad('',COL.med,'r'); highS=pad('',COL.high,'r'); confS=pad('',COL.conf); }
+      else if(!priced){
+        minS=pad('—',COL.min,'r'); medS=pad('not priced',COL.med,'r'); highS=pad('—',COL.high,'r');
+        confS=pad('○',COL.conf);
+      } else {
+        minS=pad(exCell(p.exalted.min)||'—',COL.min,'r');
+        medS=pad(exCell(p.exalted.median)||'—',COL.med,'r');
+        highS=pad(exCell(p.exalted.high)||'—',COL.high,'r');
+        confS=pad(confGlyph(p.confidence),COL.conf);
+      }
+      const confCls = p ? ('conf-'+p.confidence) : 'conf-none';
+
+      // item cell: optionally a trade link wrapping the name; we keep monospace width via pad already applied
+      let itemCell;
+      if(priced && p.trade_url){
+        itemCell='<a href="'+E(p.trade_url)+'" target="_blank" rel="noopener" class="'+rarClass(it)+'" data-noselect="1">'+E(pad(cntName,COL.item))+'</a>';
+      } else {
+        itemCell=nameHTML;
+      }
+
+      h+='<div class="row '+(priced&&!on?'off':'')+'" data-k="'+E(k)+'" data-row="'+rownum+'">'
+        +'<span class="box">│</span> '+pad('',0)+ wrapInc(inc) +' '
+        +'<span class="box">│</span> '+itemCell+' '
+        +'<span class="box">│</span> <span class="cellnum '+(exCell(p&&p.exalted.min)?'':'dash')+'">'+E(minS)+'</span> '
+        +'<span class="box">│</span> <span class="cellnum">'+E(medS)+'</span> '
+        +'<span class="box">│</span> <span class="cellnum">'+E(highS)+'</span> '
+        +'<span class="box">│</span> <span class="'+confCls+'">'+E(confS)+'</span> <span class="box">│</span></div>';
+
+      // note / edit-affixes sub-line
+      let sub='';
+      if(p && p.note) sub+='<span class="noteline">└ '+E(p.note)+'</span>';
+      if(isRareAdv){ sub+=(sub?'  ':'<span class="noteline">└ </span>')+'<span class="editlink" data-edit="'+E(k)+'">[edit affixes]</span>'; }
+      if(sub) h+='<div class="pre" style="white-space:normal">  '+sub+'</div>';
+    });
+    h+='<div><span class="box">└'+H.replace(/┬/g,'┴')+'┘</span></div>';
+    h+='</div>';
+  }
+
+  /* --- TOTAL box --- */
+  const t=bpc.totals();
+  const inner = '═'.repeat(totalLineLen()+2);
+  h+='<div class="totalbox pre" style="margin-top:8px">';
+  h+='<div><span class="box">╔'+inner+'╗</span></div>';
+  h+='<div><span class="box">║</span> '+totalContent(t)+' <span class="box">║</span></div>';
+  h+='<div><span class="box">╚'+inner+'╝</span></div>';
+  h+='</div>';
+
+  el.innerHTML=h;
+  scheduleMinimap();
+}
+function wrapInc(inc){ return inc; }
+function totalWidth(){
+  // total interior width of a row (sum of all cols + separators) for the group title bar
+  return COL.inc+COL.item+COL.min+COL.med+COL.high+COL.conf + (5*3); // 5 inner " │ " sep groups of 3 chars
+}
+function spinGlyph(){ const g=['⠋','⠙','⠹','⠸','⠼','⠴','⠦','⠧','⠇','⠏']; return g[Math.floor(Date.now()/90)%g.length]; }
+function confGlyph(c){ return c==='high'?'●':c==='medium'?'◐':c==='low'?'○':'·'; }
+
+function totalLineLen(){
+  // build the total content as plain text to measure, then HTML version separately
+  return totalPlain(bpc.totals()).length;
+}
+function totalPlain(t){
+  const f=v=>{ const p=bpc.price(v); return p.empty?'—':(p.div!=null?(p.divStr+'d'):(p.exStr+'ex')); };
+  return 'TOTAL  min '+f(t.min)+'   med '+f(t.median)+'   high '+f(t.high)+'    ('+t.included+'/'+t.priced+' included)';
+}
+function totalContent(t){
+  const f=v=>{ const p=bpc.price(v); if(p.empty) return '<span class="bpc-dash">—</span>'; return p.div!=null?(p.divStr+'d'):(p.exStr+'ex'); };
+  return '<span class="lab">TOTAL</span>  <span class="inc">min</span> <span class="v">'+f(t.min)+'</span>'
+    +'   <span class="inc">med</span> <span class="v">'+f(t.median)+'</span>'
+    +'   <span class="inc">high</span> <span class="v">'+f(t.high)+'</span>'
+    +'    <span class="inc">('+t.included+'/'+t.priced+' included)</span>';
+}
+
+/* row / link / edit / copy interactions inside results */
+scroll.addEventListener('click',e=>{
+  const copy=e.target.closest('[data-act="pob"]');
+  if(copy){ doCopyPob(copy); return; }
+  const edit=e.target.closest('[data-edit]');
+  if(edit){ bpc.reopenRare(edit.dataset.edit); return; }
+  if(e.target.closest('a[data-noselect]')) return; // let link open
+  const row=e.target.closest('.row');
+  if(row){ const k=row.dataset.k; const s=bpc.state.priced[k];
+    if(s && s.exalted.median!=null) bpc.setEnabled(k, !bpc.state.enabled[k]); }
+});
+function doCopyPob(elm){
+  if(!pobCode) return;
+  if(navigator.clipboard) navigator.clipboard.writeText(pobCode).catch(()=>{});
+  elm.textContent='[copied]';
+  logJob('pob code copied to clipboard ('+pobCode.length+' chars)');
+  setTimeout(()=>{ elm.textContent='[copy]'; }, 1400);
+}
+
+/* ====================================================================== */
+/*  INLINE BOX-FORM AFFIX PICKER (keyboard navigable)                     */
+/* ====================================================================== */
+let pickerEl=null, pickerState=null;
+/* pickerState: {info, usePseudo, rows:[{type,affix,checked,min,max,searchable}], focus} */
+
+function buildPickerRows(info, usePseudo){
+  const r=info.rare, rows=[];
+  r.affixes.forEach(a=>{
+    if(usePseudo && a.resist) return;
+    rows.push(mkRow(a));
+  });
+  if(usePseudo && r.pseudo) r.pseudo.forEach(p=> rows.push(mkRow(p)));
+  return rows;
+}
+function mkRow(a){
+  return { affix:a, searchable:!!a.searchable, checked:!!a.searchable,
+           min:(a.value!=null?String(a.value):''), max:'' };
+}
+function buildPicker(info){
+  const r=info.rare;
+  const usePseudo = !!(r.pseudo && r.pseudo.length);
+  pickerState = { info, usePseudo, rows: buildPickerRows(info, usePseudo), focus:0, focusField:'row' };
+  // ensure focus starts on first interactive row
+  pickerState.focus = firstFocusable(0,1);
+  renderPicker();
+}
+function firstFocusable(from, dir){
+  const rows=pickerState.rows; let i=from;
+  for(let n=0;n<rows.length;n++){
+    if(i<0) i=rows.length-1; if(i>=rows.length) i=0;
+    if(rows[i].searchable) return i;
+    i+=dir;
+  }
+  return Math.max(0,Math.min(rows.length-1,from));
+}
+function renderPicker(){
+  const ps=pickerState; if(!ps) return;
+  const info=ps.info, r=info.rare;
+  if(!pickerEl || !pickerEl.isConnected){
+    pickerEl=document.createElement('div'); pickerEl.className='picker'; pickerEl.tabIndex=0;
+    scroll.appendChild(pickerEl);
+    pickerEl.addEventListener('keydown', pickerKey);
+  }
+  const W=58;
+  const titleTxt=' RARE '+(info.index+1)+'/'+info.total+': '+r.name+' ';
+  const dashCount=Math.max(2, W-2-titleTxt.length);
+  let h='';
+  h+='<div><span class="frame">┤</span><span class="ptitle">'+E(titleTxt)+'</span><span class="frame">├'+'─'.repeat(dashCount)+'</span></div>';
+  h+='<div>  <span class="pscope">'+E(r.scope||'')+(info.redo?'  · re-submit to replace':'')+'</span></div>';
+
+  if(r.pseudo && r.pseudo.length){
+    const pf = (ps.focus===-2);
+    h+='<div class="afxrow'+(pf?' foc':'')+'" data-fi="-2"> '
+      +'<span class="cbx'+(ps.usePseudo?'':' un')+'">['+(ps.usePseudo?'x':' ')+']</span> '
+      +'<span class="atext">combine-resist</span> <span class="areason">(pseudo-total elemental/chaos resist)</span></div>';
+  }
+
+  ps.rows.forEach((row,i)=>{
+    const a=row.affix, foc=(ps.focus===i);
+    if(!row.searchable){
+      h+='<div class="afxrow no"> <span class="cbx un">[ ]</span> <span class="atext">'+E(a.text)+'</span> <span class="areason">'+E(a.reason||'unsearchable')+'</span></div>';
+      return;
+    }
+    h+='<div class="afxrow'+(foc?' foc':'')+(a.resist?' pseudorow':'')+'" data-i="'+i+'"> '
+      +'<span class="cbx'+(row.checked?'':' un')+'">['+(row.checked?'x':' ')+']</span> '
+      +'<span class="atext'+(a.resist?' pseudorow':'')+'">'+E(pad(a.text,40))+'</span> '
+      +'<span class="lbl">min</span><input class="mm" data-i="'+i+'" data-f="min" value="'+E(row.min)+'" '+(foc&&ps.focusField==='min'?'data-autofocus':'')+'> '
+      +'<span class="lbl">max</span><input class="mm" data-i="'+i+'" data-f="max" value="'+E(row.max)+'" '+(foc&&ps.focusField==='max'?'data-autofocus':'')+'>'
+      +'</div>';
+  });
+
+  h+='<div class="frame">└'+'─'.repeat(W-1)+'</div>';
+  h+='<div class="footer">  '
+    + (info.index>0?'<span class="key">[b]</span>ack   ':'')
+    + '<span class="key go">[enter]</span>search   '
+    + '<span class="key">[s]</span>kip   '
+    + '<span class="lbl">·  Tab/↑↓ move · Space toggle · type min/max</span></div>';
+
+  pickerEl.innerHTML=h;
+
+  // wire inputs (no caret animation here; native focus)
+  pickerEl.querySelectorAll('input.mm').forEach(inp=>{
+    inp.addEventListener('input',()=>{
+      const i=+inp.dataset.i, f=inp.dataset.f;
+      if(ps.rows[i]) ps.rows[i][f]=inp.value;
+    });
+    inp.addEventListener('focus',()=>{ ps.focus=+inp.dataset.i; ps.focusField=inp.dataset.f; markFocus(); });
+    inp.addEventListener('keydown', inputKey);
+  });
+  pickerEl.querySelectorAll('.afxrow').forEach(rw=>{
+    rw.addEventListener('mousedown',e=>{
+      if(e.target.tagName==='INPUT') return;
+      e.preventDefault();
+      if(rw.dataset.fi==='-2'){ togglePseudo(); return; }
+      const i=+rw.dataset.i; if(!isNaN(i)){ ps.focus=i; ps.focusField='row'; ps.rows[i].checked=!ps.rows[i].checked; renderPicker(); pickerEl.focus(); }
+    });
+  });
+
+  // restore focus
+  const af=pickerEl.querySelector('input[data-autofocus]');
+  if(af){ af.focus(); af.setSelectionRange(af.value.length, af.value.length); }
+  else pickerEl.focus();
+
+  autoscroll(); scheduleMinimap();
+}
+function markFocus(){
+  if(!pickerEl) return;
+  pickerEl.querySelectorAll('.afxrow').forEach(rw=>{
+    const i=rw.dataset.i!=null? +rw.dataset.i : (rw.dataset.fi!=null? +rw.dataset.fi : NaN);
+    rw.classList.toggle('foc', i===pickerState.focus);
+  });
+}
+function togglePseudo(){
+  const ps=pickerState;
+  ps.usePseudo=!ps.usePseudo;
+  ps.rows=buildPickerRows(ps.info, ps.usePseudo);
+  ps.focus=firstFocusable(0,1);
+  ps.focusField='row';
+  renderPicker(); pickerEl.focus();
+}
+function pickerMove(dir){
+  const ps=pickerState; const n=ps.rows.length;
+  const hasPseudo = ps.info.rare.pseudo && ps.info.rare.pseudo.length;
+  // focus indices: -2 (pseudo toggle) then 0..n-1 (skip unsearchable)
+  let order=[]; if(hasPseudo) order.push(-2);
+  ps.rows.forEach((r,i)=>{ if(r.searchable) order.push(i); });
+  if(!order.length) return;
+  let cur=order.indexOf(ps.focus); if(cur<0) cur=0;
+  cur=(cur+dir+order.length)%order.length;
+  ps.focus=order[cur]; ps.focusField='row';
+  renderPicker(); pickerEl.focus();
+}
+function pickerKey(e){
+  const ps=pickerState; if(!ps) return;
+  if(e.key==='Tab'){ e.preventDefault(); pickerMove(e.shiftKey?-1:1); return; }
+  if(e.key==='ArrowDown'){ e.preventDefault(); pickerMove(1); return; }
+  if(e.key==='ArrowUp'){ e.preventDefault(); pickerMove(-1); return; }
+  if(e.key===' '){ e.preventDefault(); toggleFocused(); return; }
+  if(e.key==='Enter'){ e.preventDefault(); submitPicker(); return; }
+  if(e.key.toLowerCase()==='s' && !targetIsInput(e)){ e.preventDefault(); bpc.skipRare(ps.info.key); return; }
+  if(e.key.toLowerCase()==='b' && !targetIsInput(e)){ e.preventDefault(); if(ps.info.index>0) bpc.backRare(); return; }
+  if(e.key==='Escape'){ e.preventDefault(); bpc.skipRare(ps.info.key); return; }
+}
+function inputKey(e){
+  const ps=pickerState; if(!ps) return;
+  if(e.key==='Enter'){ e.preventDefault(); submitPicker(); return; }
+  if(e.key==='Tab'){ e.preventDefault();
+    // Tab from min -> max -> next row
+    const inp=e.target, i=+inp.dataset.i, f=inp.dataset.f;
+    if(f==='min' && !e.shiftKey){ ps.focus=i; ps.focusField='max'; renderPicker(); return; }
+    pickerMove(e.shiftKey?-1:1); return;
+  }
+  if(e.key==='ArrowDown'){ e.preventDefault(); pickerMove(1); return; }
+  if(e.key==='ArrowUp'){ e.preventDefault(); pickerMove(-1); return; }
+  if(e.key==='Escape'){ e.preventDefault(); pickerEl.focus(); ps.focusField='row'; }
+}
+function targetIsInput(e){ return e.target && e.target.tagName==='INPUT'; }
+function toggleFocused(){
+  const ps=pickerState;
+  if(ps.focus===-2){ togglePseudo(); return; }
+  const row=ps.rows[ps.focus]; if(row && row.searchable){ row.checked=!row.checked; renderPicker(); pickerEl.focus(); }
+}
+function num(s){ s=(s||'').trim(); if(!s) return null; const n=Number(s); return isNaN(n)?null:n; }
+function submitPicker(){
+  const ps=pickerState; if(!ps) return;
+  const filters=[], equip=[];
+  ps.rows.forEach(row=>{
+    if(!row.searchable || !row.checked) return;
+    const a=row.affix;
+    if(a.kind==='equip') equip.push({key:a.key, min:num(row.min), max:num(row.max)});
+    else if(a.stat_id) filters.push({stat_id:a.stat_id, min:num(row.min), max:num(row.max)});
+  });
+  logJob('pricing '+rarName(ps.info.rare.name)+' <span class="dim">('+filters.length+' filters'+(equip.length?'+'+equip.length+' defence':'')+')…</span>');
+  bpc.submitRare(ps.info.key, {filters, equip});
+}
+function rarName(n){ return '<span class="r-rare">'+E(n)+'</span>'; }
+function closePicker(){
+  pickerState=null;
+  if(pickerEl){ pickerEl.remove(); pickerEl=null; }
+}
+
+bpc.on('rare', info=>{
+  if(!info){ closePicker(); cmd.focus(); return; }
+  buildPicker(info);
+});
+
+/* ====================================================================== */
+/*  EVENTS WIRING                                                          */
+/* ====================================================================== */
+let firstPriceSeen=false, pricedCount=0;
+bpc.on('meta', m=>{
+  logJob('resolving build <span class="ok">ok</span>');
+  logJob('character <b style="color:var(--grn)">'+E(m.character)+'</b> · '+E(m['class'])+' lvl '+m.level);
+});
+bpc.on('items', items=>{
+  logJob('resolving <span class="num">'+items.length+'</span> items');
+  renderResults();
+});
+bpc.on('priced', d=>{
+  // flicker each newly priced row: re-render results so spinner->number; log a line
+  (d.keys||[]).forEach(k=>{
+    const it=bpc.state.items.find(x=>String(x.index)===String(k));
+    const p=bpc.state.priced[k];
+    if(it && p){
+      pricedCount++;
+      if(p.exalted.median!=null){
+        const ex=exCell(p.exalted.median);
+        logJob('pricing '+rarColored(it)+' <span class="dim">…</span> <span class="num">'+E(ex||'—')+'</span>');
+      } else if(p.method!=='skipped'){
+        logJob('pricing '+rarColored(it)+' <span class="warn">no match</span>', 'warn');
+      }
+    }
+  });
+  renderResults();
+});
+function rarColored(it){ return '<span class="'+rarClass(it)+'">'+E(it.name)+'</span>'; }
+bpc.on('totals', t=>{ // granular: just repaint total + minimap
+  patchTotals(t);
+});
+function patchTotals(t){
+  if(!resultsEl) return;
+  const tb=resultsEl.querySelector('.totalbox');
+  if(!tb){ renderResults(); return; }
+  const inner='═'.repeat(totalLineLen()+2);
+  tb.innerHTML='<div><span class="box">╔'+inner+'╗</span></div>'
+    +'<div><span class="box">║</span> '+totalContent(t)+' <span class="box">║</span></div>'
+    +'<div><span class="box">╚'+inner+'╝</span></div>';
+}
+bpc.on('enabled', ()=>{ // toggle de-emphasis without full rerender (avoid picker focus loss)
+  const s=bpc.state;
+  if(!resultsEl) return;
+  resultsEl.querySelectorAll('.row').forEach(rw=>{
+    const k=rw.dataset.k, p=s.priced[k];
+    const priced=p&&p.exalted.median!=null;
+    rw.classList.toggle('off', priced && !s.enabled[k]);
+    // update checkbox glyph
+    const cb=rw.querySelector('.cbx');
+    if(cb && priced) cb.textContent='['+(s.enabled[k]?'x':' ')+']';
+  });
+});
+bpc.on('phase', p=>{
+  if(p==='loading'){ logJob('fetch poe.ninja <span class="dim">…</span>'); }
+  if(p==='queued'){ logJob('job queued <span class="dim">…</span>'); }
+  if(p==='error'){}
+});
+bpc.on('progress', m=>{
+  if(m && ['queued','running','loading'].includes(bpc.state.phase)){
+    // surface progress as a dim sub-line occasionally (avoid spam: only distinct)
+    if(m!==lastProg){ lastProg=m; /* keep quiet to avoid noise; progress reflected by priced lines */ }
+  }
+});
+let lastProg='';
+bpc.on('done', s=>{
+  logJob('done <span class="ok">·</span> '+(s.searches!=null?('<span class="num">'+s.searches+'</span> trade searches used'):'pricing complete'));
+  renderResults();
+  // count up total
+  animateTotal();
+});
+bpc.on('error', m=>{
+  logJob('error: '+E(m), 'err');
+});
+bpc.on('control', c=>{ syncLamps(); });
+bpc.on('leagues', ls=>{ leagues=ls.slice(); syncLamps(); });
+bpc.on('recent', bs=>{ recent=bs.slice(); renderRecentLs(); });
+
+/* total count-up */
+function animateTotal(){
+  if(RM) return;
+  const t=bpc.totals(); if(!t.median) return;
+  const tb=resultsEl && resultsEl.querySelector('.totalbox');
+  if(!tb) return;
+  const start=performance.now(), dur=520, target=t;
+  function frame(now){
+    const k=Math.min(1,(now-start)/dur); const e=1-Math.pow(1-k,3);
+    patchTotals({min:target.min*e, median:target.median*e, high:target.high*e, included:target.included, priced:target.priced});
+    if(k<1) requestAnimationFrame(frame); else patchTotals(target);
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ---------- lamps / strut state ---------- */
+let leagues=[], recent=[], recentExpanded=false;
+function syncLamps(){
+  const s=bpc.state;
+  $('#lampLeague').classList.toggle('on', !!s.league); // lit = explicit league chosen
+  $('#lampOnline').classList.toggle('on', s.status==='online'||s.status==='onlineleague'||s.status==='available'||s.status==='securable');
+  $('#lampAdv').classList.toggle('on', !!s.advanced);
+  $('#lampLeague').title='league: '+(s.league||'auto');
+  $('#lampOnline').title='status: '+(bpc.STATUS_LABEL[s.status]||s.status);
+  $('#lampAdv').title='advanced: '+(s.advanced?'on':'off');
+  $('#srLeague').innerHTML='<span class="k">league</span> '+E(s.league||'auto');
+  $('#srStatus').innerHTML='<span class="k">status</span> '+E(shortStatus(s.status));
+  $('#srAdv').innerHTML='<span class="k">adv</span> '+(s.advanced?'on':'off');
+}
+function shortStatus(s){ return {available:'instant+ip',securable:'instant',onlineleague:'ip-league',online:'online',any:'any'}[s]||s; }
+
+/* ---------- recent builds (ls) ---------- */
+function renderRecentLs(){
+  // remove old ls block(s) at top? We render recent at top once on load.
+  let lsEl=$('#lsblock');
+  if(!lsEl){ lsEl=document.createElement('div'); lsEl.id='lsblock'; lsEl.className='line lsline';
+    // place at very top of scroll
+    scroll.insertBefore(lsEl, scroll.firstChild); }
+  if(!recent.length){ lsEl.innerHTML='<span class="ts">'+ts()+'</span> <span class="arrow">&gt;</span> ls cached/  <span class="dim">(no cached builds yet)</span>'; return; }
+  const show = recentExpanded ? recent : recent.slice(0,5);
+  let h='<span class="ts">'+ts()+'</span> <span class="arrow">&gt;</span> ls cached/  <span class="dim">'+recent.length+' build'+(recent.length>1?'s':'')+'</span>\n';
+  show.forEach(b=>{
+    h+='   <span class="b" data-cache="'+E(b.key)+'">'+E((b.character||'?'))+'</span>'
+      +'  <span class="dim">'+E(b.char_class||'')+' '+(b.level||'')+(b.league?(' · '+E(b.league)):'')+'</span>\n';
+  });
+  if(recent.length>5) h+='   <span class="lsmore" data-more="1">'+(recentExpanded?'[show less]':('[+'+(recent.length-5)+' more…]'))+'</span>';
+  lsEl.innerHTML=h;
+  lsEl.style.whiteSpace='pre-wrap';
+}
+scroll.addEventListener('click',e=>{
+  const b=e.target.closest('[data-cache]'); if(b){ runCacheKey(b.dataset.cache); return; }
+  const more=e.target.closest('[data-more]'); if(more){ recentExpanded=!recentExpanded; renderRecentLs(); }
+});
+function runCacheKey(k){
+  echoCmd('load '+k.slice(0,18));
+  resetForRun();
+  bpc.startCache(k);
+}
+
+/* ====================================================================== */
+/*  COMMAND BAR                                                            */
+/* ====================================================================== */
+const HINTS=[
+  'paste a link + <b>Enter</b> to price · <span class="kbd">Ctrl/⌘ K</span> palette · type <b>help</b> for commands',
+  '<b>exclude 4</b> · <b>incl all</b> · <b>exclude flask*</b> — glob-toggle rows in the totals',
+  '<b>status any</b> · <b>league std</b> · <b>adv on/off</b> — change controls and re-run',
+  '<b>pob</b> copy import code · <b>ls</b> recent builds · <b>open 1</b> reopen rare affixes',
+];
+let hintIdx=0;
+function rotateHint(){ $('#hint').innerHTML='<span class="kbd">hint</span> '+HINTS[hintIdx%HINTS.length]; hintIdx++; }
+rotateHint(); setInterval(rotateHint, RM?999999:7000);
+
+/* caret positioning following the input text */
+const meas=document.createElement('span');
+meas.style.cssText='position:absolute;visibility:hidden;white-space:pre;font:inherit';
+$('#inputwrap').appendChild(meas);
+function placeCaret(){
+  if(palOpen){ caret.style.display='none'; return; }
+  const v=cmd.value.slice(0, cmd.selectionStart==null?cmd.value.length:cmd.selectionStart);
+  meas.textContent=v;
+  const w=meas.getBoundingClientRect().width;
+  caret.style.display = (document.activeElement===cmd) ? 'block':'none';
+  caret.style.left = (cmd.offsetLeft + w)+'px';
+  caret.style.top = (cmd.offsetTop + (cmd.offsetHeight-caret.offsetHeight)/2)+'px';
+}
+['input','keyup','click','focus','blur','select'].forEach(ev=>cmd.addEventListener(ev, placeCaret));
+window.addEventListener('resize', placeCaret);
+cmd.addEventListener('blur',()=>{ caret.style.display='none'; });
+cmd.addEventListener('focus',()=>{ if(!palOpen) caret.style.display='block'; placeCaret(); });
+
+function echoCmd(text){ appendLine('<span class="cmdecho"><span class="p">exile@trade:~$</span> '+E(text)+'</span>'); }
+function resetForRun(){
+  // clear previous results block + reset counters so a fresh run prints cleanly
+  if(resultsEl){ resultsEl.remove(); resultsEl=null; }
+  closePicker();
+  pricedCount=0; firstPriceSeen=false;
+}
+
+cmd.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey) && (e.key==='k'||e.key==='K')){ e.preventDefault(); openPalette(); return; }
+  if(e.key==='Enter'){ e.preventDefault(); if(palOpen){ runPalSel(); return; } submitCmd(); return; }
+  if(e.key==='ArrowUp'){ if(palOpen){ e.preventDefault(); palMove(-1); return; } histPrev(e); return; }
+  if(e.key==='ArrowDown'){ if(palOpen){ e.preventDefault(); palMove(1); return; } histNext(e); return; }
+  if(e.key==='Escape'){ if(palOpen) closePalette(); }
+});
+$('#goBtn').addEventListener('click',()=>submitCmd());
+
+/* command history */
+let hist=[], histPos=-1;
+function histPrev(e){ if(!hist.length) return; e.preventDefault(); histPos=Math.max(0,histPos<0?hist.length-1:histPos-1); cmd.value=hist[histPos]; placeCaret(); }
+function histNext(e){ if(!hist.length||histPos<0) return; e.preventDefault(); histPos++; if(histPos>=hist.length){histPos=-1;cmd.value='';} else cmd.value=hist[histPos]; placeCaret(); }
+
+function submitCmd(){
+  const raw=cmd.value.trim();
+  if(!raw) return;
+  hist.push(raw); histPos=-1;
+  cmd.value=''; placeCaret();
+  runCommand(raw);
+}
+
+/* ---------- command parser ---------- */
+function looksLikeLink(s){
+  return /^https?:\/\//i.test(s) || /poe\.ninja/i.test(s) || /pobb\.in/i.test(s)
+      || (s.length>120 && /^[A-Za-z0-9\-_=]+$/.test(s.replace(/\s/g,''))); // PoB base64-ish
+}
+function runCommand(raw){
+  echoCmd(raw);
+  // If it's a link / PoB code -> price it.
+  if(looksLikeLink(raw)){
+    resetForRun();
+    logJob('fetch <span class="dim">'+E(raw.length>54?raw.slice(0,54)+'…':raw)+'</span>');
+    bpc.startUrl(raw);
+    return;
+  }
+  const parts=raw.split(/\s+/);
+  const c=parts[0].toLowerCase();
+  const arg=parts.slice(1).join(' ');
+  try{
+    switch(c){
+      case 'help': case '?': printHelp(); break;
+      case 'ls': case 'recent': recentExpanded=true; renderRecentLs(); logJob('listed <span class="num">'+recent.length+'</span> cached builds'); scroll.scrollTop=0; break;
+      case 'load': case 'open':
+        // open => reopen rare; load => cache key. Disambiguate: open <n|name> reopens rare
+        if(c==='open'){ cmdOpenRare(arg); }
+        else { cmdLoad(arg); }
+        break;
+      case 'edit': cmdOpenRare(arg); break;
+      case 'exclude': case 'excl': case 'off': cmdToggle(arg,false); break;
+      case 'incl': case 'include': case 'on': cmdToggle(arg,true); break;
+      case 'status': cmdStatus(arg); break;
+      case 'league': cmdLeague(arg); break;
+      case 'adv': case 'advanced': cmdAdv(arg); break;
+      case 'refresh': case 'fresh': cmdRefresh(arg); break;
+      case 'pob': cmdPob(); break;
+      case 'clear': case 'cls': cmdClear(); break;
+      case 'price': case 'run': if(arg) runCommand(arg); else logJob('usage: price <link>', 'warn'); break;
+      default:
+        logJob('unknown command: <span class="errln">'+E(c)+'</span> — type <span class="ok">help</span>', 'err');
+    }
+  }catch(err){
+    logJob('command error: '+E(err.message||String(err)), 'err');
+  }
+}
+
+function printHelp(){
+  const lines=[
+    ['paste &lt;link|PoB&gt;','price a poe.ninja / pobb.in / PoB build'],
+    ['exclude N | flask*','drop item(s) from totals (glob ok)'],
+    ['incl all | N','include item(s) in totals'],
+    ['status &lt;name&gt;','online·any·instant·instant+ip·ip-league'],
+    ['league &lt;name|auto&gt;','set league (auto = build league)'],
+    ['adv on|off','toggle advanced affix pricing'],
+    ['refresh on|off','force a fresh pull on next run'],
+    ['open N | edit N','reopen rare N affix picker'],
+    ['pob','copy the PoB import code'],
+    ['ls','list cached builds'],
+    ['clear','clear the scrollback'],
+    ['⌘/Ctrl K','fuzzy command palette'],
+  ];
+  appendBlank();
+  appendLine('<span class="grpname">commands</span>');
+  lines.forEach(l=>appendLine('   <span class="ok">'+pad2(l[0],22)+'</span><span class="dim">'+l[1]+'</span>','pre'));
+  appendBlank();
+}
+function pad2(s,w){ const t=stripTags(s); const g=Math.max(1,w-t.length); return s+' '.repeat(g); }
+function stripTags(s){ return s.replace(/<[^>]+>/g,'').replace(/&[a-z]+;/g,'x'); }
+
+/* glob/index toggle: exclude 4 / exclude flask* / incl all */
+function cmdToggle(arg, on){
+  arg=(arg||'').trim();
+  if(!bpc.state.items.length){ logJob('no build loaded', 'warn'); return; }
+  if(!arg || arg==='all' || arg==='*'){
+    bpc.state.items.forEach(it=>{ const p=bpc.state.priced[String(it.index)]; if(p&&p.exalted.median!=null) bpc.setEnabled(String(it.index), on); });
+    logJob((on?'included':'excluded')+' <span class="num">all</span> priced items'); return;
+  }
+  // group name?
+  const groups={equipment:'equipment',equip:'equipment',flask:'flask',flasks:'flask',jewel:'jewel',jewels:'jewel',rune:'rune',runes:'rune',gem:'gem',gems:'gem'};
+  let matched=0;
+  const tokens=arg.split(/[\s,]+/).filter(Boolean);
+  tokens.forEach(tok=>{
+    const low=tok.toLowerCase();
+    if(groups[low.replace(/\*$/,'')] && (low.endsWith('*')||groups[low])){
+      // exact group keyword (with optional *)
+    }
+    if(/^\d+$/.test(tok)){
+      // index within currently displayed numbering = item.index? We numbered rows per group 1..n.
+      // Interpret N as the global item index (matches `exclude 4` in concept = belt index 4).
+      const it=bpc.state.items.find(x=>String(x.index)===tok);
+      if(it){ const p=bpc.state.priced[tok]; if(p&&p.exalted.median!=null){ bpc.setEnabled(tok,on); matched++; } }
+      return;
+    }
+    if(/\*/.test(tok) || groups[low]){
+      // glob against item name OR group
+      const gk=groups[low.replace(/\*$/,'')];
+      const rx=globToRx(low);
+      bpc.state.items.forEach(it=>{
+        const nameMatch=rx.test(it.name.toLowerCase());
+        const grpMatch=gk && it.group===gk;
+        if(nameMatch||grpMatch){ const k=String(it.index); const p=bpc.state.priced[k]; if(p&&p.exalted.median!=null){ bpc.setEnabled(k,on); matched++; } }
+      });
+      return;
+    }
+    // plain word -> substring/glob on name
+    const rx=globToRx(low.indexOf('*')>=0?low:('*'+low+'*'));
+    bpc.state.items.forEach(it=>{ if(rx.test(it.name.toLowerCase())){ const k=String(it.index); const p=bpc.state.priced[k]; if(p&&p.exalted.median!=null){ bpc.setEnabled(k,on); matched++; } } });
+  });
+  if(matched) logJob((on?'included':'excluded')+' <span class="num">'+matched+'</span> item'+(matched>1?'s':''));
+  else logJob('no priced items matched "<span class="errln">'+E(arg)+'</span>"', 'warn');
+}
+function globToRx(g){ const e=g.replace(/[.+^${}()|[\]\\]/g,'\\$&').replace(/\*/g,'.*').replace(/\?/g,'.'); return new RegExp('^'+e+'$','i'); }
+
+function cmdStatus(arg){
+  arg=(arg||'').trim().toLowerCase();
+  const map={any:'any',online:'online',ip:'online','in-person':'online',onlineleague:'onlineleague','ip-league':'onlineleague',league:'onlineleague',instant:'securable',securable:'securable','instant+ip':'available',available:'available'};
+  const v=map[arg];
+  if(!v){ logJob('status options: <span class="dim">online · any · instant · instant+ip · ip-league</span>', 'warn'); return; }
+  logJob('set status = <span class="ok">'+E(bpc.STATUS_LABEL[v])+'</span>'+(bpc.state.source&&!bpc.state._mock?' · re-running':''));
+  bpc.setControl('status', v);
+}
+function cmdLeague(arg){
+  arg=(arg||'').trim();
+  if(!arg||/^auto$/i.test(arg)){ bpc.setControl('league',''); logJob('set league = <span class="ok">auto</span>'); return; }
+  // fuzzy-match against known leagues
+  let m=leagues.find(l=>l.toLowerCase()===arg.toLowerCase()) || leagues.find(l=>l.toLowerCase().indexOf(arg.toLowerCase())>=0);
+  if(/^std$/i.test(arg)||/^standard$/i.test(arg)) m=leagues.find(l=>/standard/i.test(l))||'Standard';
+  if(!m){ logJob('unknown league "<span class="errln">'+E(arg)+'</span>" — known: <span class="dim">'+E(leagues.slice(0,6).join(', ')||'(none loaded)')+'</span>', 'warn'); return; }
+  bpc.setControl('league', m);
+  logJob('set league = <span class="ok">'+E(m)+'</span>');
+}
+function cmdAdv(arg){
+  arg=(arg||'').trim().toLowerCase();
+  const on = arg==='' ? !bpc.state.advanced : ['on','1','true','yes'].includes(arg);
+  bpc.setControl('advanced', on);
+  logJob('advanced affix pricing <span class="ok">'+(on?'on':'off')+'</span>');
+}
+function cmdRefresh(arg){
+  arg=(arg||'').trim().toLowerCase();
+  const on = arg==='' ? !bpc.state.refresh : ['on','1','true','yes'].includes(arg);
+  bpc.setControl('refresh', on);
+  logJob('fresh-pull <span class="ok">'+(on?'on':'off')+'</span>'+(on?' <span class="dim">(next run ignores cache)</span>':''));
+}
+function cmdPob(){
+  if(!pobCode){ logJob('no PoB code available (poe.ninja builds only)', 'warn'); return; }
+  if(navigator.clipboard) navigator.clipboard.writeText(pobCode).catch(()=>{});
+  logJob('pob code copied <span class="dim">('+pobCode.length+' chars)</span>');
+}
+function cmdLoad(arg){
+  if(!arg){ logJob('usage: load &lt;cache-key&gt; — see <span class="ok">ls</span>', 'warn'); return; }
+  // match by key prefix or character name
+  let b=recent.find(x=>x.key===arg) || recent.find(x=>x.key.indexOf(arg)===0)
+       || recent.find(x=>(x.character||'').toLowerCase().indexOf(arg.toLowerCase())>=0);
+  if(!b){ logJob('no cached build matching "<span class="errln">'+E(arg)+'</span>"', 'warn'); return; }
+  resetForRun();
+  bpc.startCache(b.key);
+}
+function cmdOpenRare(arg){
+  arg=(arg||'').trim();
+  if(!bpc.state.advanced){ logJob('advanced mode is off — <span class="ok">adv on</span> first', 'warn'); return; }
+  const rares=bpc.rareList();
+  if(!rares.length){ logJob('no rare items in this build', 'warn'); return; }
+  let target=null;
+  if(/^\d+$/.test(arg)){ target=rares[(+arg)-1]; } // 1-based among rares
+  else if(arg){ target=rares.find(r=>r.rare && r.rare.name.toLowerCase().indexOf(arg.toLowerCase())>=0); }
+  else target=rares[0];
+  if(!target){ logJob('no rare #'+E(arg)+' (have '+rares.length+')', 'warn'); return; }
+  logJob('reopening affixes for '+(target.rare?('<span class="r-rare">'+E(target.rare.name)+'</span>'):('#'+arg)));
+  bpc.reopenRare(target.key);
+}
+function cmdClear(){
+  scroll.innerHTML=''; resultsEl=null; closePicker();
+  $('#lsblock')&&($('#lsblock').remove());
+  renderRecentLs();
+  if(bpc.state.meta) renderResults();
+  scheduleMinimap();
+}
+
+/* ====================================================================== */
+/*  COMMAND PALETTE (Cmd+K fuzzy)                                          */
+/* ====================================================================== */
+const PALCMDS=[
+  {cmd:'help', desc:'list all commands'},
+  {cmd:'ls', desc:'list cached builds'},
+  {cmd:'pob', desc:'copy PoB import code'},
+  {cmd:'incl all', desc:'include every priced item'},
+  {cmd:'exclude flask*', desc:'drop flasks from totals'},
+  {cmd:'exclude gem*', desc:'drop gems from totals'},
+  {cmd:'adv on', desc:'advanced affix pricing on'},
+  {cmd:'adv off', desc:'advanced affix pricing off'},
+  {cmd:'status online', desc:'in-person, online'},
+  {cmd:'status any', desc:'any listing'},
+  {cmd:'status instant', desc:'instant buyout'},
+  {cmd:'league auto', desc:'use the build\'s league'},
+  {cmd:'refresh on', desc:'fresh pull next run'},
+  {cmd:'open 1', desc:'reopen first rare\'s affixes'},
+  {cmd:'edit 1', desc:'edit first rare\'s affixes'},
+  {cmd:'clear', desc:'clear the scrollback'},
+];
+let palOpen=false, palItems=[], palSel=0;
+function openPalette(){
+  palOpen=true; $('#palette').classList.add('open'); caret.style.display='none';
+  palFilter(cmd.value.trim());
+}
+function closePalette(){ palOpen=false; $('#palette').classList.remove('open'); placeCaret(); cmd.focus(); }
+function fuzzy(q, s){
+  q=q.toLowerCase(); s=s.toLowerCase(); if(!q) return {hit:true,score:0,html:null};
+  let qi=0, score=0, last=-1, html='';
+  // simple subsequence
+  for(let i=0;i<s.length;i++){
+    if(qi<q.length && s[i]===q[qi]){ if(last>=0&&i===last+1) score+=2; else score+=1; last=i; qi++; }
+  }
+  return {hit:qi===q.length, score, html:null};
+}
+function palFilter(q){
+  // strip leading words that are already typed; use whole input as query
+  palItems=PALCMDS.map(c=>({c, m:fuzzy(q, c.cmd+' '+c.desc)})).filter(x=>x.m.hit)
+    .sort((a,b)=>b.m.score-a.m.score).map(x=>x.c);
+  if(!palItems.length) palItems=PALCMDS.slice();
+  palSel=0; renderPalette(q);
+}
+function renderPalette(q){
+  const list=$('#palList');
+  list.innerHTML=palItems.map((c,i)=>
+    '<div class="palitem '+(i===palSel?'sel':'')+'" data-i="'+i+'">'
+    +'<span class="cmd">'+hl(c.cmd,q)+'</span><span class="desc">'+hl(c.desc,q)+'</span></div>').join('');
+  const sel=list.querySelector('.palitem.sel'); if(sel) sel.scrollIntoView({block:'nearest'});
+}
+function hl(s,q){
+  if(!q) return E(s);
+  // highlight subsequence chars
+  q=q.toLowerCase(); let qi=0,out='';
+  for(const ch of s){ if(qi<q.length && ch.toLowerCase()===q[qi]){ out+='<mark>'+E(ch)+'</mark>'; qi++; } else out+=E(ch); }
+  return out;
+}
+function palMove(d){ palSel=(palSel+d+palItems.length)%palItems.length; renderPalette(cmd.value.trim()); }
+function runPalSel(){
+  const c=palItems[palSel]; closePalette();
+  if(c){ cmd.value=''; runCommand(c.cmd); }
+}
+$('#palList').addEventListener('click',e=>{ const it=e.target.closest('.palitem'); if(it){ palSel=+it.dataset.i; runPalSel(); } });
+$('#palList').addEventListener('mousemove',e=>{ const it=e.target.closest('.palitem'); if(it){ palSel=+it.dataset.i; renderPalette(cmd.value.trim()); } });
+cmd.addEventListener('input',()=>{ if(palOpen) palFilter(cmd.value.trim()); });
+document.addEventListener('click',e=>{ if(palOpen && !e.target.closest('#palette') && !e.target.closest('#promptline')) closePalette(); });
+
+/* ====================================================================== */
+/*  BOOT                                                                   */
+/* ====================================================================== */
+function boot(){
+  syncLamps();
+  renderRecentLs();
+  // banner
+  logLine('<span class="ok">abacus terminal</span> <span class="dim">· bpc v · keyboard-first build price checker</span>');
+  logLine('<span class="dim">type</span> <span class="ok">help</span> <span class="dim">for commands, or paste a build link below. (</span><span class="ok">⌘/Ctrl K</span><span class="dim"> = palette)</span>');
+  appendBlank();
+  setTimeout(()=>cmd.focus(), 50);
+  scheduleMinimap();
+}
+
+if(location.search.indexOf('mock')>=0){
+  bpc.init({mock:true});
+  boot();
+  // mock has a complete build already: print a quick faux log + render
+  if(bpc.state.meta){
+    echoCmd('price (demo build)');
+    if(RM){ renderResults(); }
+    else {
+      logJob('fetch poe.ninja <span class="ok">ok</span>');
+      logJob('resolving build · <b style="color:var(--grn)">'+E(bpc.state.meta.character)+'</b>');
+      logJob('resolving <span class="num">'+bpc.state.items.length+'</span> items');
+      // stagger a few "pricing" lines for flavor then render
+      const its=bpc.state.items.filter(it=>{ const p=bpc.state.priced[String(it.index)]; return p&&p.exalted.median!=null; }).slice(0,6);
+      its.forEach(it=>{ const p=bpc.state.priced[String(it.index)]; logJob('pricing '+rarColored(it)+' <span class="dim">…</span> <span class="num">'+E(exCell(p.exalted.median)||'—')+'</span>'); });
+      logJob('done <span class="ok">·</span> <span class="num">'+(bpc.state.searches||'')+'</span> trade searches used');
+      // render results immediately (do not block on the typed log)
+      renderResults();
+    }
+  }
+} else {
+  bpc.init();
+  boot();
+}
+</script>
+</body></html>
