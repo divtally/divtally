@@ -76,7 +76,7 @@
 
   /* rarity colors */
   .r-unique{color:var(--unique)} .r-rare{color:var(--rare)} .r-magic{color:var(--magic)}
-  .r-currency{color:var(--currency)} .r-rune{color:var(--currency)} .r-gem{color:var(--gem)} .r-normal{color:var(--normal)}
+  .r-gem{color:var(--gem)} .r-normal{color:var(--normal)}
 
   /* box tables */
   .tbl{margin:6px 0 2px 0; line-height:1.5}
@@ -237,7 +237,7 @@ function pad(s,w,align){ s=String(s); if(s.length>w) s=s.slice(0,w-1)+'…'; con
 function rarClass(it){
   const c=(it.category||'').toLowerCase();
   if(c==='unique') return 'r-unique'; if(c==='rare') return 'r-rare'; if(c==='magic') return 'r-magic';
-  if(c==='gem') return 'r-gem'; if(c==='currency') return 'r-currency'; return 'r-normal';
+  if(c==='gem') return 'r-gem'; return 'r-normal';
 }
 /* plain-ex string for table cells (no orb icons inside box columns) */
 function exCell(ex){

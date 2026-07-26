@@ -106,6 +106,36 @@ def _is_property(ln: str) -> bool:
     return any(ln.startswith(p) for p in _PROP_PREFIXES)
 
 
+# Socket colour -> GGG attribute letter (R=Str, G=Dex, B=Int, W=generic/white, A=abyss).
+# Cosmetic parity with the poe.ninja socket shape only; pricing keys on max_link, not attr.
+_SOCKET_ATTR = {"R": "S", "G": "D", "B": "I", "W": "G", "A": "A"}
+
+
+def _parse_sockets(spec: str) -> Tuple[list, int, int, list]:
+    """Parse a PoB `Sockets:` value into the SAME four socket fields the poe.ninja path
+    builds (poeninja._sockets_info), so a PoB-imported item's LINKS drive pricing identically
+    to a poe.ninja-imported one. Notation (docs/research/pob1.md 3.4): sockets within a linked
+    group are joined by '-', a space separates unlinked groups; colours R/G/B/W/A. Returns
+    (sockets, max_link, total_sockets, socket_colours) where max_link = size of the largest
+    linked group (the 5L/6L price driver) and sockets carry the [{group, attr, sColour}] shape."""
+    spec = (spec or "").strip()
+    if not spec:
+        return [], 0, 0, []
+    sockets: List[dict] = []
+    colours: List[str] = []
+    max_link = 0
+    for gidx, grp in enumerate(spec.split()):
+        cols = [c for c in grp.split("-") if c]
+        if not cols:
+            continue
+        if len(cols) > max_link:
+            max_link = len(cols)
+        for c in cols:
+            sockets.append({"group": gidx, "attr": _SOCKET_ATTR.get(c, ""), "sColour": c})
+            colours.append(c)
+    return sockets, max_link, len(sockets), colours
+
+
 def _parse_item_text(text: str, all_types) -> Optional[dict]:
     lines = [ln.strip() for ln in text.splitlines()
              if ln.strip() and not ln.strip().startswith("<")]
@@ -128,6 +158,7 @@ def _parse_item_text(text: str, all_types) -> Optional[dict]:
     ilvl = 0
     corrupted = False
     defences: dict = {}
+    sockets_spec = ""
     impl_count = 0
     impl_seen = False
     mods: List[dict] = []                       # {text, tags}
@@ -135,6 +166,9 @@ def _parse_item_text(text: str, all_types) -> Optional[dict]:
         if ln.startswith("Item Level:"):
             m = re.search(r"\d+", ln)
             ilvl = int(m.group()) if m else 0
+            continue
+        if ln.startswith("Sockets:"):           # capture links BEFORE the header-property skip
+            sockets_spec = ln.split(":", 1)[1]
             continue
         if ln == "Corrupted":
             corrupted = True
@@ -163,8 +197,11 @@ def _parse_item_text(text: str, all_types) -> Optional[dict]:
     implicit_mods = [m["text"] for m in mods[:impl_count]]
     # explicit affixes exclude enchant-granted lines (not base item affixes)
     explicit_mods = [m["text"] for m in mods[impl_count:] if "enchant" not in m["tags"]]
+    sockets, max_link, total_sockets, socket_colours = _parse_sockets(sockets_spec)
     return {"frame": frame, "name": name, "base": base, "type_line": type_line,
             "ilvl": ilvl, "corrupted": corrupted, "defences": defences,
+            "sockets": sockets, "max_link": max_link, "total_sockets": total_sockets,
+            "socket_colours": socket_colours,
             "implicit_mods": implicit_mods, "explicit_mods": explicit_mods}
 
 
@@ -240,7 +277,9 @@ def parse(code_or_xml: str, types: dict) -> Tuple[BuildMeta, List[Item]]:
             category=_CAT_BY_FRAME.get(frame, CAT_NORMAL), group=group, slot=disp,
             explicit_mods=parsed["explicit_mods"], implicit_mods=parsed["implicit_mods"],
             corrupted=parsed["corrupted"], ilvl=parsed["ilvl"],
-            defences=parsed["defences"], raw={"inventoryId": inv}))
+            defences=parsed["defences"], sockets=parsed["sockets"],
+            max_link=parsed["max_link"], total_sockets=parsed["total_sockets"],
+            socket_colours=parsed["socket_colours"], raw={"inventoryId": inv}))
 
     # gems: active skill set only, skipping item-/tree-granted skills. PoB sets count="nil"
     # for normal single gems, so gate on enabled (+ a non-empty name), NOT count -- otherwise

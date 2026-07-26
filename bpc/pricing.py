@@ -570,6 +570,23 @@ class Pricer:
                            "priority": "skip" if is_unique else "required", "reason": ""})
         return {"affixes": affixes, "pseudo": pseudo}
 
+    def _rare_query(self, item: Item, scope: dict, stat_groups: List[dict],
+                    equip_filters: dict) -> dict:
+        """Assemble a rare trade query for one scope (base type or item category) with the
+        given stat groups + defence totals (armour_filters) + a 5L/6L socket-links filter.
+        Pure query construction -- runs NO search, so a budget-skipped item can still get a
+        clickable URL from the exact query it WOULD have run."""
+        query = dict(scope)
+        query["status"] = self._status()
+        query["stats"] = stat_groups or [{"type": "and", "filters": []}]
+        filt = dict(query.get("filters", {}))      # scope may carry type_filters
+        if equip_filters:
+            filt["armour_filters"] = {"filters": equip_filters}
+        filt.update(self._links_filter(item))       # {} for <5 links -> no-op
+        if filt:
+            query["filters"] = filt
+        return query
+
     def _price_rare_query(self, item: Item, stat_groups: List[dict], equip_filters: dict,
                           method: str, built_for: str) -> PriceResult:
         """Run a rare search (base scope then category) with the given stat groups, defence-
@@ -581,20 +598,10 @@ class Pricer:
             r.note = f"base {item.base_type!r} / category not recognised by trade"
             r.confidence = "none"
             return r
-        links = self._links_filter(item)
         for scope, scope_label in scopes:
             if self.client.search_count >= SEARCH_BUDGET:
                 break
-            query = dict(scope)
-            query["status"] = self._status()
-            query["stats"] = stat_groups or [{"type": "and", "filters": []}]
-            filt = dict(query.get("filters", {}))      # scope may carry type_filters
-            if equip_filters:
-                filt["armour_filters"] = {"filters": equip_filters}
-            if links:
-                filt.update(links)
-            if filt:
-                query["filters"] = filt
+            query = self._rare_query(item, scope, stat_groups, equip_filters)
             prices, total, qid = self._search_collect(query)
             # The clickable link must be the MOST SPECIFIC (base-type) search -- NOT the broad
             # category fallback we try next. Keep the first scope's URL.
@@ -616,9 +623,11 @@ class Pricer:
                   "(item may be uniquely rolled) - see trade_url to check manually")
         return r
 
-    def price_rare(self, item: Item) -> PriceResult:
-        """Default rare pricing: require all of the item's searchable affixes AND at least
-        ~85% of each of its total defence values (armour/evasion/ES/ward)."""
+    def _rare_default_filters(self, item: Item) -> Tuple[List[dict], dict, int]:
+        """The DEFAULT rare search parts (README: "require all of the item's searchable
+        affixes"): one AND group of every searchable affix, plus each total-defence value at
+        >=85%. Returns (stat_groups, equip_filters, n_unsearchable). Pure -- runs NO search,
+        so the same parts drive both live pricing and a budget-skipped item's trade link."""
         opts = self.affix_options(item)["affixes"]
         stat_opts = [o for o in opts if o["kind"] == "stat" and o["searchable"]]
         equip_opts = [o for o in opts if o["kind"] == "equip" and o["value"]]
@@ -632,6 +641,14 @@ class Pricer:
         stat_filters = [_statf(o) for o in stat_opts]
         equip_filters = {o["key"]: {"min": int(o["value"] * 0.85)} for o in equip_opts}
         n_skip = sum(1 for o in opts if o["kind"] == "stat" and not o["searchable"])
+        stat_groups = [{"type": "and", "filters": stat_filters}] if stat_filters else []
+        return stat_groups, equip_filters, n_skip
+
+    def price_rare(self, item: Item) -> PriceResult:
+        """Default rare pricing: require all of the item's searchable affixes AND at least
+        ~85% of each of its total defence values (armour/evasion/ES/ward)."""
+        stat_groups, equip_filters, n_skip = self._rare_default_filters(item)
+        stat_filters = stat_groups[0]["filters"] if stat_groups else []
         if not stat_filters and not equip_filters:
             r = self._price_rare_query(item, [], {}, "rare-base", "base-type ballpark")
             if r.confidence != "none":
@@ -647,7 +664,6 @@ class Pricer:
         built = "requires " + " + ".join(parts)
         if n_skip:
             built += f" ({n_skip} not searchable)"
-        stat_groups = [{"type": "and", "filters": stat_filters}] if stat_filters else []
         return self._price_rare_query(item, stat_groups, equip_filters, "rare-all", built)
 
     def _custom_query_parts(self, groups: Optional[List[dict]],
@@ -838,6 +854,33 @@ class Pricer:
                    "total_chaos": total if priced_any else None, "gems": breakdown}
         return r
 
+    def _skip_trade_url(self, item: Item) -> str:
+        """A clickable trade URL for an item left UNPRICED because the per-run search budget
+        was already spent. Mirrors the query its category WOULD have run, built locally with NO
+        API call (the browser POSTs it on click), so a skipped row still carries a trade link
+        and no number -- the same 'unpriceable => trade link, never a misleading price'
+        guardrail every other unpriceable row honours (README/CLAUDE.md)."""
+        if item.category == CAT_UNIQUE:
+            query = {"status": self._status(), "name": item.name, "type": item.base_type,
+                     "stats": [{"type": "and", "filters": []}]}
+            links = self._links_filter(item)
+            if links:
+                query["filters"] = dict(links)
+            return self._q_url(query)
+        if item.category == CAT_RARE:
+            scopes = self._rare_scopes(item)
+            if not scopes:
+                return ""
+            stat_groups, equip_filters, _ = self._rare_default_filters(item)
+            return self._q_url(self._rare_query(item, scopes[0][0], stat_groups, equip_filters))
+        if item.category == CAT_MAGIC:
+            btype = self.resolve_type(item.base_type)
+            if not btype:
+                return ""
+            return self._q_url({"status": self._status(), "type": btype,
+                                "stats": [{"type": "and", "filters": []}]})
+        return ""
+
     # ---- orchestration ---------------------------------------------------
     def price_build(self, items: List[Item]) -> List[PriceResult]:
         results: List[PriceResult] = []
@@ -850,9 +893,10 @@ class Pricer:
         for idx, it in enumerate(non_gems, 1):
             self._emit(f"[{idx}/{n}] pricing {it.display_name} ({it.category})...")
             if self.client.search_count >= SEARCH_BUDGET:
-                results.append(PriceResult(item=it, method="skipped",
-                               note="skipped to stay within trade rate limits",
-                               confidence="none"))
+                results.append(PriceResult(
+                    item=it, method="skipped", confidence="none",
+                    note="skipped to stay within trade rate limits",
+                    trade_url=self._skip_trade_url(it)))
                 continue
             if it.category == CAT_UNIQUE:
                 results.append(self.price_unique(it))

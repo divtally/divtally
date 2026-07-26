@@ -205,6 +205,26 @@ from bpc.engine import _norm_league
 check("league ssf==hc", _norm_league("HC SSF Allflame"), _norm_league("Hardcore Allflame"))
 check("league plain", _norm_league("Allflame"), "allflame")
 
+# FIX (MINOR-2): the poe.ninja economy must be fed the NORMALISED trade league, not the raw
+# SSF build league (poe.ninja publishes no SSF economy). resolve_trade_league maps an SSF league
+# to its tradeable parent; engine.prepare* now builds PoeNinjaEconomy(trade_league). Verify the
+# mapping offline (stub the live league list) + that the resolved economy league carries no 'ssf'.
+from bpc.engine import resolve_trade_league as _rtl
+from bpc.trade import TradeClient as _TC
+from bpc.poeninja import PoeNinjaEconomy as _PNE
+_orig_ll = _TC.__dict__["list_leagues"]
+_TC.list_leagues = staticmethod(lambda: [{"id": "Allflame"}, {"id": "Hardcore Allflame"},
+                                         {"id": "Standard"}, {"id": "Hardcore"}])
+try:
+    check("resolve SSF -> tradeable parent", _rtl("SSF Allflame"), "Allflame")
+    check("resolve HC SSF -> hardcore parent", _rtl("HC SSF Allflame"), "Hardcore Allflame")
+    check("resolve plain league unchanged", _rtl("Allflame"), "Allflame")
+    check("economy league (from resolved) has no ssf",
+          "ssf" in _PNE(_rtl("SSF Allflame")).league.lower(), False)
+    check("economy league == tradeable parent", _PNE(_rtl("SSF Allflame")).league, "Allflame")
+finally:
+    _TC.list_leagues = _orig_ll
+
 # ---- cache tolerates a non-dict file ----
 from bpc import cache as _cache
 _cache.put("selftest:list", ["x"])  # writes a proper dict wrapper
@@ -360,6 +380,181 @@ if os.path.exists(_fix):
         check("normalize support drops lineage", "lineage" in _s0, False)
 else:
     print("(skipped char_poe1.json fixture tests: dump not present)")
+
+# ================= fix-minors coverage (all offline; RULE 8 documented promises) =================
+
+# ---- FIX (MINOR-1): PoB import now populates sockets/links, so a 5/6-link PoB item yields the
+#      SAME links filter the poe.ninja path yields (was dropped -> PoB gear underpriced) ----
+_pob6_xml = ('<?xml version="1.0"?><PathOfBuilding>'
+             '<Build level="90" className="Witch"/>'
+             '<Items activeItemSet="1">'
+             '<Item id="1">\nRarity: UNIQUE\nBlunderbore\nAstral Plate\n'
+             'Armour: 1958\nItem Level: 83\nQuality: 20\nSockets: W-G-R-W-G-G\n'
+             'LevelReq: 62\nImplicits: 1\n+2 to Level of Socketed Projectile Gems\n'
+             '113% increased Armour\nCorrupted\n</Item>'
+             '<ItemSet id="1"><Slot name="Body Armour" itemId="1"/></ItemSet>'
+             '</Items></PathOfBuilding>')
+_pob6_code = _b64.urlsafe_b64encode(_zlib.compress(_pob6_xml.encode())).decode()
+_m6, _items6 = _pob.parse(_pob6_code, {"all": {"Astral Plate"}, "by_group": {}})
+_body6 = next((i for i in _items6 if i.base_type == "Astral Plate"), None)
+check("pob 6-link body parsed", _body6 is not None, True)
+if _body6:
+    check("pob 6-link max_link=6", _body6.max_link, 6)
+    check("pob 6-link total_sockets=6", _body6.total_sockets, 6)
+    check("pob 6-link socket_colours len", len(_body6.socket_colours), 6)
+    # poe.ninja derives max_link via _sockets_info; both input paths must pin the SAME links
+    _nj_ml = _pn._sockets_info({"sockets": [{"group": 0, "sColour": c} for c in "WGRWGG"]})[1]
+    _nj_body = _Item(name="Blunderbore", base_type="Astral Plate", type_line="", frame_type=3,
+                     rarity="Unique", category="unique", group="equipment",
+                     slot="Body Armour", max_link=_nj_ml)
+    check("pob links filter == poe.ninja links filter",
+          _pnew._links_filter(_body6), _pnew._links_filter(_nj_body))
+    check("pob 6-link filter is min-6 socket-links filter",
+          _pnew._links_filter(_body6), {"socket_filters": {"filters": {"links": {"min": 6}}}})
+# unlinked groups (space-separated): max_link = size of the largest hyphen-run, not total
+_unlinked = _pob._parse_sockets("R-G B W")
+check("pob unlinked groups max_link=2", _unlinked[1], 2)
+check("pob unlinked groups total=4", _unlinked[2], 4)
+
+# ---- shared Pricer with offline fakes (no trade calls) for query-assembly + guardrail tests ----
+from bpc.pricing import SEARCH_BUDGET as _BUDGET
+class _FakeStatsRare:
+    def stats_data(self):
+        return {"result": [{"label": "Explicit", "entries": [
+            {"id": "explicit.stat_life", "text": "+# to maximum Life"},
+            {"id": "explicit.stat_fireres", "text": "+#% to Fire Resistance"}]}]}
+class _FakeSearchClient:
+    def __init__(self):
+        self.league = "SelfTestPricerLeague"
+        self.search_count = 0
+    def search(self, query):
+        self.search_count += 1
+        return {"id": "QID0", "result": [], "total": 0}      # deterministic no-match
+    def fetch(self, ids, qid):
+        return []
+_pr = Pricer.__new__(Pricer)
+_pr.client = _FakeSearchClient()
+_pr.status = "online"
+_pr.mapper = _StatMapper(_FakeStatsRare())
+_pr._valid_types = {"Vaal Regalia", "Testonium Plate"}
+_pr.economy = None
+_pr.verbose = False
+_pr.progress = None
+_pr.conv = CurrencyConverter.__new__(CurrencyConverter)
+_pr.conv.client = None
+_pr.conv.economy = None
+_pr.conv._rates = {"chaos": 1.0}
+
+# ---- (5b) rare default query requires ALL of the item's searchable affixes (extras allowed) ----
+_rare_b = _Item(name="", base_type="Vaal Regalia", type_line="Vaal Regalia", frame_type=2,
+                rarity="Rare", category="rare", group="equipment", slot="Body Armour",
+                explicit_mods=["+90 to maximum Life", "+40% to Fire Resistance",
+                               "12% increased Banana"],
+                mod_src=["explicit", "explicit", "explicit"], raw={"inventoryId": "BodyArmour"})
+_sg_b, _ef_b, _nskip_b = _pr._rare_default_filters(_rare_b)
+check("rare default: single AND group", len(_sg_b) == 1 and _sg_b[0]["type"] == "and", True)
+check("rare default requires ALL searchable affixes", len(_sg_b[0]["filters"]), 2)
+check("rare default filter ids are the mapped mods",
+      sorted(f["id"] for f in _sg_b[0]["filters"]),
+      ["explicit.stat_fireres", "explicit.stat_life"])
+check("rare default counts the unsearchable mod", _nskip_b, 1)
+
+# ---- (5c) armour_filters total-defence construction (>=85% of each total) from Item.defences ----
+_rare_c = _Item(name="", base_type="Testonium Plate", type_line="Testonium Plate", frame_type=2,
+                rarity="Rare", category="rare", group="equipment", slot="Body Armour",
+                defences={"ar": 1000, "es": 200}, raw={"inventoryId": "BodyArmour"})
+_sg_c, _ef_c, _ = _pr._rare_default_filters(_rare_c)
+check("armour totals built at 85%", _ef_c, {"ar": {"min": 850}, "es": {"min": 170}})
+_q_c = _pr._rare_query(_rare_c, {"type": "Testonium Plate"}, _sg_c, _ef_c)
+check("armour_filters embedded in query",
+      _q_c["filters"]["armour_filters"], {"filters": {"ar": {"min": 850}, "es": {"min": 170}}})
+
+# ---- (5d) no-match => confidence 'none', no numeric tier, but trade_url STILL present ----
+_rare_d = _Item(name="", base_type="Testonium Plate", type_line="Testonium Plate", frame_type=2,
+                rarity="Rare", category="rare", group="equipment", slot="Body Armour",
+                raw={"inventoryId": "BodyArmour"})
+_pr.client.search_count = 0
+_res_d = _pr.price_rare(_rare_d)
+check("no-match confidence none", _res_d.confidence, "none")
+check("no-match has NO median number", _res_d.tier.median, None)
+check("no-match has NO min number", _res_d.tier.minimum, None)
+check("no-match STILL emits a trade_url",
+      _res_d.trade_url.startswith("https://www.pathofexile.com/trade/search/"), True)
+
+# ---- FIX (MINOR-3): a budget-SKIPPED row also carries a trade link + no number (was blank) ----
+_uniq_skip = _Item(name="Headhunter", base_type="Leather Belt", type_line="Leather Belt",
+                   frame_type=3, rarity="Unique", category="unique", group="equipment", slot="Belt")
+_pr.client.search_count = _BUDGET             # force the per-run search-budget cap
+_skips = _pr.price_build([_uniq_skip])
+check("skipped: one result", len(_skips), 1)
+check("skipped: method 'skipped'", _skips[0].method, "skipped")
+check("skipped: confidence none", _skips[0].confidence, "none")
+check("skipped: NO number", _skips[0].tier.median, None)
+check("skipped: HAS a trade link (unpriceable guardrail)",
+      _skips[0].trade_url.startswith("https://www.pathofexile.com/trade/search/"), True)
+# a skipped RARE also gets a link, built from its default query WITHOUT executing a search
+_rare_skip = _Item(name="", base_type="Testonium Plate", type_line="Testonium Plate", frame_type=2,
+                   rarity="Rare", category="rare", group="equipment", slot="Body Armour",
+                   defences={"ar": 1000}, raw={"inventoryId": "BodyArmour"})
+_pr.client.search_count = _BUDGET
+check("skipped rare: trade link present (no search run)",
+      _pr.price_build([_rare_skip])[0].trade_url.startswith(
+          "https://www.pathofexile.com/trade/search/"), True)
+
+# ---- (5a) --status mapping: 5 documented options pass through; bogus/empty fall back to online ----
+_orig_lt = Pricer._load_types
+Pricer._load_types = lambda self: set()
+class _StatusClient:
+    league = "SelfTestStatusLeague"
+    search_count = 0
+    def stats_data(self):
+        return {"result": []}
+try:
+    def _mk(st):
+        return Pricer(_StatusClient(), verbose=False, status=st, economy=None)
+    check("status options are the 5 documented", set(Pricer.STATUS_OPTIONS),
+          {"online", "any", "onlineleague", "available", "securable"})
+    for _s in Pricer.STATUS_OPTIONS:
+        check("status " + _s + " -> option", _mk(_s)._status(), {"option": _s})
+    check("status bogus -> online fallback", _mk("bananas")._status(), {"option": "online"})
+    check("status empty -> online fallback", _mk("")._status(), {"option": "online"})
+finally:
+    Pricer._load_types = _orig_lt
+
+# ---- (5e) CurrencyConverter.to_chaos for non-chaos currencies (divine/mirror), stubbed economy ----
+class _StubEcon:
+    def chaos_by_id(self, cat, cid):
+        return {"divine": 102.5, "mirror": 16787.0}.get(cid)
+_conve = CurrencyConverter.__new__(CurrencyConverter)
+_conve.client = None
+_conve.economy = _StubEcon()
+_conve._rates = {"chaos": 1.0, "divine": 102.5, "mirror": 16787.0}
+approx("to_chaos divine multiply", _conve.to_chaos(2, "divine"), 205.0)
+approx("to_chaos mirror multiply", _conve.to_chaos(3, "mirror"), 50361.0)
+approx("to_chaos chaos identity", _conve.to_chaos(7, "chaos"), 7.0)
+approx("_lookup divine from stubbed economy", _conve._lookup("divine"), 102.5)
+approx("_lookup mirror from stubbed economy", _conve._lookup("mirror"), 16787.0)
+check("_lookup unknown currency -> None", _conve._lookup("unobtaniumorb"), None)
+
+# ---- (5f) version-unique auto-detection: a build affix NOT shared by most listings is flagged
+#      version-specific; a widely-shared affix is treated as a fixed roll (not flagged) ----
+_lifep = util.mod_to_pattern("+90 to maximum Life")
+_firep = util.mod_to_pattern("+40% to Fire Resistance")
+_vu_item = _Item(name="Loreweave", base_type="Prismatic Ring", type_line="", frame_type=3,
+                 rarity="Unique", category="unique", group="equipment", slot="Ring",
+                 explicit_mods=["+90 to maximum Life", "+40% to Fire Resistance"])
+# life shared by all 4 listings (fixed roll); fire res in only 1/4 (version-specific)
+_vu_rare = [[10, [_lifep]], [12, [_lifep]], [15, [_lifep]], [20, [_lifep, _firep]]]
+_va = _pr._variant_affixes(_vu_item, _vu_rare)
+check("version-unique: rare affix flagged version-specific (mappable)",
+      _va["mappable"], [{"id": "explicit.stat_fireres"}])
+check("version-unique: shared affix not left unmappable", _va["unmappable"], [])
+# the same affix shared by most listings -> fixed roll, NOT flagged
+_vu_common = [[10, [_lifep, _firep]], [12, [_lifep, _firep]], [15, [_lifep, _firep]], [20, [_lifep]]]
+check("version-unique: widely-shared affix treated as fixed roll",
+      _pr._variant_affixes(_vu_item, _vu_common)["mappable"], [])
+check("version-unique: <4 listings -> detection disabled",
+      _pr._variant_affixes(_vu_item, [[10, [_firep]]])["mappable"], [])
 
 if _fails:
     print("FAILED:")

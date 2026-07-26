@@ -71,7 +71,7 @@ def prepare(url: str, league: Optional[str] = None, refresh: bool = False,
 
     trade_league = resolve_trade_league(meta.league, league)
     client = TradeClient(trade_league, verbose=False)
-    econ = poeninja.PoeNinjaEconomy(meta.league)             # gem prices + chaos rates, no trade API
+    econ = poeninja.PoeNinjaEconomy(trade_league)            # gem prices + chaos rates, no trade API; SSF->tradeable (same league the searches use)
     pricer = Pricer(client, verbose=False, progress=progress, status=status, economy=econ)
     return meta, items, pricer, trade_league
 
@@ -117,7 +117,7 @@ def prepare_from_cache(cache_key: str, league: Optional[str] = None,
     meta.cache_key = cache_key
     trade_league = resolve_trade_league(meta.league, league)
     client = TradeClient(trade_league, verbose=False)
-    econ = poeninja.PoeNinjaEconomy(meta.league)             # gem prices + chaos rates, no trade API
+    econ = poeninja.PoeNinjaEconomy(trade_league)            # gem prices + chaos rates, no trade API; SSF->tradeable (same league the searches use)
     pricer = Pricer(client, verbose=False, progress=progress, status=status, economy=econ)
     return meta, items, pricer, trade_league
 
@@ -187,7 +187,7 @@ def prepare_from_pob(code_or_xml: str, league: Optional[str] = None, refresh: bo
         raise EstimateError(str(e))
     meta.league = trade_league
     meta.source_url = "(Path of Building import)"
-    econ = poeninja.PoeNinjaEconomy(meta.league)             # gem prices + chaos rates, no trade API
+    econ = poeninja.PoeNinjaEconomy(trade_league)            # gem prices + chaos rates, no trade API; SSF->tradeable (same league the searches use)
     pricer = Pricer(client, verbose=False, progress=progress, status=status, economy=econ)
     return meta, items, pricer, trade_league
 

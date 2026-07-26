@@ -16,7 +16,7 @@
   --ac:#7c5cff; --ac2:#9d83ff; --ink:#ece8f6; --mut:#9a92b4; --faint:#5a5374;
   --panel:#1b1530; --panel2:#221a3c; --bd:#352a55; --bd2:#473a6e;
   --ok:#48d597; --warn:#ffb454; --grey:#6b6486;
-  --r-rare:#ffff77; --r-magic:#8888ff; --r-unique:#af6025; --r-gem:#1ba29b; --r-currency:#aa9e82; --r-normal:#cfcad8;
+  --r-rare:#ffff77; --r-magic:#8888ff; --r-unique:#af6025; --r-gem:#1ba29b; --r-normal:#cfcad8;
   --card-w:178px; --card-h:252px;
 }
 *{box-sizing:border-box}
@@ -514,7 +514,7 @@ const num=s=>{s=(s==null?'':String(s)).trim();if(!s)return null;const n=Number(s
 const GROUP_LABEL={equipment:"Equipment",flask:"Flasks",jewel:"Jewels",gem:"Gems"};
 const GROUP_SIGIL={equipment:"⚔",flask:"⚗",jewel:"◈",gem:"◇"};
 const RARITY_COLOR={rare:"var(--r-rare)",magic:"var(--r-magic)",unique:"var(--r-unique)",gem:"var(--r-gem)",
-  currency:"var(--r-currency)",normal:"var(--r-normal)"};
+  normal:"var(--r-normal)"};
 function rcOf(it){return RARITY_COLOR[it.category]||RARITY_COLOR[(it.rarity||'').toLowerCase()]||"var(--r-normal)";}
 function sigilGlyph(it){
   if(it.category==='unique')return "✪";
