@@ -1,0 +1,629 @@
+{
+  "result": [
+    {
+      "id": "15d2969fdd20fc513993df262d4c497cb1e899cf09641419e455814076217c68",
+      "listing": {
+        "method": "psapi",
+        "indexed": "2026-07-26T15:33:16Z",
+        "stash": {
+          "name": "Tr",
+          "x": 10,
+          "y": 0
+        },
+        "price": {
+          "type": "~price",
+          "amount": 40,
+          "currency": "chaos"
+        },
+        "account": {
+          "name": "MentalDavy#6075",
+          "online": {
+            "league": "Allflame"
+          },
+          "lastCharacterName": "SuddenlyStorming",
+          "language": "en_US",
+          "realm": "pc"
+        },
+        "whisper": "@SuddenlyStorming Hi, I would like to buy your Chimeric Veil Astral Plate listed for 40 chaos in Allflame (stash tab \"Tr\"; position: left 11, top 1)"
+      },
+      "item": {
+        "verified": true,
+        "w": 2,
+        "h": 3,
+        "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQXJtb3Vycy9Cb2R5QXJtb3Vycy9Cb2R5U3RyMUMiLCJ3IjoyLCJoIjozLCJzY2FsZSI6MX1d/94a3d5d98e/BodyStr1C.png",
+        "league": "Allflame",
+        "id": "15d2969fdd20fc513993df262d4c497cb1e899cf09641419e455814076217c68",
+        "sockets": [
+          {
+            "group": 0,
+            "attr": "G",
+            "sColour": "W"
+          },
+          {
+            "group": 0,
+            "attr": "G",
+            "sColour": "W"
+          },
+          {
+            "group": 0,
+            "attr": "G",
+            "sColour": "W"
+          },
+          {
+            "group": 0,
+            "attr": "S",
+            "sColour": "R"
+          },
+          {
+            "group": 0,
+            "attr": "G",
+            "sColour": "W"
+          },
+          {
+            "group": 0,
+            "attr": "S",
+            "sColour": "R"
+          }
+        ],
+        "name": "Chimeric Veil",
+        "typeLine": "Astral Plate",
+        "baseType": "Astral Plate",
+        "rarity": "Rare",
+        "ilvl": 85,
+        "identified": true,
+        "note": "~price 40 chaos",
+        "corrupted": true,
+        "properties": [
+          {
+            "name": "Armour",
+            "values": [
+              [
+                "972",
+                1
+              ]
+            ],
+            "displayMode": 0,
+            "type": 16
+          }
+        ],
+        "requirements": [
+          {
+            "name": "Level",
+            "values": [
+              [
+                "67",
+                0
+              ]
+            ],
+            "displayMode": 0,
+            "type": 62
+          },
+          {
+            "name": "Str",
+            "values": [
+              [
+                "180",
+                0
+              ]
+            ],
+            "displayMode": 1,
+            "type": 63
+          }
+        ],
+        "implicitMods": [
+          {
+            "description": "+9% to all Elemental Resistances",
+            "domain": "implicit",
+            "hash": "stat.implicit.stat_2901986750",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "8",
+                    "max": "12"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "explicitMods": [
+          {
+            "description": "+10 to Strength",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_4080418644",
+            "mods": [
+              {
+                "name": "of the Brute",
+                "tier": "S9",
+                "magnitudes": [
+                  {
+                    "min": "8",
+                    "max": "12"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "32% increased Armour",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_1062208444",
+            "mods": [
+              {
+                "name": "Rhino's",
+                "tier": "P3",
+                "level": 42,
+                "magnitudes": [
+                  {
+                    "min": "27",
+                    "max": "32"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "+172 to maximum Life",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_3299347043",
+            "mods": [
+              {
+                "name": "Rapturous",
+                "tier": "P2",
+                "level": 81,
+                "magnitudes": [
+                  {
+                    "min": "160",
+                    "max": "174"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "+48% to Cold Resistance",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_4220027924",
+            "mods": [
+              {
+                "name": "of Haast",
+                "tier": "S1",
+                "level": 84,
+                "magnitudes": [
+                  {
+                    "min": "46",
+                    "max": "48"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "30% increased Stun and Block Recovery",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_2511217560",
+            "mods": [
+              {
+                "name": "Rhino's",
+                "tier": "P3",
+                "level": 42,
+                "magnitudes": [
+                  {
+                    "min": "12",
+                    "max": "13"
+                  }
+                ]
+              },
+              {
+                "name": "of Iron Skin",
+                "tier": "S4",
+                "level": 28,
+                "magnitudes": [
+                  {
+                    "min": "17",
+                    "max": "19"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "Reflects 9 Physical Damage to Melee Attackers",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_3767873853",
+            "mods": [
+              {
+                "name": "Spiny",
+                "tier": "P3",
+                "level": 10,
+                "magnitudes": [
+                  {
+                    "min": "5",
+                    "max": "10"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "frameType": 2,
+        "frameTypeId": "Rare",
+        "extended": {
+          "base_defence_percentile": 35,
+          "ar": 1166,
+          "ar_aug": true,
+          "hashes": {
+            "explicit": [
+              [
+                "explicit.stat_4080418644",
+                [
+                  2
+                ]
+              ],
+              [
+                "explicit.stat_1062208444",
+                [
+                  3
+                ]
+              ],
+              [
+                "explicit.stat_3299347043",
+                [
+                  0
+                ]
+              ],
+              [
+                "explicit.stat_4220027924",
+                [
+                  4
+                ]
+              ],
+              [
+                "explicit.stat_2511217560",
+                [
+                  3,
+                  5
+                ]
+              ],
+              [
+                "explicit.stat_3767873853",
+                [
+                  1
+                ]
+              ]
+            ],
+            "implicit": [
+              [
+                "implicit.stat_2901986750",
+                [
+                  0
+                ]
+              ]
+            ]
+          },
+          "text": "SXRlbSBDbGFzczogQm9keSBBcm1vdXJzDQpSYXJpdHk6IFJhcmUNCkNoaW1lcmljIFZlaWwNCkFzdHJhbCBQbGF0ZQ0KLS0tLS0tLS0NCkFybW91cjogOTcyIChhdWdtZW50ZWQpDQotLS0tLS0tLQ0KUmVxdWlyZW1lbnRzOg0KTGV2ZWw6IDY3DQpTdHI6IDE4MA0KLS0tLS0tLS0NClNvY2tldHM6IFctVy1XLVItVy1SIA0KLS0tLS0tLS0NCkl0ZW0gTGV2ZWw6IDg1DQotLS0tLS0tLQ0KKzklIHRvIGFsbCBFbGVtZW50YWwgUmVzaXN0YW5jZXMNCi0tLS0tLS0tDQorMTAgdG8gU3RyZW5ndGgNCjMyJSBpbmNyZWFzZWQgQXJtb3VyDQorMTcyIHRvIG1heGltdW0gTGlmZQ0KKzQ4JSB0byBDb2xkIFJlc2lzdGFuY2UNCjMwJSBpbmNyZWFzZWQgU3R1biBhbmQgQmxvY2sgUmVjb3ZlcnkNClJlZmxlY3RzIDkgUGh5c2ljYWwgRGFtYWdlIHRvIE1lbGVlIEF0dGFja2Vycw0KLS0tLS0tLS0NCkNvcnJ1cHRlZA0KLS0tLS0tLS0NCk5vdGU6IH5wcmljZSA0MCBjaGFvcw0K"
+        }
+      }
+    },
+    {
+      "id": "4708d661571ecaeab4c28fa58d9be1e81a21d77ab257cce8f5578f277a13ccee",
+      "listing": {
+        "method": "psapi",
+        "indexed": "2026-07-26T16:22:55Z",
+        "stash": {
+          "name": "~price 1 divine",
+          "x": 10,
+          "y": 9
+        },
+        "price": {
+          "type": "~price",
+          "amount": 1,
+          "currency": "divine"
+        },
+        "account": {
+          "name": "잠컨의신#2599",
+          "online": {
+            "league": "Allflame",
+            "status": "afk"
+          },
+          "lastCharacterName": "DomChaGongJoo",
+          "language": "ko_KR",
+          "realm": "pc"
+        },
+        "whisper": "@DomChaGongJoo 안녕하세요, 1 divine(으)로 올려놓은 Allflame 리그의 혼백 대피소 우주의 판금 갑옷(을)를 구매하고 싶습니다 (보관함 탭 \"~price 1 divine\", 위치: 왼쪽 11, 상단 10)"
+      },
+      "item": {
+        "verified": true,
+        "w": 2,
+        "h": 3,
+        "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQXJtb3Vycy9Cb2R5QXJtb3Vycy9Cb2R5U3RyMUMiLCJ3IjoyLCJoIjozLCJzY2FsZSI6MX1d/94a3d5d98e/BodyStr1C.png",
+        "league": "Allflame",
+        "id": "4708d661571ecaeab4c28fa58d9be1e81a21d77ab257cce8f5578f277a13ccee",
+        "sockets": [
+          {
+            "group": 0,
+            "attr": "G",
+            "sColour": "W"
+          },
+          {
+            "group": 0,
+            "attr": "G",
+            "sColour": "W"
+          },
+          {
+            "group": 0,
+            "attr": "I",
+            "sColour": "B"
+          },
+          {
+            "group": 0,
+            "attr": "G",
+            "sColour": "W"
+          },
+          {
+            "group": 0,
+            "attr": "G",
+            "sColour": "W"
+          },
+          {
+            "group": 0,
+            "attr": "G",
+            "sColour": "W"
+          }
+        ],
+        "name": "Spirit Shelter",
+        "typeLine": "Astral Plate",
+        "baseType": "Astral Plate",
+        "rarity": "Rare",
+        "ilvl": 83,
+        "identified": true,
+        "corrupted": true,
+        "properties": [
+          {
+            "name": "Armour",
+            "values": [
+              [
+                "1140",
+                1
+              ]
+            ],
+            "displayMode": 0,
+            "type": 16
+          }
+        ],
+        "requirements": [
+          {
+            "name": "Level",
+            "values": [
+              [
+                "62",
+                0
+              ]
+            ],
+            "displayMode": 0,
+            "type": 62
+          },
+          {
+            "name": "Str",
+            "values": [
+              [
+                "180",
+                0
+              ]
+            ],
+            "displayMode": 1,
+            "type": 63
+          }
+        ],
+        "implicitMods": [
+          {
+            "description": "+12% to all Elemental Resistances",
+            "domain": "implicit",
+            "hash": "stat.implicit.stat_2901986750",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "8",
+                    "max": "12"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "explicitMods": [
+          {
+            "description": "+22 to Strength",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_4080418644",
+            "mods": [
+              {
+                "name": "of the Bear",
+                "tier": "S7",
+                "level": 22,
+                "magnitudes": [
+                  {
+                    "min": "18",
+                    "max": "22"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "+90 to Armour",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_3484657501",
+            "mods": [
+              {
+                "name": "Plated",
+                "tier": "P7",
+                "level": 29,
+                "magnitudes": [
+                  {
+                    "min": "83",
+                    "max": "101"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "42% increased Armour",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_1062208444",
+            "mods": [
+              {
+                "name": "Mammoth's",
+                "tier": "P1",
+                "level": 78,
+                "magnitudes": [
+                  {
+                    "min": "39",
+                    "max": "42"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "+110 to maximum Life",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_3299347043",
+            "mods": [
+              {
+                "name": "Virile",
+                "tier": "P6",
+                "level": 44,
+                "magnitudes": [
+                  {
+                    "min": "100",
+                    "max": "114"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "+36% to Cold Resistance",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_4220027924",
+            "mods": [
+              {
+                "name": "of the Polar Bear",
+                "tier": "S3",
+                "level": 60,
+                "magnitudes": [
+                  {
+                    "min": "36",
+                    "max": "41"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "17% increased Stun and Block Recovery",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_2511217560",
+            "mods": [
+              {
+                "name": "Mammoth's",
+                "tier": "P1",
+                "level": 78,
+                "magnitudes": [
+                  {
+                    "min": "16",
+                    "max": "17"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "5% additional Physical Damage Reduction",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_3771516363",
+            "mods": [
+              {
+                "name": "of the Sentry",
+                "tier": "S4",
+                "level": 58,
+                "magnitudes": [
+                  {
+                    "min": "5",
+                    "max": "5"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "frameType": 2,
+        "frameTypeId": "Rare",
+        "extended": {
+          "base_defence_percentile": 3,
+          "ar": 1368,
+          "ar_aug": true,
+          "hashes": {
+            "explicit": [
+              [
+                "explicit.stat_4080418644",
+                [
+                  2
+                ]
+              ],
+              [
+                "explicit.stat_3484657501",
+                [
+                  5
+                ]
+              ],
+              [
+                "explicit.stat_1062208444",
+                [
+                  0
+                ]
+              ],
+              [
+                "explicit.stat_3299347043",
+                [
+                  4
+                ]
+              ],
+              [
+                "explicit.stat_4220027924",
+                [
+                  1
+                ]
+              ],
+              [
+                "explicit.stat_2511217560",
+                [
+                  0
+                ]
+              ],
+              [
+                "explicit.stat_3771516363",
+                [
+                  3
+                ]
+              ]
+            ],
+            "implicit": [
+              [
+                "implicit.stat_2901986750",
+                [
+                  0
+                ]
+              ]
+            ]
+          },
+          "text": "SXRlbSBDbGFzczogQm9keSBBcm1vdXJzDQpSYXJpdHk6IFJhcmUNClNwaXJpdCBTaGVsdGVyDQpBc3RyYWwgUGxhdGUNCi0tLS0tLS0tDQpBcm1vdXI6IDExNDAgKGF1Z21lbnRlZCkNCi0tLS0tLS0tDQpSZXF1aXJlbWVudHM6DQpMZXZlbDogNjINClN0cjogMTgwDQotLS0tLS0tLQ0KU29ja2V0czogVy1XLUItVy1XLVcgDQotLS0tLS0tLQ0KSXRlbSBMZXZlbDogODMNCi0tLS0tLS0tDQorMTIlIHRvIGFsbCBFbGVtZW50YWwgUmVzaXN0YW5jZXMNCi0tLS0tLS0tDQorMjIgdG8gU3RyZW5ndGgNCis5MCB0byBBcm1vdXINCjQyJSBpbmNyZWFzZWQgQXJtb3VyDQorMTEwIHRvIG1heGltdW0gTGlmZQ0KKzM2JSB0byBDb2xkIFJlc2lzdGFuY2UNCjE3JSBpbmNyZWFzZWQgU3R1biBhbmQgQmxvY2sgUmVjb3ZlcnkNCjUlIGFkZGl0aW9uYWwgUGh5c2ljYWwgRGFtYWdlIFJlZHVjdGlvbg0KLS0tLS0tLS0NCkNvcnJ1cHRlZA0K"
+        }
+      }
+    }
+  ]
+}

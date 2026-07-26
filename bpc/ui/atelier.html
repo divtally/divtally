@@ -415,7 +415,7 @@
 
   <footer class="colophon">
     <span class="smallcaps">Atelier — a build price checker</span>
-    <span>Prices in Exalted &amp; Divine Orbs · estimates only</span>
+    <span>Prices in Chaos &amp; Divine Orbs · estimates only</span>
   </footer>
 </div>
 
@@ -441,7 +441,7 @@
     var p=bpc.price(ex);
     if(p.empty) return '<span class="bpc-dash">—</span>';
     if(p.div!=null) return p.divStr+' '+bpc.curImg('div')+'<span class="unit">div</span>';
-    return p.exStr+' '+bpc.curImg('ex')+'<span class="unit">ex</span>';
+    return p.exStr+' '+bpc.curImg('chaos')+'<span class="unit">ex</span>';
   }
   function heroValue(ex){ // numeric magnitude actually displayed (for count-up)
     var p=bpc.price(ex); if(p.empty) return 0; return p.div!=null?p.div:ex;
@@ -570,7 +570,7 @@
            ', level '+E(m.level)+'<span class="muted">, played in '+E(m.league)+'.</span>';
     $("#standfirst").innerHTML=sf;
     var ml=[];
-    if(m.divine_to_exalted) ml.push('1 '+bpc.curImg("div")+' = '+bpc.nfmt(Math.round(m.divine_to_exalted),0)+' '+bpc.curImg("ex"));
+    if(m.divine_to_chaos) ml.push('1 '+bpc.curImg("div")+' = '+bpc.nfmt(Math.round(m.divine_to_chaos),0)+' '+bpc.curImg("chaos"));
     if(m.league) ml.push(E(m.league));
     $("#metaLine").innerHTML=ml.join(' &nbsp;·&nbsp; ');
     // PoB
@@ -624,7 +624,7 @@
     if(!it) return;
     var tr=$('.row[data-k="'+cssq(k)+'"]'); if(!tr) return;
     var p=s.priced[k], on=!!s.enabled[k];
-    var priced=!!(p&&p.exalted.median!=null);
+    var priced=!!(p&&p.chaos.median!=null);
     var conf=p?p.confidence:"none";
     tr.className="row conf-"+conf+(on?"":" off")+(priced?"":" unpriced");
 
@@ -650,9 +650,9 @@
       editLink;
 
     if(priced){
-      tr.querySelector("[data-min]").innerHTML=bpc.priceHTML(p.exalted.min);
-      tr.querySelector("[data-med]").innerHTML=bpc.priceHTML(p.exalted.median);
-      tr.querySelector("[data-high]").innerHTML=bpc.priceHTML(p.exalted.high);
+      tr.querySelector("[data-min]").innerHTML=bpc.priceHTML(p.chaos.min);
+      tr.querySelector("[data-med]").innerHTML=bpc.priceHTML(p.chaos.median);
+      tr.querySelector("[data-high]").innerHTML=bpc.priceHTML(p.chaos.high);
       tr.querySelector("[data-conf]").innerHTML='<span class="conftag">'+E(CONFWORD[conf]||conf)+'</span>';
     } else if(p){ // resolved but unpriced (skipped / no match)
       tr.querySelector("[data-min]").innerHTML='';
@@ -675,8 +675,8 @@
       var mn=0,md=0,hi=0,any=false;
       g.items.forEach(function(it){
         var k=String(it.index),p=bpc.state.priced[k];
-        if(p&&p.exalted.median!=null&&bpc.state.enabled[k]){ any=true; var c=it.count||1;
-          md+=p.exalted.median*c; }
+        if(p&&p.chaos.median!=null&&bpc.state.enabled[k]){ any=true; var c=it.count||1;
+          md+=p.chaos.median*c; }
       });
       var el=$('[data-grpsub="'+cssq(g.group)+'"]');
       if(el) el.innerHTML= any? bpc.priceHTML(md) : '';
@@ -744,7 +744,7 @@
     var s=bpc.state, score=0,w=0,map={high:3,medium:2,low:1,none:0};
     s.items.forEach(function(it){
       var k=String(it.index),p=s.priced[k];
-      if(p&&p.exalted.median!=null&&s.enabled[k]){ score+=map[p.confidence]||0; w++; }
+      if(p&&p.chaos.median!=null&&s.enabled[k]){ score+=map[p.confidence]||0; w++; }
     });
     if(!w) return "none";
     var avg=score/w; return avg>=2.5?"high":avg>=1.5?"medium":avg>=0.5?"low":"none";
@@ -754,7 +754,7 @@
     if(rawMedian<=0){ totalEl.innerHTML='<span class="bpc-dash">—</span>'; displayedTotal=0; return; }
     if(RM){ totalEl.innerHTML=heroHTML(rawMedian); displayedTotal=target; return; }
     var from=displayedTotal, dur=700, start=null;
-    var unit=displayedIsDiv?bpc.curImg('div'):bpc.curImg('ex');
+    var unit=displayedIsDiv?bpc.curImg('div'):bpc.curImg('chaos');
     var unitTxt=displayedIsDiv?'div':'ex';
     function fmtNum(v){ return v<100 && displayedIsDiv ? bpc.nfmt(v,1) : bpc.nfmt(Math.round(v),0); }
     function frame(ts){
@@ -921,7 +921,7 @@
     $("#standfirst").innerHTML='<em>'+E(m.character||"This build")+'</em> — '+E(m["class"]||"")+
       ', level '+E(m.level)+'<span class="muted">, played in '+E(m.league)+'.</span>';
     var ml=[];
-    if(m.divine_to_exalted) ml.push('1 '+bpc.curImg("div")+' = '+bpc.nfmt(Math.round(m.divine_to_exalted),0)+' '+bpc.curImg("ex"));
+    if(m.divine_to_chaos) ml.push('1 '+bpc.curImg("div")+' = '+bpc.nfmt(Math.round(m.divine_to_chaos),0)+' '+bpc.curImg("chaos"));
     if(m.league) ml.push(E(m.league));
     $("#metaLine").innerHTML=ml.join(' &nbsp;·&nbsp; ');
     if(m.pob_code){ $("#pobwrap").hidden=false; $("#pobcode").textContent=m.pob_code; }

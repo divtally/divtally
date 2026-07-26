@@ -17,7 +17,7 @@ def _pause(msg=""):
 
 def main():
     print("=" * 56)
-    print("   PoE2 Build Price Checker")
+    print("   PoE1 Build Price Checker")
     print("=" * 56)
     print("   Your web browser should open in a few seconds.")
     print("   If it doesn't, open this address yourself:")

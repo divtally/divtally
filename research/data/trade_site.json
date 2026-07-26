@@ -1,0 +1,28 @@
+{
+  "site_base": {
+    "url": "https://www.pathofexile.com/trade/search/Allflame",
+    "status": 403,
+    "len": 5622,
+    "token_present": {
+      "\"onlineleague\"": false,
+      "\"securable\"": false,
+      "socket_filters": false,
+      "armour_filters": false,
+      "q=": false,
+      "/trade/search/": true
+    }
+  },
+  "site_queryid": {
+    "url": "https://www.pathofexile.com/trade/search/Allflame/7np9qdGnC5",
+    "status": 403,
+    "len": 5676,
+    "token_present": {
+      "\"onlineleague\"": false,
+      "\"securable\"": false,
+      "socket_filters": false,
+      "armour_filters": false,
+      "q=": false,
+      "/trade/search/": true
+    }
+  }
+}

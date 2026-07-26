@@ -1,6 +1,6 @@
 <!doctype html>
 <!-- bpc-title: (hidden) Extension test harness
-     Local harness to test the "PoE2 Trade Bridge" browser extension WITHOUT the full public
+     Local harness to test the "PoE1 Trade Bridge" browser extension WITHOUT the full public
      site. Served at http://127.0.0.1:8765/v/_exttest (the extension's content script matches
      127.0.0.1:8765). It speaks the same window.postMessage protocol the public site will use,
      so it validates the page <-> content-script <-> service-worker -> trade API path end to end. -->
@@ -40,8 +40,8 @@
 
   <div id="det" class="wait">checking for the extension&hellip;</div>
 
-  <div class="hint">Paste one or more PoE2 trade links (the <code>?q=</code> links the app generates) &mdash; <b>one per line</b>. The easiest source: open your build in the local app, click an item's trade button, copy that URL here. You can also paste raw <code>{"league":"&hellip;","query":{&hellip;}}</code> JSON.</div>
-  <textarea id="in" placeholder="https://www.pathofexile.com/trade2/search/poe2/Runes%20of%20Aldur?q=%7B...%7D&#10;https://www.pathofexile.com/trade2/search/poe2/Runes%20of%20Aldur?q=%7B...%7D"></textarea>
+  <div class="hint">Paste one or more PoE1 trade links (the <code>?q=</code> links the app generates) &mdash; <b>one per line</b>. The easiest source: open your build in the local app, click an item's trade button, copy that URL here. You can also paste raw <code>{"league":"&hellip;","query":{&hellip;}}</code> JSON.</div>
+  <textarea id="in" placeholder="https://www.pathofexile.com/trade/search/Allflame?q=%7B...%7D&#10;https://www.pathofexile.com/trade/search/Allflame?q=%7B...%7D"></textarea>
   <div style="margin-top:10px; display:flex; gap:10px;">
     <button id="go">Price via extension</button>
     <button id="clear" class="ghost">clear</button>
@@ -92,7 +92,7 @@
     if (!text) return null;
     if (/^https?:\/\//i.test(text)) {
       var u = new URL(text);
-      var m = u.pathname.match(/\/poe2\/([^/?]+)/i);
+      var m = u.pathname.match(/\/search\/([^/?]+)/i);
       var q = u.searchParams.get("q");
       if (!q) throw new Error("no ?q= in URL");
       var o = JSON.parse(q);

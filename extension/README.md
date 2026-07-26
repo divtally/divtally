@@ -1,7 +1,7 @@
-# PoE2 Build Price Checker — Trade Bridge (browser extension)
+# PoE1 Build Price Checker — Trade Bridge (browser extension)
 
 This extension prices **rares/uniques** for the public Build Price Checker website by calling
-the official PoE2 trade API **from your own browser and IP**. That's the only safe way to do
+the official PoE1 trade API **from your own browser and IP**. That's the only safe way to do
 live rare pricing on a public site: the trade API blocks browser pages (CORS) and bans a shared
 server IP that searches for everyone, but an extension is privileged (CORS-exempt) and uses each
 user's own per-IP rate budget. Ported 1:1 from the app's Python trade client
@@ -28,7 +28,7 @@ limiter state **persisted** so an MV3 service-worker restart can't burst past GG
 
 ## Test it — three ways, easiest first
 
-**A. Popup (no website needed).** Click the extension's toolbar icon. Paste a PoE2 trade `?q=`
+**A. Popup (no website needed).** Click the extension's toolbar icon. Paste a PoE1 trade `?q=`
 link (open a build in the local app, click any item's trade button, copy that URL) into the box
 and hit **Price it**. You should see the cheapest online listing price. This alone proves the
 trade search/fetch + rate limiting work from your IP.
@@ -52,7 +52,7 @@ window.postMessage({ source:"bpc-page", type:"price", reqId, league,
                      queries:[{ key, query }] }, location.origin);
 // the extension replies with { source:"bpc-ext", type:"pong"|"price-result", reqId, ... }
 ```
-`query` is the trade2 **query** object (status/type/name/stats/filters) — exactly the inner
+`query` is the trade **query** object (status/type/name/stats/filters) — exactly the inner
 object the site already builds for its clickable `?q=` links. The extension returns, per item,
 `{ key, amount, currency, total }` (cheapest online listing) or `{ key, error }`.
 

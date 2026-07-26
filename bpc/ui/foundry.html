@@ -452,8 +452,8 @@ bpc.on('error',m=>{ setStatus('',false);
 bpc.on('rare',info=>{ if(info) setStatus('AWAITING SPEC APPROVAL — SEE DETAIL CALLOUT.',true); });
 
 /* ---------------- BOM render (skeleton on items, granular fills after) -------------- */
-const ASM_CODE={equipment:'EQ',flask:'FL',jewel:'JW',rune:'RC',gem:'GM'};
-const ASM_LABEL={equipment:'Equipment Assembly',flask:'Flasks & Charms',jewel:'Jewels',rune:'Runes / Soul Cores',gem:'Gems'};
+const ASM_CODE={equipment:'EQ',flask:'FL',jewel:'JW',gem:'GM'};
+const ASM_LABEL={equipment:'Equipment Assembly',flask:'Flasks',jewel:'Jewels',gem:'Gems'};
 let builtBOM=false;
 
 bpc.on('items',()=>{ buildBOM(); buildRail(); buildTitleblock(); builtBOM=true; scheduleReg(); });
@@ -503,7 +503,7 @@ function buildBOM(){
 function fillRow(k){
   const row=$(`#bomwrap tr.item[data-k="${cssEsc(k)}"]`); if(!row) return;
   const p=bpc.state.priced[k]; if(!p) return;
-  const priced=p.exalted.median!=null;
+  const priced=p.chaos.median!=null;
   row.classList.remove('await');
   // build the three value cells (replace the dots placeholder once)
   let cells=row.querySelector('[data-cells]');
@@ -514,9 +514,9 @@ function fillRow(k){
   }
   const tds=row.querySelectorAll('td.val');
   if(tds.length===3){
-    tds[0].innerHTML=bpc.priceHTML(p.exalted.min);
-    tds[1].innerHTML=bpc.priceHTML(p.exalted.median);
-    tds[2].innerHTML=bpc.priceHTML(p.exalted.high);
+    tds[0].innerHTML=bpc.priceHTML(p.chaos.min);
+    tds[1].innerHTML=bpc.priceHTML(p.chaos.median);
+    tds[2].innerHTML=bpc.priceHTML(p.chaos.high);
   }
   // confidence + note
   row.querySelector('.conf').innerHTML=`<span class="conf-tag ${E(p.confidence)}">${E(p.confidence)}</span>`;
@@ -551,7 +551,7 @@ function markAwaiting(){
 function refreshVoids(){
   $$('#bomwrap tr.item').forEach(row=>{
     const k=row.dataset.k, p=bpc.state.priced[k];
-    const priced=p && p.exalted.median!=null;
+    const priced=p && p.chaos.median!=null;
     const excluded = priced && !bpc.state.enabled[k];
     const has=row.classList.contains('void');
     if(excluded && !has){ row.classList.add('void'); addVoidCloud(row); }
@@ -611,7 +611,7 @@ function hiCallout(k,on){ const g=$(`#fig g.cal[data-k="${cssEsc(k)}"]`); if(g) 
 /* ---------------- right rail: wireframe figure + spec note ---------------- */
 const SLOT_PTS={ // approximate callout anchor points on the wireframe (viewBox 0 0 240 300)
   Helmet:[120,38],'Body Armour':[120,120],Gloves:[60,150],Weapon:[40,120],Focus:[200,120],
-  Boots:[120,250],Belt:[120,180],Amulet:[120,70],Ring:[170,150],Jewel:[120,210],Flask:[150,250],Rune:[90,250]
+  Boots:[120,250],Belt:[120,180],Amulet:[120,70],Ring:[170,150],Jewel:[120,210],Flask:[150,250]
 };
 function buildRail(){
   const s=bpc.state, m=s.meta; let h='';
@@ -682,7 +682,7 @@ let lastMed=null;
 function stampTotal(t){
   const st=$('#totstamp'); if(!st) return;
   st.innerHTML=bpc.priceHTML(t.median);
-  // restamp ink-print animation + count-up on the median exalted value
+  // restamp ink-print animation + count-up on the median chaos value
   if(t.median!==lastMed){
     st.classList.remove('print'); void st.offsetWidth; st.classList.add('print');
     countUp(st,t.median);

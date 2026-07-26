@@ -1,4 +1,4 @@
-/* Popup = a self-contained tester. Paste a trade2 ?q= link (or raw query JSON), and the
+/* Popup = a self-contained tester. Paste a trade ?q= link (or raw query JSON), and the
  * extension runs the real search+fetch from your IP and shows the cheapest listing. No web
  * page required -- this alone validates the extension end to end. */
 "use strict";
@@ -14,13 +14,13 @@ chrome.runtime.sendMessage({ type: "bpc-ping" }, function (resp) {
   statusEl.innerHTML = '<span class="ok">&#9679; active</span> &middot; v' + (resp && resp.version || "?");
 });
 
-// Accept either a full trade2 URL (...trade2/search/poe2/<league>?q=<json>) or raw query/{query} JSON.
+// Accept either a full trade URL (...trade/search/<league>?q=<json>) or raw query/{query} JSON.
 function parseInput(text) {
   text = (text || "").trim();
   if (!text) throw new Error("paste a trade link or query JSON");
   if (/^https?:\/\//i.test(text)) {
     var u = new URL(text);
-    var m = u.pathname.match(/\/poe2\/([^/?]+)/i);
+    var m = u.pathname.match(/\/search\/([^/?]+)/i);
     var league = m ? decodeURIComponent(m[1]) : "";
     var q = u.searchParams.get("q");
     if (!q) throw new Error("no ?q= payload in that URL");

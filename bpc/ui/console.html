@@ -415,7 +415,7 @@ a:hover{text-shadow:0 0 6px var(--cyan-dim)}
               stroke-linecap="round" stroke-dasharray="113 151" stroke-dashoffset="113"
               style="filter:drop-shadow(0 0 4px rgba(56,225,216,.5));transition:stroke-dashoffset 1s"/>
           </svg></div>
-          <div class="info"><div class="big" id="rate-val">—</div><div class="cap">1 Divine in Exalted</div></div>
+          <div class="info"><div class="big" id="rate-val">—</div><div class="cap">1 Divine in Chaos</div></div>
         </div>
       </div>
     </section>
@@ -548,11 +548,11 @@ bpc.on('meta',m=>{
   $('#callsign').textContent = parts.join(' · ');
   $('#gauge-sub').textContent = 'TGT LOCKED';
   // divine rate gauge
-  if(m.divine_to_exalted){
+  if(m.divine_to_chaos){
     $('#rateblock').hidden=false;
-    $('#rate-val').innerHTML = bpc.nfmt(Math.round(m.divine_to_exalted),0)+' '+bpc.curImg('ex');
+    $('#rate-val').innerHTML = bpc.nfmt(Math.round(m.divine_to_chaos),0)+' '+bpc.curImg('chaos');
     // arbitrary scale: map rate to a fraction (cap at 800ex/div)
-    setArc('#rate-arc',24, Math.min(1, m.divine_to_exalted/800));
+    setArc('#rate-arc',24, Math.min(1, m.divine_to_chaos/800));
   } else { $('#rateblock').hidden=true; }
   // IFF / PoB
   if(m.pob_code){
@@ -563,29 +563,29 @@ bpc.on('meta',m=>{
 
 /* ---- target list ---- */
 bpc.on('items',renderTargets);
-const SECTOR_ICON={equipment:'EQUIPMENT', flask:'FLASKS & CHARMS', jewel:'JEWELS', rune:'RUNES / SOUL CORES', gem:'GEMS'};
+const SECTOR_ICON={equipment:'EQUIPMENT', flask:'FLASKS', jewel:'JEWELS', gem:'GEMS'};
 const collapsed={};
 
-function rarClass(cat){ return cat==='unique'?'rar-unique':cat==='rare'?'rar-rare':cat==='magic'?'rar-magic':cat==='rune'?'rar-rune':''; }
+function rarClass(cat){ return cat==='unique'?'rar-unique':cat==='rare'?'rar-rare':cat==='magic'?'rar-magic':''; }
 
 function priceCell(it,p){
   const k=String(it.index);
   if(!p) return `<div class="c-price pending">- - - - -</div>`;
   if(p.method==='skipped') return `<div class="c-price nodata">RELEASED</div>`;
-  if(p.exalted.median==null) return `<div class="c-price nodata">NO LOCK</div>`;
-  return `<div class="c-price">${bpc.priceHTML(p.exalted.median)}</div>`;
+  if(p.chaos.median==null) return `<div class="c-price nodata">NO LOCK</div>`;
+  return `<div class="c-price">${bpc.priceHTML(p.chaos.median)}</div>`;
 }
 function lampClass(it,p,on){
   if(!p) return 'scan';
   if(p.method==='skipped' || !on) return 'standby';
-  if(p.exalted.median==null) return 'nodata';
+  if(p.chaos.median==null) return 'nodata';
   return 'lock';
 }
 function sigClass(p){ return p&&p.confidence ? p.confidence : 'none'; }
 
 function contactRow(it){
   const s=bpc.state, k=String(it.index), p=s.priced[k], on=!!s.enabled[k];
-  const priced = p && p.exalted.median!=null;
+  const priced = p && p.chaos.median!=null;
   const cnt = it.count>1?`<span class="cnt">×${it.count}</span>`:'';
   const re = (s.advanced && it.category==='rare') ? `<button class="retarget" data-re="${E(k)}" title="re-target affixes">RE-TGT</button>` : '';
   const nameHTML = (p&&p.trade_url)
@@ -678,7 +678,7 @@ function renderGauge(){
   const t=bpc.totals();
   // hub total (segmented) — robust mono fallback so verifier always reads a number
   $('#hub-total').textContent = t.median>0 ? bpc.nfmt(Math.round(t.median),0) : '-----';
-  $('#hub-unit').innerHTML = t.median>0 ? bpc.curImg('ex')+' EXALTED' : '';
+  $('#hub-unit').innerHTML = t.median>0 ? bpc.curImg('chaos')+' CHAOS' : '';
   $('#hub-contacts').innerHTML = `<b>${t.included}</b>/<b>${t.priced}</b> CONTACTS LOCKED`;
   // readouts
   $('#ro-min').innerHTML  = t.min>0 ? bpc.priceHTML(t.min) : '<span class="bpc-dash">—</span>';

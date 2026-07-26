@@ -212,9 +212,6 @@
   .sk-sups{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:3px;}
   .sk-sups .sup{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--mut); padding:2px 0;}
   .sk-sups .sup .sup-free{margin-left:auto; font-family:var(--mono); font-size:10px; color:rgba(170,158,130,.5); letter-spacing:.05em; text-transform:uppercase;}
-  .sk-sups .sup.lineage{color:var(--unique);}
-  .sk-sups .sup.lineage a{color:var(--unique); text-decoration:none;}
-  .sk-sups .sup.lineage a:hover{text-decoration:underline;}
   .sk-sups .sup-tag{font-family:var(--mono); font-size:9px; text-transform:uppercase; letter-spacing:.08em; color:var(--unique); border:1px solid rgba(175,96,37,.5); border-radius:3px; padding:0 4px;}
   .sk-sups .sup-price{margin-left:auto; font-family:var(--mono); font-size:12px; color:var(--val);}
   .sk-sups .sup-price .bpc-cur{height:11px; vertical-align:-2px;}
@@ -704,7 +701,7 @@
           <div class="bt-inc" id="btInc"></div>
         </div>
         <div class="research-row" id="researchRow" hidden>
-          <button class="stone-btn pob-btn" id="pobBtn" type="button" hidden title="Copy this build's Path of Building 2 import code">
+          <button class="stone-btn pob-btn" id="pobBtn" type="button" hidden title="Copy this build's Path of Building import code">
             <svg class="pob-ico" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V5a2 2 0 0 1 2-2h10"></path></svg>
             <span class="pob-lbl">pob import</span>
           </button>
@@ -746,7 +743,7 @@
     <div class="stash-wrap">
       <div class="frame">
         <div class="inner">
-          <div class="panel-head"><span>Stash</span><span style="color:var(--mut);font-family:var(--serif);text-transform:none;letter-spacing:0;font-size:12px">flasks · jewels · runes · gems</span></div>
+          <div class="panel-head"><span>Stash</span><span style="color:var(--mut);font-family:var(--serif);text-transform:none;letter-spacing:0;font-size:12px">flasks · jewels · gems</span></div>
           <div class="stash-groups" id="stash"></div>
         </div>
       </div>
@@ -801,11 +798,11 @@ const SLOT_GLYPH = {
   "Helmet":"⚰","Amulet":"◈","Weapon":"⚔","Body Armour":"⛨",
   "Off-hand":"◉","Weapon (swap)":"⚔","Off-hand (swap)":"◉","Focus":"◉",
   "Gloves":"✋","Belt":"═","Boots":"➜","Ring":"○","Jewel":"❖",
-  "Flask":"⚗","Rune":"⧉"
+  "Flask":"⚗"
 };
 const SHORT = {"Body Armour":"Body","Weapon":"Wpn","Off-hand":"Off-Hand",
   "Weapon (swap)":"Wpn ⇄","Off-hand (swap)":"Off ⇄"};
-const catClass = c => ({unique:"r-unique",rare:"r-rare",magic:"r-magic",rune:"r-currency",gem:"r-gem",normal:"r-normal"}[c]||"r-normal");
+const catClass = c => ({unique:"r-unique",rare:"r-rare",magic:"r-magic",gem:"r-gem",normal:"r-normal"}[c]||"r-normal");
 
 /* ---------- controls ---------- */
 $('#liststatus').innerHTML = bpc.STATUS_ORDER.map(o=>`<option value="${o}">${E(bpc.STATUS_LABEL[o])}</option>`).join('');
@@ -904,9 +901,9 @@ bpc.on('meta',m=>{
     ? `<a class="name-link" href="${E(su)}" target="_blank" rel="noopener" title="View this build on poe.ninja">${nm}</a>`
     : nm;
   $('#bSub').innerHTML=`<b>${E(m['class']||'')}</b> &middot; Level ${m.level||'?'} &middot; ${E(m.league||'')}`;
-  if(m.divine_to_exalted){
+  if(m.divine_to_chaos){
     $('#rateLine').hidden=false;
-    $('#rateLine').innerHTML=`1 ${bpc.curImg('div')} = ${bpc.nfmt(Math.round(m.divine_to_exalted),0)} ${bpc.curImg('ex')}`;
+    $('#rateLine').innerHTML=`1 ${bpc.curImg('div')} = ${bpc.nfmt(Math.round(m.divine_to_chaos),0)} ${bpc.curImg('chaos')}`;
   } else $('#rateLine').hidden=true;
   pobCode = m.pob_code || '';
   $('#pobBtn').hidden = !pobCode;
@@ -942,24 +939,23 @@ function buildBoard(){
     doll.appendChild(el);
   });
 
-  // flasks + charms occupy the doll's bottom row: life | charm | charm | charm | mana
+  // the flask belt occupies the doll's bottom row: life | utility | utility | utility | mana
   const flGroup=groups.find(g=>g.group==='flask');
   const flasks=flGroup?flGroup.items.slice():[];
-  let life=null, mana=null; const charms=[];
+  let life=null, mana=null; const utils=[];
   flasks.forEach(it=>{ const n=(it.name||'').toLowerCase();
-    if(n.indexOf('charm')>=0) charms.push(it);
-    else if(n.indexOf('mana')>=0 && !mana) mana=it;
+    if(n.indexOf('mana')>=0 && !mana) mana=it;
     else if(n.indexOf('life')>=0 && !life) life=it;
-    else charms.push(it);
+    else utils.push(it);
   });
-  [['slot-fl1',life,'⚗'],['slot-ch1',charms[0],'❋'],['slot-ch2',charms[1],'❋'],
-   ['slot-ch3',charms[2],'❋'],['slot-fl2',mana,'⚗']]
+  [['slot-fl1',life,'⚗'],['slot-ch1',utils[0],'❋'],['slot-ch2',utils[1],'❋'],
+   ['slot-ch3',utils[2],'❋'],['slot-fl2',mana,'⚗']]
     .forEach(([area,it,gl])=>{ doll.appendChild(it ? slotEl(it,area) : emptySlot(area,gl)); });
-  const extraFlasks=charms.slice(3);   // overflow beyond the 5 doll cells -> render in the stash (don't drop)
+  const extraFlasks=utils.slice(3);   // overflow beyond the 5 doll cells -> render in the stash (don't drop)
 
-  // stash sections (jewel/rune/gem -- flasks moved to the doll)
+  // stash sections (jewel/gem -- flasks moved to the doll)
   const stash=$('#stash'); stash.innerHTML='';
-  const order=[['jewel','Jewels'],['rune','Runes / Soul Cores'],['gem','Gems']];
+  const order=[['jewel','Jewels'],['gem','Gems']];
   order.forEach(([gk,title])=>{
     const g=groups.find(x=>x.group===gk); if(!g) return;
     const sec=document.createElement('div'); sec.className='stash-section';
@@ -976,9 +972,9 @@ function buildBoard(){
     g.items.forEach(it=>{ grid.appendChild(slotEl(it,'')); });
     sec.appendChild(grid); stash.appendChild(sec);
   });
-  if(extraFlasks.length){                 // overflow flasks/charms that didn't fit the doll
+  if(extraFlasks.length){                 // overflow flasks that didn't fit the doll
     const sec=document.createElement('div'); sec.className='stash-section';
-    const h=document.createElement('h4'); h.innerHTML='Flasks &amp; Charms <span class="grp-toggle" data-grp="flask">toggle</span>';
+    const h=document.createElement('h4'); h.innerHTML='Flasks <span class="grp-toggle" data-grp="flask">toggle</span>';
     sec.appendChild(h);
     const grid=document.createElement('div'); grid.className='grid12';
     extraFlasks.forEach(it=>grid.appendChild(slotEl(it,'')));
@@ -987,13 +983,13 @@ function buildBoard(){
   renderSkills();
 }
 
-/* ---------- active-skill list (poe.ninja-priced; uncut feeds the total) ---------- */
+/* ---------- active-skill list (poe.ninja-priced; active skill + supports feed the total) ---------- */
 const skillsOpen = new Set();
 function renderSkills(){
   const wrap=$('#skills'); if(!wrap) return;
   // sort: included (checked) skills first, then by total cost desc. Unchecked skills —
   // including gear/passive-granted ones (off by default) — sink to the bottom.
-  const tot=it=>{ const p=bpc.state.priced[String(it.index)]; return (p&&p.exalted.median!=null)?p.exalted.median:-1; };
+  const tot=it=>{ const p=bpc.state.priced[String(it.index)]; return (p&&p.chaos.median!=null)?p.chaos.median:-1; };
   const onState=it=>!!bpc.state.enabled[String(it.index)];
   const items=bpc.state.items.filter(it=>it.group==='gem').sort((a,b)=>{
     const oa=onState(a), ob=onState(b);
@@ -1004,23 +1000,23 @@ function renderSkills(){
   let h='';
   for(const it of items){
     const k=String(it.index), p=bpc.state.priced[k]||{};
-    const priced=p.exalted && p.exalted.median!=null;
+    const priced=p.chaos && p.chaos.median!=null;
     const on=!!bpc.state.enabled[k];
     const open=skillsOpen.has(k);
     const lvl=it.level||0, sock=(it.sockets!=null?it.sockets:0);
-    const uncut = priced ? p.exalted.median : null;
+    const total = priced ? p.chaos.median : null;
     h+=`<div class="skill ${on?'on':'off'} ${priced?'':'noprice'} ${open?'open':''}" data-k="${E(k)}">
       <div class="sk-head">
         <input type="checkbox" class="sk-inc" data-k="${E(k)}" ${on?'checked':''} ${priced?'':'disabled'} title="include in total">
         <span class="sk-tw">${open?'▾':'▸'}</span>
         ${it.icon?`<img class="sk-ico" src="${E(it.icon)}" alt="" loading="lazy">`:'<span class="sk-ico ph">◆</span>'}
-        ${p.trade_url?`<a class="sk-name" href="${E(p.trade_url)}" target="_blank" rel="noopener" title="search this skill on trade (Lv ${lvl}, ${sock} sockets)">${E(it.name)}</a>`:`<span class="sk-name">${E(it.name)}</span>`}
+        ${p.trade_url?`<a class="sk-name" href="${E(p.trade_url)}" target="_blank" rel="noopener" title="search this skill on trade (Lv ${lvl})">${E(it.name)}</a>`:`<span class="sk-name">${E(it.name)}</span>`}
         ${it.granted?'<span class="sk-granted" title="granted by gear or a passive — not bought, so excluded by default">granted</span>':''}
         <span class="sk-meta">Lv ${lvl}${sock?` · ${sock} sup`:''}</span>
-        <span class="sk-price">${uncut!=null?bpc.priceHTML(uncut):'<span class="bpc-dash">—</span>'}</span>
+        <span class="sk-price">${total!=null?bpc.priceHTML(total):'<span class="bpc-dash">—</span>'}</span>
       </div>
       <div class="sk-body">
-        <div class="sk-cut">uncut (DIY) priced above &middot; cut: ${p.trade_url?`<a href="${E(p.trade_url)}" target="_blank" rel="noopener">view listings &#8599;</a>`:'&mdash;'} <span class="sk-hint">(poe.ninja tracks uncut gems only)</span></div>
+        <div class="sk-cut">priced from the poe.ninja gem economy: active skill + every support gem${p.trade_url?` &middot; <a href="${E(p.trade_url)}" target="_blank" rel="noopener">view on trade &#8599;</a>`:''} <span class="sk-hint">(each gem by name / level / quality / corruption)</span></div>
         <ul class="sk-sups">${supportsHTML(it,p)}</ul>
       </div>
     </div>`;
@@ -1030,20 +1026,21 @@ function renderSkills(){
 function supportsHTML(it,p){
   const sups=it.supports||[];
   if(!sups.length) return '<li class="sup none">no support gems</li>';
-  const lp={}; (p.lineage||[]).forEach(l=>{ lp[l.name]=l; });
+  // PoE1: every support gem is a real priced item. p.gems[] carries the per-gem
+  // breakdown (first entry is the active skill; each support has a chaos price).
+  const gp={}; (p.gems||[]).forEach(g=>{ if(g.support) gp[(g.name||'').toLowerCase()]=g; });
   return sups.map(s=>{
     const ic = s.icon ? `<img class="sup-ico" src="${E(s.icon)}" alt="" loading="lazy">` : '';
-    if(s.lineage){
-      const l=lp[s.name]||{};
-      const price=(l.exalted&&l.exalted.median!=null)?bpc.priceHTML(l.exalted.median):'<span class="bpc-dash">—</span>';
-      const nm=l.trade_url?`<a href="${E(l.trade_url)}" target="_blank" rel="noopener">${E(s.name)}</a>`:E(s.name);
-      return `<li class="sup lineage">${ic}${nm} <span class="sup-tag">lineage</span><span class="sup-price">${price}</span></li>`;
-    }
-    return `<li class="sup">${ic}<span class="sup-nm">${E(s.name)}</span><span class="sup-free">free</span></li>`;
+    const g=gp[(s.name||'').toLowerCase()]||{};
+    const price=(g.chaos!=null)?bpc.priceHTML(g.chaos):'<span class="bpc-dash">—</span>';
+    const nm=g.trade_url?`<a href="${E(g.trade_url)}" target="_blank" rel="noopener">${E(s.name)}</a>`:E(s.name);
+    const q=(s.quality?`/${s.quality}`:''), corr=(s.corrupted?' <span class="sup-tag">corrupted</span>':'');
+    const lv=(s.level?`<span class="sup-tag">Lv ${s.level}${q}</span>`:'');
+    return `<li class="sup">${ic}<span class="sup-nm">${nm}</span> ${lv}${corr}<span class="sup-price">${price}</span></li>`;
   }).join('');
 }
 
-function emptySlot(areaClass, glyph){    // empty flask/charm placeholder slot
+function emptySlot(areaClass, glyph){    // empty flask placeholder slot
   const el=document.createElement('div');
   el.className='slot empty in-view'+(areaClass?(' '+areaClass):'');
   el.innerHTML=`<div class="bezel"></div><div class="glyph">${glyph||'◆'}</div>`;
@@ -1117,11 +1114,11 @@ function updateSlot(k){
   el.classList.remove('nolist','skipped','loading','on','off','notfound','fewresults','bought');
   const tag=el.querySelector('[data-tag]');
   if(!p){ el.classList.add('loading'); if(tag) tag.innerHTML=''; return; }
-  const priced = p.exalted.median!=null;
+  const priced = p.chaos.median!=null;
   if(p.method==='skipped'){ el.classList.add('skipped','nolist'); }
   else if(!priced){ el.classList.add('nolist'); }
-  // result-count border cue — only for SEARCHED items (uniques/rares/magic); runes use the
-  // bulk exchange and gems poe.ninja, so they aren't "search results".
+  // result-count border cue — only for SEARCHED items (uniques/rares/magic); gems are
+  // priced from poe.ninja, so they aren't "search results".
   const searched = (it.category==='unique'||it.category==='rare'||it.category==='magic') && p.method!=='skipped';
   if(searched){
     if(!priced) el.classList.add('notfound');                    // red: nothing matched
@@ -1145,26 +1142,26 @@ function updateSlot(k){
 function syncEnabledMarks(){
   bpc.state.items.forEach(it=>{
     const k=String(it.index); const el=document.querySelector('.slot[data-k="'+cssEsc(k)+'"]');
-    const p=bpc.state.priced[k]; if(!el||!p||p.exalted.median==null) return;
+    const p=bpc.state.priced[k]; if(!el||!p||p.chaos.median==null) return;
     el.classList.toggle('on', !!bpc.state.enabled[k]);
     el.classList.toggle('off', !bpc.state.enabled[k]);
     el.classList.toggle('bought', !!bpc.state.enabled[k] && bpc.isPurchased(k));
   });
 }
 
-/* compact price for the slot corner: divine if big else exalted */
+/* compact price for the slot corner: divine if big else chaos */
 function compactPrice(ex){
   const p=bpc.price(ex);
   if(p.empty) return '';
   if(p.div!=null) return p.divStr+' '+bpc.curImg('div');
-  return p.exStr+' '+bpc.curImg('ex');
+  return p.exStr+' '+bpc.curImg('chaos');
 }
 /* card corner shows the user's selected tier (falls back to median if that tier is null) */
-function cardEx(p){ const v=p.exalted[bpc.state.tier]; return v!=null ? v : p.exalted.median; }
+function cardEx(p){ const v=p.chaos[bpc.state.tier]; return v!=null ? v : p.chaos.median; }
 function repaintTierPrices(){
   bpc.state.items.forEach(it=>{
     const k=String(it.index); const el=document.querySelector('.slot[data-k="'+cssEsc(k)+'"]');
-    const p=bpc.state.priced[k]; if(!el||!p||p.exalted.median==null) return;
+    const p=bpc.state.priced[k]; if(!el||!p||p.chaos.median==null) return;
     const tag=el.querySelector('[data-tag]'); if(tag) tag.innerHTML=compactPrice(cardEx(p));
   });
 }
@@ -1182,11 +1179,11 @@ $('#board').addEventListener('click',e=>{
   if(sinc){ bpc.setEnabled(sinc.dataset.k, sinc.checked); return; }
   const inc=e.target.closest('.incmark');             // the checkbox toggles include/exclude
   if(inc){ e.stopPropagation(); const sk=inc.closest('.slot').dataset.k; const sp=bpc.state.priced[sk];
-    if(sp && sp.exalted.median!=null) bpc.setEnabled(sk, !bpc.state.enabled[sk]); return; }
+    if(sp && sp.chaos.median!=null) bpc.setEnabled(sk, !bpc.state.enabled[sk]); return; }
   const buy=e.target.closest('.buymark');             // the cart toggles purchased (priced items also drop out of the remaining total)
   if(buy){ e.stopPropagation(); const sk=buy.closest('.slot').dataset.k; const sp=bpc.state.priced[sk];
     if(!sp) return;                                                 // still appraising -> nothing to mark yet
-    if(sp.exalted.median!=null && !bpc.state.enabled[sk]) return;   // excluded priced item -> no cart shown
+    if(sp.chaos.median!=null && !bpc.state.enabled[sk]) return;   // excluded priced item -> no cart shown
     bpc.setPurchased(sk, !bpc.isPurchased(sk)); return; }
   const slot=e.target.closest('.slot'); if(!slot) return;
   const k=slot.dataset.k; const p=bpc.state.priced[k];
@@ -1201,7 +1198,7 @@ document.addEventListener('click',e=>{
   const gt=e.target.closest('.grp-toggle'); if(!gt) return;
   const grp=gt.dataset.grp;
   // determine current majority state -> flip
-  const items=bpc.state.items.filter(it=>it.group===grp && bpc.state.priced[String(it.index)] && bpc.state.priced[String(it.index)].exalted.median!=null);
+  const items=bpc.state.items.filter(it=>it.group===grp && bpc.state.priced[String(it.index)] && bpc.state.priced[String(it.index)].chaos.median!=null);
   const anyOff=items.some(it=>!bpc.state.enabled[String(it.index)]);
   bpc.setGroupEnabled(grp, anyOff);
 });
@@ -1232,9 +1229,9 @@ function modsHTML(mods){
   if(!mods) return '';
   const sec=(arr,cls)=> (arr&&arr.length) ? arr.map(m=>`<div class="tt-mod ${cls}">${E(m)}</div>`).join('') : '';
   let h=sec(mods.implicit,'imp');
-  if(mods.implicit&&mods.implicit.length && ((mods.explicit&&mods.explicit.length)||(mods.rune&&mods.rune.length)))
+  if(mods.implicit&&mods.implicit.length && (mods.explicit&&mods.explicit.length))
     h+='<div class="tt-modsep"></div>';
-  h+=sec(mods.explicit,'exp')+sec(mods.rune,'rune');
+  h+=sec(mods.explicit,'exp');
   return h ? `<div class="tt-mods">${h}</div>` : '';
 }
 function showTip(slot){
@@ -1243,21 +1240,21 @@ function showTip(slot){
   const hc='h-'+(it.category||'normal');
   let body='';
   if(it.slot) body+=`<div style="text-align:center;color:var(--mut);font-size:12px;margin-bottom:2px">${E(it.group==='equipment'?it.slot:cap(it.group))}</div>`;
-  body+=modsHTML(it.mods);                 // affixes (equipment / jewels / flasks / runes)
+  body+=modsHTML(it.mods);                 // affixes (equipment / jewels / flasks)
   body+=`<div class="tt-div"><span class="dia">◆</span></div>`;
   if(!p){
     body+=`<div class="tt-empty">appraising…</div>`;
   } else if(p.method==='skipped'){
     body+=`<div class="tt-empty">Skipped — not priced.</div>`;
-  } else if(p.exalted.median==null){
+  } else if(p.chaos.median==null){
     body+=`<div class="tt-empty">No listing matched.</div>`;
     if(p.note) body+=`<div class="tt-note">${E(p.note)}</div>`;
     if(p.trade_url) body+=`<div class="tt-link">click → open on trade ↗</div>`;
   } else {
     body+=`<div class="tt-prices">
-      <div class="row"><span class="k">min</span><span class="v">${bpc.priceHTML(p.exalted.min)}</span></div>
-      <div class="row"><span class="k">median</span><span class="v">${bpc.priceHTML(p.exalted.median)}</span></div>
-      <div class="row"><span class="k">high</span><span class="v">${bpc.priceHTML(p.exalted.high)}</span></div>
+      <div class="row"><span class="k">min</span><span class="v">${bpc.priceHTML(p.chaos.min)}</span></div>
+      <div class="row"><span class="k">median</span><span class="v">${bpc.priceHTML(p.chaos.median)}</span></div>
+      <div class="row"><span class="k">high</span><span class="v">${bpc.priceHTML(p.chaos.high)}</span></div>
     </div>`;
     body+=`<div class="tt-conf"><span class="dot ${E(p.confidence)}"></span>${E(p.confidence)} confidence${p.sample_size?(' &middot; '+p.sample_size+' samples'):''}</div>`;
     if(p.note) body+=`<div class="tt-note">${E(p.note)}</div>`;
@@ -1325,8 +1322,8 @@ function cap(s){ return s?s.charAt(0).toUpperCase()+s.slice(1):s; }
 /* ---------- ADVANCED PICKER — multi stat-group editor (render on 'rare' event) ----------
    Mirrors the trade site: the item's affixes live in one or more stat GROUPS, each with a
    type (And / Count / Not / If) and threshold. Submitting emits a `groups` payload that the
-   backend turns into the trade2 query.stats array.
-   NOTE: Weighted Sum (weight / weight2) is intentionally NOT offered -- the trade2 SEARCH API
+   backend turns into the PoE1 trade query.stats array.
+   NOTE: Weighted Sum (weight / weight2) is intentionally NOT offered -- the PoE1 trade SEARCH API
    rejects weighted groups with HTTP 400 (verified); a Count group is the supported equivalent
    ("how many of these you want"). Any legacy weighted group is coerced to Count server-side. */
 const pickwrap=$('#pickwrap'), pick=$('#pick');
@@ -1581,7 +1578,7 @@ function pkBuildPayload(){
   return {groups,equip};
 }
 function pkSubmit(){ bpc.submitRare(pkInfo.key, pkBuildPayload()); }
-/* build a clickable trade2 ?q= URL from the CURRENT picker config (no search/commit) */
+/* build a clickable trade ?q= URL from the CURRENT picker config (no search/commit) */
 function pkGroupsToStats(groups){
   return (groups||[]).map(g=>{
     const isW=(g.type==='weight'||g.type==='weight2');
@@ -1598,10 +1595,10 @@ function pkBuildTradeUrl(payload){
   query.stats=pkGroupsToStats(payload.groups);
   if(payload.equip && payload.equip.length){
     const ef={}; payload.equip.forEach(e=>{ const v={}; if(e.min!=null)v.min=e.min; if(e.max!=null)v.max=e.max; if(Object.keys(v).length)ef[e.key]=v; });
-    if(Object.keys(ef).length){ query.filters=query.filters||{}; query.filters.equipment_filters={filters:ef}; }
+    if(Object.keys(ef).length){ query.filters=query.filters||{}; query.filters.armour_filters={filters:ef}; }
   }
   const q=encodeURIComponent(JSON.stringify({query, sort:{price:'asc'}}));
-  return `https://www.pathofexile.com/trade2/search/poe2/${encodeURIComponent(meta.league||'')}?q=${q}`;
+  return `https://www.pathofexile.com/trade/search/${encodeURIComponent(meta.league||'')}?q=${q}`;
 }
 function pkViewTrade(payload){ const u=pkBuildTradeUrl(payload); if(u) window.open(u,'_blank','noopener'); }
 /* Trade link for a BOARD card. Prefer the server's link when it's already a ?q= search (a fresh
@@ -1624,9 +1621,9 @@ function cardTradeUrl(k){
     const scope=r.scope_q?JSON.parse(JSON.stringify(r.scope_q)):{};
     const query=Object.assign({status:{option:meta.status||'online'}}, scope);
     query.stats=pkGroupsToStats([{type:'and',min:null,max:null,filters:filters}]);
-    if(equip.length){ const ef={}; equip.forEach(e=>{const v={}; if(e.min!=null)v.min=e.min; if(e.max!=null)v.max=e.max; if(Object.keys(v).length)ef[e.key]=v;}); if(Object.keys(ef).length){query.filters=query.filters||{}; query.filters.equipment_filters={filters:ef};} }
+    if(equip.length){ const ef={}; equip.forEach(e=>{const v={}; if(e.min!=null)v.min=e.min; if(e.max!=null)v.max=e.max; if(Object.keys(v).length)ef[e.key]=v;}); if(Object.keys(ef).length){query.filters=query.filters||{}; query.filters.armour_filters={filters:ef};} }
     const q=encodeURIComponent(JSON.stringify({query, sort:{price:'asc'}}));
-    return 'https://www.pathofexile.com/trade2/search/poe2/'+encodeURIComponent(meta.league||'')+'?q='+q;
+    return 'https://www.pathofexile.com/trade/search/'+encodeURIComponent(meta.league||'')+'?q='+q;
   }catch(e){} }
   return (p && p.trade_url) || '';
 }
@@ -1656,7 +1653,7 @@ function pkApplyTiers(){
   //  required -> AND group, each at ~60% of the build's roll (a "roughly this good" comparable);
   //  nice + not-important -> ONE Count group ("has at least ~a third of these bonus mods");
   //  unnecessary / negated-soft -> omitted.
-  // We deliberately use a COUNT group, not weighted-sum: the trade2 SEARCH API rejects weight
+  // We deliberately use a COUNT group, not weighted-sum: the PoE1 trade SEARCH API rejects weight
   // AND weight2 groups with HTTP 400 (verified against every documented format -- they are a
   // UI-only construct), so every old survey with soft mods silently failed to search. A count
   // group is fully supported and finds comparable items reliably.
@@ -1691,7 +1688,7 @@ function pkSurveyRow(rw){
   const txt=shown!=null?E(rw.text).replace(String(shown),`<span class="roll">${E(shown)}</span>`):E(rw.text);
   const note=isEq?' <span class="range">(defence total)</span>':(rw.added?' <span class="range">(off-item)</span>':'');
   const rm=rw.added?`<button class="rowrm" data-rid="${rw.rid}" type="button" title="remove">✕</button>`:'';
-  // defence totals go to equipment_filters (can't be weighted) -> only Required / Unnecessary;
+  // defence totals go to armour_filters (can't be weighted) -> only Required / Unnecessary;
   // coerce a legacy nice/notimp tier on an equip row to 'required' so the select shows sanely.
   const tiers = isEq ? [['required','Required'],['skip','Unnecessary']] : SURVEY_TIERS;
   if(isEq && rw.tier!=='required' && rw.tier!=='skip') rw.tier='required';

@@ -2,47 +2,55 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-# frameType -> rarity label (GGG standard item frame ids)
+# frameType -> rarity label (GGG standard item frame ids). PoE1: 9 = Relic (foil uniques
+# reuse the unique frame + a `foil` flag, unlike PoE2 where 9/10 were Foil). Routing keys
+# only on 1-4, so 9's label is cosmetic.
 FRAME_RARITY = {0: "Normal", 1: "Magic", 2: "Rare", 3: "Unique", 4: "Gem",
-                5: "Currency", 6: "Divination", 9: "Foil", 10: "Foil"}
+                5: "Currency", 6: "Divination", 8: "Prophecy", 9: "Relic"}
 
-# Pricing categories we route items into.
+# Pricing categories we route items into. (PoE2's CAT_RUNE is deleted -- PoE1 has no
+# runes / soul cores; that frame-5 socketed mechanic does not exist here.)
 CAT_UNIQUE = "unique"
 CAT_RARE = "rare"
-CAT_MAGIC = "magic"      # magic flasks / charms
-CAT_RUNE = "rune"        # runes / soul cores (frameType Currency, socketed)
-CAT_GEM = "gem"          # skill / support gems
+CAT_MAGIC = "magic"      # magic flasks / magic jewels (typically cheap)
+CAT_GEM = "gem"          # skill / support gems (real, tradeable items in PoE1)
 CAT_NORMAL = "normal"
 
 
 @dataclass
 class Item:
     name: str                       # unique name, or "" for non-uniques
-    base_type: str                  # e.g. "Utility Belt"
+    base_type: str                  # e.g. "Astral Plate"
     type_line: str                  # full type incl. magic affixes
     frame_type: int                 # GGG frameType
     rarity: str                     # label from FRAME_RARITY
     category: str                   # one of CAT_*
-    group: str                      # "equipment" | "flask" | "jewel" | "rune" | "gem"
+    group: str                      # "equipment" | "flask" | "jewel" | "gem"
     slot: str                       # display slot name (Ring, Body Armour, ...)
     explicit_mods: List[str] = field(default_factory=list)
     mod_src: List[str] = field(default_factory=list)   # trade group per explicit mod (enchant/explicit/...)
     implicit_mods: List[str] = field(default_factory=list)
-    rune_mods: List[str] = field(default_factory=list)
-    mods_explicit: List[dict] = field(default_factory=list)  # {id, stats}
+    mods_explicit: List[dict] = field(default_factory=list)  # {id, stats} (best-effort; unused in pricing)
     corrupted: bool = False
     ilvl: int = 0
     support: bool = False           # gems only
     icon: str = ""
-    count: int = 1                  # how many copies (runes dedupe into one line)
+    count: int = 1                  # how many copies
     defences: Dict[str, int] = field(default_factory=dict)  # ar/ev/es/ward totals (armour)
+    # PoE1 sockets / LINKS (brand new vs PoE2; a 5L/6L is a major price component).
+    # sockets: raw [{group, attr, sColour}]; max_link = size of the largest link-group;
+    # total_sockets = len(sockets); socket_colours = per-socket display colour (R/G/B/W/A).
+    sockets: List[dict] = field(default_factory=list)
+    max_link: int = 0
+    total_sockets: int = 0
+    socket_colours: List[str] = field(default_factory=list)
     raw: Dict[str, Any] = field(default_factory=dict)
-    # gems: an active skill carries its level, its used support-socket count, and the
-    # list of its support gems [{name, lineage}]. is_lineage marks a lineage support gem.
+    # gems: PoE1 prices each gem as a real item by name + level + quality + corruption.
+    # An active-skill gem carries its own level/quality and the list of its support gems
+    # (each a priceable item: {name, level, quality, corrupted, icon}). No uncut/lineage.
     gem_level: int = 0
-    gem_sockets: int = 0
+    gem_quality: int = 0
     supports: List[dict] = field(default_factory=list)
-    is_lineage: bool = False
 
     @property
     def display_name(self) -> str:
@@ -53,7 +61,7 @@ class Item:
 
 @dataclass
 class PriceTier:
-    minimum: Optional[float] = None   # exalted
+    minimum: Optional[float] = None   # chaos
     median: Optional[float] = None
     high: Optional[float] = None
 
@@ -64,7 +72,7 @@ class PriceResult:
     tier: PriceTier = field(default_factory=PriceTier)
     sample_size: int = 0            # listings used after trimming
     total_found: int = 0            # total listings the search reported
-    method: str = ""                # "unique-name", "rare-mods", "exchange", ...
+    method: str = ""                # "unique-name", "rare-mods", "skill", ...
     confidence: str = "n/a"         # high / medium / low / none
     note: str = ""
     trade_url: str = ""             # link to reproduce the search in a browser

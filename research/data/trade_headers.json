@@ -1,0 +1,86 @@
+{
+  "search:unique": {
+    "status": 200,
+    "url": "https://www.pathofexile.com/api/trade/search/Allflame",
+    "method": "POST",
+    "rate_headers": {
+      "Content-Type": "application/json",
+      "X-Rate-Limit-Policy": "trade-search-request-limit",
+      "X-Rate-Limit-Rules": "Ip",
+      "X-Rate-Limit-Ip": "5:10:60,15:60:300,30:300:1800,600:21600:3600",
+      "X-Rate-Limit-Ip-State": "1:10:0,1:60:0,1:300:0,1:21600:0"
+    }
+  },
+  "search:rare+links": {
+    "status": 200,
+    "url": "https://www.pathofexile.com/api/trade/search/Allflame",
+    "method": "POST",
+    "rate_headers": {
+      "Content-Type": "application/json",
+      "X-Rate-Limit-Policy": "trade-search-request-limit",
+      "X-Rate-Limit-Rules": "Ip",
+      "X-Rate-Limit-Ip": "5:10:60,15:60:300,30:300:1800,600:21600:3600",
+      "X-Rate-Limit-Ip-State": "2:10:0,2:60:0,2:300:0,2:21600:0"
+    }
+  },
+  "search:pricesort+armour": {
+    "status": 200,
+    "url": "https://www.pathofexile.com/api/trade/search/Allflame",
+    "method": "POST",
+    "rate_headers": {
+      "Content-Type": "application/json",
+      "X-Rate-Limit-Policy": "trade-search-request-limit",
+      "X-Rate-Limit-Rules": "Ip",
+      "X-Rate-Limit-Ip": "5:10:60,15:60:300,30:300:1800,600:21600:3600",
+      "X-Rate-Limit-Ip-State": "3:10:0,3:60:0,3:300:0,3:21600:0"
+    }
+  },
+  "exchange:chaos->divine": {
+    "status": 200,
+    "url": "https://www.pathofexile.com/api/trade/exchange/Allflame",
+    "method": "POST",
+    "rate_headers": {
+      "Content-Type": "application/json",
+      "X-Rate-Limit-Policy": "trade-exchange-request-limit",
+      "X-Rate-Limit-Rules": "Ip",
+      "X-Rate-Limit-Ip": "5:15:60,10:90:300,30:300:1800",
+      "X-Rate-Limit-Ip-State": "1:15:0,1:90:0,1:300:0"
+    }
+  },
+  "fetch:10ids": {
+    "status": 200,
+    "url": "https://www.pathofexile.com/api/trade/fetch/94e4db9bbb3cfb7cb6e84ffaa76f114d1bee8e08b0afed5edcfd2510b213ea34,31e49ad4264a19de0cca56536e8ae72cf2a89a43f315edf1c89a4ba5892edd42,ea437bf77a230e77a3a08f1fe865dfd8d2dd20879ca8513df30b51f7a9771a32,9d1f0b9949cd8b3955be8e194d3f3a568b184b8e55ab9775ce18515f3f075def,782a7ea60cbb0f2046d67a6f2f07d08bd6fc57273d2ea30e2cc424aa909a773b,8916b2fde702b2c465629f69b20572f98fe819a21426fc9aab75833bfb896f87,0953b9d5e084a76e058be67c80a609b5d15e9811633db451e6236247e50c29b1,53d27540bb5b16609ac4262af04ff25b987df6a61203db3a61cccd687094b081,53503c1db65c09faa4f2c5bb79f70c2219038146a034accc7d5a2b907eef2ba1,572d10f181b12d4a5534f4e698197d154224b71cff88b0fcdfc6e2214807cf48?query=7np9qdGnC5",
+    "method": "GET",
+    "rate_headers": {
+      "Content-Type": "application/json",
+      "X-Rate-Limit-Policy": "trade-fetch-request-limit",
+      "X-Rate-Limit-Rules": "Ip",
+      "X-Rate-Limit-Ip": "12:4:10,16:12:300,50:300:300,1000:21600:1800",
+      "X-Rate-Limit-Ip-State": "1:4:0,1:12:0,1:300:0,1:21600:0"
+    }
+  },
+  "fetch:11probe": {
+    "status": 400,
+    "url": "https://www.pathofexile.com/api/trade/fetch/94e4db9bbb3cfb7cb6e84ffaa76f114d1bee8e08b0afed5edcfd2510b213ea34,31e49ad4264a19de0cca56536e8ae72cf2a89a43f315edf1c89a4ba5892edd42,ea437bf77a230e77a3a08f1fe865dfd8d2dd20879ca8513df30b51f7a9771a32,9d1f0b9949cd8b3955be8e194d3f3a568b184b8e55ab9775ce18515f3f075def,782a7ea60cbb0f2046d67a6f2f07d08bd6fc57273d2ea30e2cc424aa909a773b,8916b2fde702b2c465629f69b20572f98fe819a21426fc9aab75833bfb896f87,0953b9d5e084a76e058be67c80a609b5d15e9811633db451e6236247e50c29b1,53d27540bb5b16609ac4262af04ff25b987df6a61203db3a61cccd687094b081,53503c1db65c09faa4f2c5bb79f70c2219038146a034accc7d5a2b907eef2ba1,572d10f181b12d4a5534f4e698197d154224b71cff88b0fcdfc6e2214807cf48,d651689978ade2314ef619a0560d9b2eb4c81174f548d93df39ac33507f728ce?query=7np9qdGnC5",
+    "method": "GET",
+    "rate_headers": {
+      "Content-Type": "application/json",
+      "X-Rate-Limit-Policy": "trade-fetch-request-limit",
+      "X-Rate-Limit-Rules": "Ip",
+      "X-Rate-Limit-Ip": "12:4:10,16:12:300,50:300:300,1000:21600:1800",
+      "X-Rate-Limit-Ip-State": "2:4:0,2:12:0,2:300:0,2:21600:0"
+    }
+  },
+  "fetch:rare": {
+    "status": 200,
+    "url": "https://www.pathofexile.com/api/trade/fetch/15d2969fdd20fc513993df262d4c497cb1e899cf09641419e455814076217c68,4708d661571ecaeab4c28fa58d9be1e81a21d77ab257cce8f5578f277a13ccee?query=5nvVebPJSa",
+    "method": "GET",
+    "rate_headers": {
+      "Content-Type": "application/json",
+      "X-Rate-Limit-Policy": "trade-fetch-request-limit",
+      "X-Rate-Limit-Rules": "Ip",
+      "X-Rate-Limit-Ip": "12:4:10,16:12:300,50:300:300,1000:21600:1800",
+      "X-Rate-Limit-Ip-State": "2:4:0,3:12:0,3:300:0,3:21600:0"
+    }
+  }
+}

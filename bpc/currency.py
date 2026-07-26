@@ -1,25 +1,30 @@
 """Convert trade listing prices (divine / chaos / exalted / mirror / ...) to a single
 canonical unit so item costs can be summed and compared.
 
-Canonical unit = Exalted Orb (the PoE2 base currency). We also surface a Divine-Orb
+Canonical unit = Chaos Orb (PoE1's trade index standard). We also surface a Divine-Orb
 figure for readability because expensive builds are quoted in divine.
+
+Rates come primarily from poe.ninja's Currency economy (one cheap GET, no trade API ->
+no ban risk): a currency line's `primaryValue` is already its price in chaos. The trade
+`exchange` endpoint is only a fallback for a currency poe.ninja doesn't list.
 """
 from typing import Dict, List, Optional
 
 from . import cache, util
 from .trade import TradeClient
 
-# Currencies we never need to look up.
-_BASE = "exalted"
+# PoE1 base currency.
+_BASE = "chaos"
 
 
 class CurrencyConverter:
-    def __init__(self, client: TradeClient):
+    def __init__(self, client: TradeClient, economy=None):
         self.client = client
+        self.economy = economy       # a poeninja.PoeNinjaEconomy (chaos rates), or None
         self._rates: Dict[str, Optional[float]] = {_BASE: 1.0}
 
     def rate(self, currency: str) -> Optional[float]:
-        """Exalted Orbs per 1 unit of `currency` (None if it can't be priced)."""
+        """Chaos Orbs per 1 unit of `currency` (None if it can't be priced)."""
         currency = (currency or "").lower()
         if currency in self._rates:
             return self._rates[currency]
@@ -38,6 +43,15 @@ class CurrencyConverter:
         return rate
 
     def _lookup(self, currency: str) -> Optional[float]:
+        # Primary source: poe.ninja Currency economy (line.primaryValue is chaos directly).
+        if self.economy is not None:
+            try:
+                ex = self.economy.chaos_by_id("Currency", currency)
+            except Exception:
+                ex = None
+            if ex is not None and ex > 0:
+                return ex
+        # Fallback: the trade bulk-exchange endpoint (have chaos, want the currency).
         try:
             data = self.client.exchange(want=currency, have=_BASE)
         except Exception:
@@ -49,29 +63,38 @@ class CurrencyConverter:
             for off in entry.get("listing", {}).get("offers", []):
                 ex, it = off.get("exchange", {}), off.get("item", {})
                 if ex.get("currency") == _BASE and it.get("currency") == currency:
-                    give = ex.get("amount")    # exalted you pay
+                    give = ex.get("amount")    # chaos you pay
                     get = it.get("amount")     # units you receive
                     if give and get:
                         ratios.append(give / get)
         return util.median(ratios) if ratios else None
 
-    def to_exalted(self, amount: float, currency: str) -> Optional[float]:
+    def to_chaos(self, amount: float, currency: str) -> Optional[float]:
         r = self.rate(currency)
         return amount * r if r is not None else None
 
     # ---- display ---------------------------------------------------------
     def divine_rate(self) -> Optional[float]:
+        """Chaos per 1 Divine Orb (the figure used for the Divine display column).
+        poe.ninja's Divine currency line carries this as `primaryValue` (~102.5)."""
+        if self.economy is not None:
+            try:
+                dr = self.economy.chaos_by_id("Currency", "divine")
+            except Exception:
+                dr = None
+            if dr is not None and dr > 0:
+                return dr
         return self.rate("divine")
 
-    def fmt(self, exalted: Optional[float]) -> str:
-        """Human-friendly amount, e.g. '512 ex (4.1 div)'."""
-        if exalted is None:
+    def fmt(self, chaos: Optional[float]) -> str:
+        """Human-friendly amount, e.g. '4.1 div (420 chaos)' or '35 chaos'."""
+        if chaos is None:
             return "n/a"
-        ex = exalted
+        c = chaos
         div_rate = self.divine_rate()
-        ex_str = f"{ex:,.0f} ex" if ex >= 10 else f"{ex:,.1f} ex"
-        if div_rate and ex >= div_rate * 0.5:
-            div = ex / div_rate
+        c_str = f"{c:,.0f} chaos" if c >= 10 else f"{c:,.1f} chaos"
+        if div_rate and c >= div_rate * 0.5:
+            div = c / div_rate
             div_str = f"{div:,.1f} div" if div < 100 else f"{div:,.0f} div"
-            return f"{div_str} ({ex_str})"
-        return ex_str
+            return f"{div_str} ({c_str})"
+        return c_str

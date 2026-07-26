@@ -1,0 +1,1650 @@
+{
+  "result": [
+    {
+      "id": "94e4db9bbb3cfb7cb6e84ffaa76f114d1bee8e08b0afed5edcfd2510b213ea34",
+      "listing": {
+        "method": "psapi",
+        "indexed": "2026-07-26T20:34:32Z",
+        "stash": {
+          "name": "~price 1 chaos",
+          "x": 26,
+          "y": 0
+        },
+        "price": {
+          "type": "~price",
+          "amount": 1,
+          "currency": "chaos"
+        },
+        "account": {
+          "name": "mozart_hostile#5805",
+          "online": {
+            "league": "Allflame"
+          },
+          "lastCharacterName": "Mozartgogo",
+          "language": "en_US",
+          "realm": "pc"
+        },
+        "whisper": "@Mozartgogo Hi, I would like to buy your Goldrim Leather Cap listed for 1 chaos in Allflame (stash tab \"~price 1 chaos\"; position: left 27, top 1)"
+      },
+      "item": {
+        "verified": true,
+        "w": 2,
+        "h": 2,
+        "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQXJtb3Vycy9IZWxtZXRzL0hlbG1ldERleFVuaXF1ZTIiLCJ3IjoyLCJoIjoyLCJzY2FsZSI6MX1d/7f4908ef2f/HelmetDexUnique2.png",
+        "league": "Allflame",
+        "id": "94e4db9bbb3cfb7cb6e84ffaa76f114d1bee8e08b0afed5edcfd2510b213ea34",
+        "sockets": [
+          {
+            "group": 0,
+            "attr": "D",
+            "sColour": "G"
+          },
+          {
+            "group": 0,
+            "attr": "G",
+            "sColour": "W"
+          },
+          {
+            "group": 1,
+            "attr": "G",
+            "sColour": "W"
+          }
+        ],
+        "name": "Goldrim",
+        "typeLine": "Leather Cap",
+        "baseType": "Leather Cap",
+        "rarity": "Unique",
+        "ilvl": 77,
+        "identified": true,
+        "properties": [
+          {
+            "name": "Evasion Rating",
+            "values": [
+              [
+                "62",
+                1
+              ]
+            ],
+            "displayMode": 0,
+            "type": 17
+          }
+        ],
+        "explicitMods": [
+          {
+            "description": "+39 to Evasion Rating",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_53045048",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "30",
+                    "max": "50"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "10% increased Rarity of Items found",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_3917489142",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "10",
+                    "max": "10"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "+31% to all Elemental Resistances",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_2901986750",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "30",
+                    "max": "40"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "Reflects 4 Physical Damage to Melee Attackers",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_3767873853",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "4",
+                    "max": "4"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "flavourText": [
+          "No metal slips as easily through the fingers as gold."
+        ],
+        "frameType": 3,
+        "frameTypeId": "Unique",
+        "extended": {
+          "base_defence_percentile": 50,
+          "ev": 74,
+          "ev_aug": true,
+          "hashes": {
+            "explicit": [
+              [
+                "explicit.stat_53045048",
+                [
+                  0
+                ]
+              ],
+              [
+                "explicit.stat_3917489142",
+                [
+                  3
+                ]
+              ],
+              [
+                "explicit.stat_2901986750",
+                [
+                  1
+                ]
+              ],
+              [
+                "explicit.stat_3767873853",
+                [
+                  2
+                ]
+              ]
+            ]
+          },
+          "text": "SXRlbSBDbGFzczogSGVsbWV0cw0KUmFyaXR5OiBVbmlxdWUNCkdvbGRyaW0NCkxlYXRoZXIgQ2FwDQotLS0tLS0tLQ0KRXZhc2lvbiBSYXRpbmc6IDYyIChhdWdtZW50ZWQpDQotLS0tLS0tLQ0KU29ja2V0czogRy1XIFcgDQotLS0tLS0tLQ0KSXRlbSBMZXZlbDogNzcNCi0tLS0tLS0tDQorMzkgdG8gRXZhc2lvbiBSYXRpbmcNCjEwJSBpbmNyZWFzZWQgUmFyaXR5IG9mIEl0ZW1zIGZvdW5kDQorMzElIHRvIGFsbCBFbGVtZW50YWwgUmVzaXN0YW5jZXMNClJlZmxlY3RzIDQgUGh5c2ljYWwgRGFtYWdlIHRvIE1lbGVlIEF0dGFja2Vycw0KLS0tLS0tLS0NCk5vIG1ldGFsIHNsaXBzIGFzIGVhc2lseSB0aHJvdWdoIHRoZSBmaW5nZXJzIGFzIGdvbGQuDQo="
+        }
+      }
+    },
+    {
+      "id": "31e49ad4264a19de0cca56536e8ae72cf2a89a43f315edf1c89a4ba5892edd42",
+      "listing": {
+        "method": "psapi",
+        "indexed": "2026-07-26T20:16:05Z",
+        "stash": {
+          "name": "~price 1 chaos",
+          "x": 4,
+          "y": 20
+        },
+        "price": {
+          "type": "~price",
+          "amount": 1,
+          "currency": "chaos"
+        },
+        "account": {
+          "name": "PyroTheReal#7587",
+          "online": {
+            "league": "Allflame"
+          },
+          "lastCharacterName": "CotaSharknado",
+          "language": "en_US",
+          "realm": "pc"
+        },
+        "whisper": "@CotaSharknado Hi, I would like to buy your Goldrim Leather Cap listed for 1 chaos in Allflame (stash tab \"~price 1 chaos\"; position: left 5, top 21)"
+      },
+      "item": {
+        "verified": true,
+        "w": 2,
+        "h": 2,
+        "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQXJtb3Vycy9IZWxtZXRzL0hlbG1ldERleFVuaXF1ZTIiLCJ3IjoyLCJoIjoyLCJzY2FsZSI6MX1d/7f4908ef2f/HelmetDexUnique2.png",
+        "league": "Allflame",
+        "id": "31e49ad4264a19de0cca56536e8ae72cf2a89a43f315edf1c89a4ba5892edd42",
+        "sockets": [
+          {
+            "group": 0,
+            "attr": "G",
+            "sColour": "W"
+          }
+        ],
+        "name": "Goldrim",
+        "typeLine": "Leather Cap",
+        "baseType": "Leather Cap",
+        "rarity": "Unique",
+        "ilvl": 84,
+        "identified": true,
+        "properties": [
+          {
+            "name": "Evasion Rating",
+            "values": [
+              [
+                "53",
+                1
+              ]
+            ],
+            "displayMode": 0,
+            "type": 17
+          }
+        ],
+        "explicitMods": [
+          {
+            "description": "+34 to Evasion Rating",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_53045048",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "30",
+                    "max": "50"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "10% increased Rarity of Items found",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_3917489142",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "10",
+                    "max": "10"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "+36% to all Elemental Resistances",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_2901986750",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "30",
+                    "max": "40"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "Reflects 4 Physical Damage to Melee Attackers",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_3767873853",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "4",
+                    "max": "4"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "flavourText": [
+          "No metal slips as easily through the fingers as gold."
+        ],
+        "frameType": 3,
+        "frameTypeId": "Unique",
+        "extended": {
+          "base_defence_percentile": 0,
+          "ev": 64,
+          "ev_aug": true,
+          "hashes": {
+            "explicit": [
+              [
+                "explicit.stat_53045048",
+                [
+                  0
+                ]
+              ],
+              [
+                "explicit.stat_3917489142",
+                [
+                  3
+                ]
+              ],
+              [
+                "explicit.stat_2901986750",
+                [
+                  1
+                ]
+              ],
+              [
+                "explicit.stat_3767873853",
+                [
+                  2
+                ]
+              ]
+            ]
+          },
+          "text": "SXRlbSBDbGFzczogSGVsbWV0cw0KUmFyaXR5OiBVbmlxdWUNCkdvbGRyaW0NCkxlYXRoZXIgQ2FwDQotLS0tLS0tLQ0KRXZhc2lvbiBSYXRpbmc6IDUzIChhdWdtZW50ZWQpDQotLS0tLS0tLQ0KU29ja2V0czogVyANCi0tLS0tLS0tDQpJdGVtIExldmVsOiA4NA0KLS0tLS0tLS0NCiszNCB0byBFdmFzaW9uIFJhdGluZw0KMTAlIGluY3JlYXNlZCBSYXJpdHkgb2YgSXRlbXMgZm91bmQNCiszNiUgdG8gYWxsIEVsZW1lbnRhbCBSZXNpc3RhbmNlcw0KUmVmbGVjdHMgNCBQaHlzaWNhbCBEYW1hZ2UgdG8gTWVsZWUgQXR0YWNrZXJzDQotLS0tLS0tLQ0KTm8gbWV0YWwgc2xpcHMgYXMgZWFzaWx5IHRocm91Z2ggdGhlIGZpbmdlcnMgYXMgZ29sZC4NCg=="
+        }
+      }
+    },
+    {
+      "id": "ea437bf77a230e77a3a08f1fe865dfd8d2dd20879ca8513df30b51f7a9771a32",
+      "listing": {
+        "method": "psapi",
+        "indexed": "2026-07-26T14:36:37Z",
+        "stash": {
+          "name": "~price 1 chaos",
+          "x": 11,
+          "y": 4
+        },
+        "price": {
+          "type": "~price",
+          "amount": 1,
+          "currency": "chaos"
+        },
+        "account": {
+          "name": "blurryside#6449",
+          "online": {
+            "league": "Allflame"
+          },
+          "lastCharacterName": "AllflamexClapi",
+          "language": "en_US",
+          "realm": "pc"
+        },
+        "whisper": "@AllflamexClapi Hi, I would like to buy your Goldrim Leather Cap listed for 1 chaos in Allflame (stash tab \"~price 1 chaos\"; position: left 12, top 5)"
+      },
+      "item": {
+        "verified": true,
+        "w": 2,
+        "h": 2,
+        "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQXJtb3Vycy9IZWxtZXRzL0hlbG1ldERleFVuaXF1ZTIiLCJ3IjoyLCJoIjoyLCJzY2FsZSI6MX1d/7f4908ef2f/HelmetDexUnique2.png",
+        "league": "Allflame",
+        "id": "ea437bf77a230e77a3a08f1fe865dfd8d2dd20879ca8513df30b51f7a9771a32",
+        "sockets": [
+          {
+            "group": 0,
+            "attr": "D",
+            "sColour": "G"
+          }
+        ],
+        "name": "Goldrim",
+        "typeLine": "Leather Cap",
+        "baseType": "Leather Cap",
+        "rarity": "Unique",
+        "ilvl": 85,
+        "identified": true,
+        "properties": [
+          {
+            "name": "Evasion Rating",
+            "values": [
+              [
+                "67",
+                1
+              ]
+            ],
+            "displayMode": 0,
+            "type": 17
+          }
+        ],
+        "explicitMods": [
+          {
+            "description": "+48 to Evasion Rating",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_53045048",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "30",
+                    "max": "50"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "10% increased Rarity of Items found",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_3917489142",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "10",
+                    "max": "10"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "+30% to all Elemental Resistances",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_2901986750",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "30",
+                    "max": "40"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "Reflects 4 Physical Damage to Melee Attackers",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_3767873853",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "4",
+                    "max": "4"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "flavourText": [
+          "No metal slips as easily through the fingers as gold."
+        ],
+        "frameType": 3,
+        "frameTypeId": "Unique",
+        "extended": {
+          "base_defence_percentile": 0,
+          "ev": 80,
+          "ev_aug": true,
+          "hashes": {
+            "explicit": [
+              [
+                "explicit.stat_53045048",
+                [
+                  0
+                ]
+              ],
+              [
+                "explicit.stat_3917489142",
+                [
+                  3
+                ]
+              ],
+              [
+                "explicit.stat_2901986750",
+                [
+                  1
+                ]
+              ],
+              [
+                "explicit.stat_3767873853",
+                [
+                  2
+                ]
+              ]
+            ]
+          },
+          "text": "SXRlbSBDbGFzczogSGVsbWV0cw0KUmFyaXR5OiBVbmlxdWUNCkdvbGRyaW0NCkxlYXRoZXIgQ2FwDQotLS0tLS0tLQ0KRXZhc2lvbiBSYXRpbmc6IDY3IChhdWdtZW50ZWQpDQotLS0tLS0tLQ0KU29ja2V0czogRyANCi0tLS0tLS0tDQpJdGVtIExldmVsOiA4NQ0KLS0tLS0tLS0NCis0OCB0byBFdmFzaW9uIFJhdGluZw0KMTAlIGluY3JlYXNlZCBSYXJpdHkgb2YgSXRlbXMgZm91bmQNCiszMCUgdG8gYWxsIEVsZW1lbnRhbCBSZXNpc3RhbmNlcw0KUmVmbGVjdHMgNCBQaHlzaWNhbCBEYW1hZ2UgdG8gTWVsZWUgQXR0YWNrZXJzDQotLS0tLS0tLQ0KTm8gbWV0YWwgc2xpcHMgYXMgZWFzaWx5IHRocm91Z2ggdGhlIGZpbmdlcnMgYXMgZ29sZC4NCg=="
+        }
+      }
+    },
+    {
+      "id": "9d1f0b9949cd8b3955be8e194d3f3a568b184b8e55ab9775ce18515f3f075def",
+      "listing": {
+        "method": "psapi",
+        "indexed": "2026-07-25T21:26:50Z",
+        "stash": {
+          "name": "~b/o 1 chaos",
+          "x": 0,
+          "y": 1
+        },
+        "price": {
+          "type": "~b/o",
+          "amount": 1,
+          "currency": "chaos"
+        },
+        "account": {
+          "name": "Exoca#7522",
+          "online": {
+            "league": "Allflame"
+          },
+          "lastCharacterName": "ExoEKa",
+          "language": "en_US",
+          "realm": "pc"
+        },
+        "whisper": "@ExoEKa Hi, I would like to buy your Goldrim Leather Cap listed for 1 chaos in Allflame (stash tab \"~b/o 1 chaos\"; position: left 1, top 2)"
+      },
+      "item": {
+        "verified": true,
+        "w": 2,
+        "h": 2,
+        "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQXJtb3Vycy9IZWxtZXRzL0hlbG1ldERleFVuaXF1ZTIiLCJ3IjoyLCJoIjoyLCJzY2FsZSI6MX1d/7f4908ef2f/HelmetDexUnique2.png",
+        "league": "Allflame",
+        "id": "9d1f0b9949cd8b3955be8e194d3f3a568b184b8e55ab9775ce18515f3f075def",
+        "sockets": [
+          {
+            "group": 0,
+            "attr": "G",
+            "sColour": "W"
+          }
+        ],
+        "name": "Goldrim",
+        "typeLine": "Leather Cap",
+        "baseType": "Leather Cap",
+        "rarity": "Unique",
+        "ilvl": 75,
+        "identified": true,
+        "properties": [
+          {
+            "name": "Evasion Rating",
+            "values": [
+              [
+                "71",
+                1
+              ]
+            ],
+            "displayMode": 0,
+            "type": 17
+          }
+        ],
+        "explicitMods": [
+          {
+            "description": "+46 to Evasion Rating",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_53045048",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "30",
+                    "max": "50"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "10% increased Rarity of Items found",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_3917489142",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "10",
+                    "max": "10"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "+31% to all Elemental Resistances",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_2901986750",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "30",
+                    "max": "40"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "Reflects 4 Physical Damage to Melee Attackers",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_3767873853",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "4",
+                    "max": "4"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "flavourText": [
+          "No metal slips as easily through the fingers as gold."
+        ],
+        "frameType": 3,
+        "frameTypeId": "Unique",
+        "extended": {
+          "base_defence_percentile": 75,
+          "ev": 85,
+          "ev_aug": true,
+          "hashes": {
+            "explicit": [
+              [
+                "explicit.stat_53045048",
+                [
+                  0
+                ]
+              ],
+              [
+                "explicit.stat_3917489142",
+                [
+                  3
+                ]
+              ],
+              [
+                "explicit.stat_2901986750",
+                [
+                  1
+                ]
+              ],
+              [
+                "explicit.stat_3767873853",
+                [
+                  2
+                ]
+              ]
+            ]
+          },
+          "text": "SXRlbSBDbGFzczogSGVsbWV0cw0KUmFyaXR5OiBVbmlxdWUNCkdvbGRyaW0NCkxlYXRoZXIgQ2FwDQotLS0tLS0tLQ0KRXZhc2lvbiBSYXRpbmc6IDcxIChhdWdtZW50ZWQpDQotLS0tLS0tLQ0KU29ja2V0czogVyANCi0tLS0tLS0tDQpJdGVtIExldmVsOiA3NQ0KLS0tLS0tLS0NCis0NiB0byBFdmFzaW9uIFJhdGluZw0KMTAlIGluY3JlYXNlZCBSYXJpdHkgb2YgSXRlbXMgZm91bmQNCiszMSUgdG8gYWxsIEVsZW1lbnRhbCBSZXNpc3RhbmNlcw0KUmVmbGVjdHMgNCBQaHlzaWNhbCBEYW1hZ2UgdG8gTWVsZWUgQXR0YWNrZXJzDQotLS0tLS0tLQ0KTm8gbWV0YWwgc2xpcHMgYXMgZWFzaWx5IHRocm91Z2ggdGhlIGZpbmdlcnMgYXMgZ29sZC4NCg=="
+        }
+      }
+    },
+    {
+      "id": "782a7ea60cbb0f2046d67a6f2f07d08bd6fc57273d2ea30e2cc424aa909a773b",
+      "listing": {
+        "method": "psapi",
+        "indexed": "2026-07-25T18:15:05Z",
+        "stash": {
+          "name": "~price 1 chaos",
+          "x": 10,
+          "y": 10
+        },
+        "price": {
+          "type": "~price",
+          "amount": 1,
+          "currency": "chaos"
+        },
+        "account": {
+          "name": "Kiuroman#5601",
+          "online": {
+            "league": "Allflame"
+          },
+          "lastCharacterName": "Sisters_Of_Mercy",
+          "language": "en_US",
+          "realm": "pc"
+        },
+        "whisper": "@Sisters_Of_Mercy Hi, I would like to buy your Goldrim Leather Cap listed for 1 chaos in Allflame (stash tab \"~price 1 chaos\"; position: left 11, top 11)"
+      },
+      "item": {
+        "verified": true,
+        "w": 2,
+        "h": 2,
+        "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQXJtb3Vycy9IZWxtZXRzL0hlbG1ldERleFVuaXF1ZTIiLCJ3IjoyLCJoIjoyLCJzY2FsZSI6MX1d/7f4908ef2f/HelmetDexUnique2.png",
+        "league": "Allflame",
+        "id": "782a7ea60cbb0f2046d67a6f2f07d08bd6fc57273d2ea30e2cc424aa909a773b",
+        "sockets": [
+          {
+            "group": 0,
+            "attr": "G",
+            "sColour": "W"
+          },
+          {
+            "group": 1,
+            "attr": "D",
+            "sColour": "G"
+          }
+        ],
+        "name": "Goldrim",
+        "typeLine": "Leather Cap",
+        "baseType": "Leather Cap",
+        "rarity": "Unique",
+        "ilvl": 36,
+        "identified": true,
+        "corrupted": true,
+        "properties": [
+          {
+            "name": "Evasion Rating",
+            "values": [
+              [
+                "68",
+                1
+              ]
+            ],
+            "displayMode": 0,
+            "type": 17
+          }
+        ],
+        "explicitMods": [
+          {
+            "description": "+44 to Evasion Rating",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_53045048",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "30",
+                    "max": "50"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "10% increased Rarity of Items found",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_3917489142",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "10",
+                    "max": "10"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "+35% to all Elemental Resistances",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_2901986750",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "30",
+                    "max": "40"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "Reflects 4 Physical Damage to Melee Attackers",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_3767873853",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "4",
+                    "max": "4"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "flavourText": [
+          "No metal slips as easily through the fingers as gold."
+        ],
+        "frameType": 3,
+        "frameTypeId": "Unique",
+        "extended": {
+          "base_defence_percentile": 63,
+          "ev": 82,
+          "ev_aug": true,
+          "hashes": {
+            "explicit": [
+              [
+                "explicit.stat_53045048",
+                [
+                  0
+                ]
+              ],
+              [
+                "explicit.stat_3917489142",
+                [
+                  3
+                ]
+              ],
+              [
+                "explicit.stat_2901986750",
+                [
+                  1
+                ]
+              ],
+              [
+                "explicit.stat_3767873853",
+                [
+                  2
+                ]
+              ]
+            ]
+          },
+          "text": "SXRlbSBDbGFzczogSGVsbWV0cw0KUmFyaXR5OiBVbmlxdWUNCkdvbGRyaW0NCkxlYXRoZXIgQ2FwDQotLS0tLS0tLQ0KRXZhc2lvbiBSYXRpbmc6IDY4IChhdWdtZW50ZWQpDQotLS0tLS0tLQ0KU29ja2V0czogVyBHIA0KLS0tLS0tLS0NCkl0ZW0gTGV2ZWw6IDM2DQotLS0tLS0tLQ0KKzQ0IHRvIEV2YXNpb24gUmF0aW5nDQoxMCUgaW5jcmVhc2VkIFJhcml0eSBvZiBJdGVtcyBmb3VuZA0KKzM1JSB0byBhbGwgRWxlbWVudGFsIFJlc2lzdGFuY2VzDQpSZWZsZWN0cyA0IFBoeXNpY2FsIERhbWFnZSB0byBNZWxlZSBBdHRhY2tlcnMNCi0tLS0tLS0tDQpObyBtZXRhbCBzbGlwcyBhcyBlYXNpbHkgdGhyb3VnaCB0aGUgZmluZ2VycyBhcyBnb2xkLg0KLS0tLS0tLS0NCkNvcnJ1cHRlZA0K"
+        }
+      }
+    },
+    {
+      "id": "8916b2fde702b2c465629f69b20572f98fe819a21426fc9aab75833bfb896f87",
+      "listing": {
+        "method": "psapi",
+        "indexed": "2026-07-26T16:51:27Z",
+        "stash": {
+          "name": "~price 0.911 chaos",
+          "x": 4,
+          "y": 10
+        },
+        "price": {
+          "type": "~price",
+          "amount": 1,
+          "currency": "chaos"
+        },
+        "account": {
+          "name": "nocki500#3873",
+          "online": {
+            "league": "Allflame"
+          },
+          "lastCharacterName": "nockias",
+          "language": "en_US",
+          "realm": "pc"
+        },
+        "whisper": "@nockias Hi, I would like to buy your Goldrim Leather Cap listed for 1 chaos in Allflame (stash tab \"~price 0.911 chaos\"; position: left 5, top 11)"
+      },
+      "item": {
+        "verified": true,
+        "w": 2,
+        "h": 2,
+        "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQXJtb3Vycy9IZWxtZXRzL0hlbG1ldERleFVuaXF1ZTIiLCJ3IjoyLCJoIjoyLCJzY2FsZSI6MX1d/7f4908ef2f/HelmetDexUnique2.png",
+        "league": "Allflame",
+        "id": "8916b2fde702b2c465629f69b20572f98fe819a21426fc9aab75833bfb896f87",
+        "sockets": [
+          {
+            "group": 0,
+            "attr": "G",
+            "sColour": "W"
+          }
+        ],
+        "name": "Goldrim",
+        "typeLine": "Leather Cap",
+        "baseType": "Leather Cap",
+        "rarity": "Unique",
+        "ilvl": 84,
+        "identified": true,
+        "properties": [
+          {
+            "name": "Evasion Rating",
+            "values": [
+              [
+                "63",
+                1
+              ]
+            ],
+            "displayMode": 0,
+            "type": 17
+          }
+        ],
+        "explicitMods": [
+          {
+            "description": "+38 to Evasion Rating",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_53045048",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "30",
+                    "max": "50"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "10% increased Rarity of Items found",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_3917489142",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "10",
+                    "max": "10"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "+30% to all Elemental Resistances",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_2901986750",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "30",
+                    "max": "40"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "Reflects 4 Physical Damage to Melee Attackers",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_3767873853",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "4",
+                    "max": "4"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "flavourText": [
+          "No metal slips as easily through the fingers as gold."
+        ],
+        "frameType": 3,
+        "frameTypeId": "Unique",
+        "extended": {
+          "base_defence_percentile": 75,
+          "ev": 76,
+          "ev_aug": true,
+          "hashes": {
+            "explicit": [
+              [
+                "explicit.stat_53045048",
+                [
+                  0
+                ]
+              ],
+              [
+                "explicit.stat_3917489142",
+                [
+                  3
+                ]
+              ],
+              [
+                "explicit.stat_2901986750",
+                [
+                  1
+                ]
+              ],
+              [
+                "explicit.stat_3767873853",
+                [
+                  2
+                ]
+              ]
+            ]
+          },
+          "text": "SXRlbSBDbGFzczogSGVsbWV0cw0KUmFyaXR5OiBVbmlxdWUNCkdvbGRyaW0NCkxlYXRoZXIgQ2FwDQotLS0tLS0tLQ0KRXZhc2lvbiBSYXRpbmc6IDYzIChhdWdtZW50ZWQpDQotLS0tLS0tLQ0KU29ja2V0czogVyANCi0tLS0tLS0tDQpJdGVtIExldmVsOiA4NA0KLS0tLS0tLS0NCiszOCB0byBFdmFzaW9uIFJhdGluZw0KMTAlIGluY3JlYXNlZCBSYXJpdHkgb2YgSXRlbXMgZm91bmQNCiszMCUgdG8gYWxsIEVsZW1lbnRhbCBSZXNpc3RhbmNlcw0KUmVmbGVjdHMgNCBQaHlzaWNhbCBEYW1hZ2UgdG8gTWVsZWUgQXR0YWNrZXJzDQotLS0tLS0tLQ0KTm8gbWV0YWwgc2xpcHMgYXMgZWFzaWx5IHRocm91Z2ggdGhlIGZpbmdlcnMgYXMgZ29sZC4NCg=="
+        }
+      }
+    },
+    {
+      "id": "0953b9d5e084a76e058be67c80a609b5d15e9811633db451e6236247e50c29b1",
+      "listing": {
+        "method": "psapi",
+        "indexed": "2026-07-26T17:59:24Z",
+        "stash": {
+          "name": "~price 1 chaos",
+          "x": 26,
+          "y": 0
+        },
+        "price": {
+          "type": "~price",
+          "amount": 1,
+          "currency": "chaos"
+        },
+        "account": {
+          "name": "Muslaytv#3935",
+          "online": {
+            "league": "Allflame"
+          },
+          "lastCharacterName": "GentleMatesMlnny",
+          "language": "en_US",
+          "realm": "pc"
+        },
+        "whisper": "@GentleMatesMlnny Hi, I would like to buy your Goldrim Leather Cap listed for 1 chaos in Allflame (stash tab \"~price 1 chaos\"; position: left 27, top 1)"
+      },
+      "item": {
+        "verified": true,
+        "w": 2,
+        "h": 2,
+        "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQXJtb3Vycy9IZWxtZXRzL0hlbG1ldERleFVuaXF1ZTIiLCJ3IjoyLCJoIjoyLCJzY2FsZSI6MX1d/7f4908ef2f/HelmetDexUnique2.png",
+        "league": "Allflame",
+        "id": "0953b9d5e084a76e058be67c80a609b5d15e9811633db451e6236247e50c29b1",
+        "sockets": [
+          {
+            "group": 0,
+            "attr": "G",
+            "sColour": "W"
+          },
+          {
+            "group": 0,
+            "attr": "G",
+            "sColour": "W"
+          }
+        ],
+        "name": "Goldrim",
+        "typeLine": "Leather Cap",
+        "baseType": "Leather Cap",
+        "rarity": "Unique",
+        "ilvl": 84,
+        "identified": true,
+        "properties": [
+          {
+            "name": "Evasion Rating",
+            "values": [
+              [
+                "70",
+                1
+              ]
+            ],
+            "displayMode": 0,
+            "type": 17
+          }
+        ],
+        "explicitMods": [
+          {
+            "description": "+48 to Evasion Rating",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_53045048",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "30",
+                    "max": "50"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "10% increased Rarity of Items found",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_3917489142",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "10",
+                    "max": "10"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "+37% to all Elemental Resistances",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_2901986750",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "30",
+                    "max": "40"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "Reflects 4 Physical Damage to Melee Attackers",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_3767873853",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "4",
+                    "max": "4"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "flavourText": [
+          "No metal slips as easily through the fingers as gold."
+        ],
+        "frameType": 3,
+        "frameTypeId": "Unique",
+        "extended": {
+          "base_defence_percentile": 38,
+          "ev": 84,
+          "ev_aug": true,
+          "hashes": {
+            "explicit": [
+              [
+                "explicit.stat_53045048",
+                [
+                  0
+                ]
+              ],
+              [
+                "explicit.stat_3917489142",
+                [
+                  3
+                ]
+              ],
+              [
+                "explicit.stat_2901986750",
+                [
+                  1
+                ]
+              ],
+              [
+                "explicit.stat_3767873853",
+                [
+                  2
+                ]
+              ]
+            ]
+          },
+          "text": "SXRlbSBDbGFzczogSGVsbWV0cw0KUmFyaXR5OiBVbmlxdWUNCkdvbGRyaW0NCkxlYXRoZXIgQ2FwDQotLS0tLS0tLQ0KRXZhc2lvbiBSYXRpbmc6IDcwIChhdWdtZW50ZWQpDQotLS0tLS0tLQ0KU29ja2V0czogVy1XIA0KLS0tLS0tLS0NCkl0ZW0gTGV2ZWw6IDg0DQotLS0tLS0tLQ0KKzQ4IHRvIEV2YXNpb24gUmF0aW5nDQoxMCUgaW5jcmVhc2VkIFJhcml0eSBvZiBJdGVtcyBmb3VuZA0KKzM3JSB0byBhbGwgRWxlbWVudGFsIFJlc2lzdGFuY2VzDQpSZWZsZWN0cyA0IFBoeXNpY2FsIERhbWFnZSB0byBNZWxlZSBBdHRhY2tlcnMNCi0tLS0tLS0tDQpObyBtZXRhbCBzbGlwcyBhcyBlYXNpbHkgdGhyb3VnaCB0aGUgZmluZ2VycyBhcyBnb2xkLg0K"
+        }
+      }
+    },
+    {
+      "id": "53d27540bb5b16609ac4262af04ff25b987df6a61203db3a61cccd687094b081",
+      "listing": {
+        "method": "psapi",
+        "indexed": "2026-07-26T07:09:31Z",
+        "stash": {
+          "name": "~b/o 1 chaos",
+          "x": 4,
+          "y": 13
+        },
+        "price": {
+          "type": "~b/o",
+          "amount": 1,
+          "currency": "chaos"
+        },
+        "account": {
+          "name": "Poxixs#6665",
+          "online": {
+            "league": "Allflame"
+          },
+          "lastCharacterName": "Puxixs",
+          "language": "en_US",
+          "realm": "pc"
+        },
+        "whisper": "@Puxixs Hi, I would like to buy your Goldrim Leather Cap listed for 1 chaos in Allflame (stash tab \"~b/o 1 chaos\"; position: left 5, top 14)"
+      },
+      "item": {
+        "verified": true,
+        "w": 2,
+        "h": 2,
+        "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQXJtb3Vycy9IZWxtZXRzL0hlbG1ldERleFVuaXF1ZTIiLCJ3IjoyLCJoIjoyLCJzY2FsZSI6MX1d/7f4908ef2f/HelmetDexUnique2.png",
+        "league": "Allflame",
+        "id": "53d27540bb5b16609ac4262af04ff25b987df6a61203db3a61cccd687094b081",
+        "sockets": [
+          {
+            "group": 0,
+            "attr": "G",
+            "sColour": "W"
+          },
+          {
+            "group": 0,
+            "attr": "G",
+            "sColour": "W"
+          }
+        ],
+        "name": "Goldrim",
+        "typeLine": "Leather Cap",
+        "baseType": "Leather Cap",
+        "rarity": "Unique",
+        "ilvl": 27,
+        "identified": true,
+        "properties": [
+          {
+            "name": "Evasion Rating",
+            "values": [
+              [
+                "67",
+                1
+              ]
+            ],
+            "displayMode": 0,
+            "type": 17
+          }
+        ],
+        "explicitMods": [
+          {
+            "description": "+42 to Evasion Rating",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_53045048",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "30",
+                    "max": "50"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "10% increased Rarity of Items found",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_3917489142",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "10",
+                    "max": "10"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "+36% to all Elemental Resistances",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_2901986750",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "30",
+                    "max": "40"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "Reflects 4 Physical Damage to Melee Attackers",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_3767873853",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "4",
+                    "max": "4"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "flavourText": [
+          "No metal slips as easily through the fingers as gold."
+        ],
+        "frameType": 3,
+        "frameTypeId": "Unique",
+        "extended": {
+          "base_defence_percentile": 75,
+          "ev": 80,
+          "ev_aug": true,
+          "hashes": {
+            "explicit": [
+              [
+                "explicit.stat_53045048",
+                [
+                  0
+                ]
+              ],
+              [
+                "explicit.stat_3917489142",
+                [
+                  3
+                ]
+              ],
+              [
+                "explicit.stat_2901986750",
+                [
+                  1
+                ]
+              ],
+              [
+                "explicit.stat_3767873853",
+                [
+                  2
+                ]
+              ]
+            ]
+          },
+          "text": "SXRlbSBDbGFzczogSGVsbWV0cw0KUmFyaXR5OiBVbmlxdWUNCkdvbGRyaW0NCkxlYXRoZXIgQ2FwDQotLS0tLS0tLQ0KRXZhc2lvbiBSYXRpbmc6IDY3IChhdWdtZW50ZWQpDQotLS0tLS0tLQ0KU29ja2V0czogVy1XIA0KLS0tLS0tLS0NCkl0ZW0gTGV2ZWw6IDI3DQotLS0tLS0tLQ0KKzQyIHRvIEV2YXNpb24gUmF0aW5nDQoxMCUgaW5jcmVhc2VkIFJhcml0eSBvZiBJdGVtcyBmb3VuZA0KKzM2JSB0byBhbGwgRWxlbWVudGFsIFJlc2lzdGFuY2VzDQpSZWZsZWN0cyA0IFBoeXNpY2FsIERhbWFnZSB0byBNZWxlZSBBdHRhY2tlcnMNCi0tLS0tLS0tDQpObyBtZXRhbCBzbGlwcyBhcyBlYXNpbHkgdGhyb3VnaCB0aGUgZmluZ2VycyBhcyBnb2xkLg0K"
+        }
+      }
+    },
+    {
+      "id": "53503c1db65c09faa4f2c5bb79f70c2219038146a034accc7d5a2b907eef2ba1",
+      "listing": {
+        "method": "psapi",
+        "indexed": "2026-07-26T18:44:44Z",
+        "stash": {
+          "name": "~price 1 chaos",
+          "x": 12,
+          "y": 18
+        },
+        "price": {
+          "type": "~price",
+          "amount": 1,
+          "currency": "chaos"
+        },
+        "account": {
+          "name": "blurryside#6449",
+          "online": {
+            "league": "Allflame"
+          },
+          "lastCharacterName": "AllflamexClapi",
+          "language": "en_US",
+          "realm": "pc"
+        },
+        "whisper": "@AllflamexClapi Hi, I would like to buy your Goldrim Leather Cap listed for 1 chaos in Allflame (stash tab \"~price 1 chaos\"; position: left 13, top 19)"
+      },
+      "item": {
+        "verified": true,
+        "w": 2,
+        "h": 2,
+        "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQXJtb3Vycy9IZWxtZXRzL0hlbG1ldERleFVuaXF1ZTIiLCJ3IjoyLCJoIjoyLCJzY2FsZSI6MX1d/7f4908ef2f/HelmetDexUnique2.png",
+        "league": "Allflame",
+        "id": "53503c1db65c09faa4f2c5bb79f70c2219038146a034accc7d5a2b907eef2ba1",
+        "sockets": [
+          {
+            "group": 0,
+            "attr": "G",
+            "sColour": "W"
+          }
+        ],
+        "name": "Goldrim",
+        "typeLine": "Leather Cap",
+        "baseType": "Leather Cap",
+        "rarity": "Unique",
+        "ilvl": 83,
+        "identified": true,
+        "properties": [
+          {
+            "name": "Evasion Rating",
+            "values": [
+              [
+                "68",
+                1
+              ]
+            ],
+            "displayMode": 0,
+            "type": 17
+          }
+        ],
+        "explicitMods": [
+          {
+            "description": "+46 to Evasion Rating",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_53045048",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "30",
+                    "max": "50"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "10% increased Rarity of Items found",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_3917489142",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "10",
+                    "max": "10"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "+35% to all Elemental Resistances",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_2901986750",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "30",
+                    "max": "40"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "Reflects 4 Physical Damage to Melee Attackers",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_3767873853",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "4",
+                    "max": "4"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "flavourText": [
+          "No metal slips as easily through the fingers as gold."
+        ],
+        "frameType": 3,
+        "frameTypeId": "Unique",
+        "extended": {
+          "base_defence_percentile": 38,
+          "ev": 82,
+          "ev_aug": true,
+          "hashes": {
+            "explicit": [
+              [
+                "explicit.stat_53045048",
+                [
+                  0
+                ]
+              ],
+              [
+                "explicit.stat_3917489142",
+                [
+                  3
+                ]
+              ],
+              [
+                "explicit.stat_2901986750",
+                [
+                  1
+                ]
+              ],
+              [
+                "explicit.stat_3767873853",
+                [
+                  2
+                ]
+              ]
+            ]
+          },
+          "text": "SXRlbSBDbGFzczogSGVsbWV0cw0KUmFyaXR5OiBVbmlxdWUNCkdvbGRyaW0NCkxlYXRoZXIgQ2FwDQotLS0tLS0tLQ0KRXZhc2lvbiBSYXRpbmc6IDY4IChhdWdtZW50ZWQpDQotLS0tLS0tLQ0KU29ja2V0czogVyANCi0tLS0tLS0tDQpJdGVtIExldmVsOiA4Mw0KLS0tLS0tLS0NCis0NiB0byBFdmFzaW9uIFJhdGluZw0KMTAlIGluY3JlYXNlZCBSYXJpdHkgb2YgSXRlbXMgZm91bmQNCiszNSUgdG8gYWxsIEVsZW1lbnRhbCBSZXNpc3RhbmNlcw0KUmVmbGVjdHMgNCBQaHlzaWNhbCBEYW1hZ2UgdG8gTWVsZWUgQXR0YWNrZXJzDQotLS0tLS0tLQ0KTm8gbWV0YWwgc2xpcHMgYXMgZWFzaWx5IHRocm91Z2ggdGhlIGZpbmdlcnMgYXMgZ29sZC4NCg=="
+        }
+      }
+    },
+    {
+      "id": "572d10f181b12d4a5534f4e698197d154224b71cff88b0fcdfc6e2214807cf48",
+      "listing": {
+        "method": "psapi",
+        "indexed": "2026-07-26T02:25:08Z",
+        "stash": {
+          "name": "~price 1 chaos",
+          "x": 21,
+          "y": 0
+        },
+        "price": {
+          "type": "~price",
+          "amount": 1,
+          "currency": "chaos"
+        },
+        "account": {
+          "name": "shiXMASTER1337#1919",
+          "online": {
+            "league": "Allflame"
+          },
+          "lastCharacterName": "SPINTHEPIN",
+          "language": "en_US",
+          "realm": "pc"
+        },
+        "whisper": "@SPINTHEPIN Hi, I would like to buy your Goldrim Leather Cap listed for 1 chaos in Allflame (stash tab \"~price 1 chaos\"; position: left 22, top 1)"
+      },
+      "item": {
+        "verified": true,
+        "w": 2,
+        "h": 2,
+        "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQXJtb3Vycy9IZWxtZXRzL0hlbG1ldERleFVuaXF1ZTIiLCJ3IjoyLCJoIjoyLCJzY2FsZSI6MX1d/7f4908ef2f/HelmetDexUnique2.png",
+        "league": "Allflame",
+        "id": "572d10f181b12d4a5534f4e698197d154224b71cff88b0fcdfc6e2214807cf48",
+        "sockets": [
+          {
+            "group": 0,
+            "attr": "G",
+            "sColour": "W"
+          }
+        ],
+        "name": "Goldrim",
+        "typeLine": "Leather Cap",
+        "baseType": "Leather Cap",
+        "rarity": "Unique",
+        "ilvl": 80,
+        "identified": true,
+        "properties": [
+          {
+            "name": "Evasion Rating",
+            "values": [
+              [
+                "58",
+                1
+              ]
+            ],
+            "displayMode": 0,
+            "type": 17
+          }
+        ],
+        "explicitMods": [
+          {
+            "description": "+33 to Evasion Rating",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_53045048",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "30",
+                    "max": "50"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "10% increased Rarity of Items found",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_3917489142",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "10",
+                    "max": "10"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "+30% to all Elemental Resistances",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_2901986750",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "30",
+                    "max": "40"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "Reflects 4 Physical Damage to Melee Attackers",
+            "domain": "explicit",
+            "hash": "stat.explicit.stat_3767873853",
+            "mods": [
+              {
+                "magnitudes": [
+                  {
+                    "min": "4",
+                    "max": "4"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "flavourText": [
+          "No metal slips as easily through the fingers as gold."
+        ],
+        "frameType": 3,
+        "frameTypeId": "Unique",
+        "extended": {
+          "base_defence_percentile": 75,
+          "ev": 70,
+          "ev_aug": true,
+          "hashes": {
+            "explicit": [
+              [
+                "explicit.stat_53045048",
+                [
+                  0
+                ]
+              ],
+              [
+                "explicit.stat_3917489142",
+                [
+                  3
+                ]
+              ],
+              [
+                "explicit.stat_2901986750",
+                [
+                  1
+                ]
+              ],
+              [
+                "explicit.stat_3767873853",
+                [
+                  2
+                ]
+              ]
+            ]
+          },
+          "text": "SXRlbSBDbGFzczogSGVsbWV0cw0KUmFyaXR5OiBVbmlxdWUNCkdvbGRyaW0NCkxlYXRoZXIgQ2FwDQotLS0tLS0tLQ0KRXZhc2lvbiBSYXRpbmc6IDU4IChhdWdtZW50ZWQpDQotLS0tLS0tLQ0KU29ja2V0czogVyANCi0tLS0tLS0tDQpJdGVtIExldmVsOiA4MA0KLS0tLS0tLS0NCiszMyB0byBFdmFzaW9uIFJhdGluZw0KMTAlIGluY3JlYXNlZCBSYXJpdHkgb2YgSXRlbXMgZm91bmQNCiszMCUgdG8gYWxsIEVsZW1lbnRhbCBSZXNpc3RhbmNlcw0KUmVmbGVjdHMgNCBQaHlzaWNhbCBEYW1hZ2UgdG8gTWVsZWUgQXR0YWNrZXJzDQotLS0tLS0tLQ0KTm8gbWV0YWwgc2xpcHMgYXMgZWFzaWx5IHRocm91Z2ggdGhlIGZpbmdlcnMgYXMgZ29sZC4NCg=="
+        }
+      }
+    }
+  ]
+}

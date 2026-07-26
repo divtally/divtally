@@ -79,7 +79,6 @@ def main():
 
     meta, items = poeninja.normalize(data)
     meta.source_url = a.url or f"(recovered from cache) {account}/{character}"
-    items = poeninja.dedupe_runes(items)
     print(f"  {meta.character} - {meta.char_class} level {meta.level} ({meta.league})")
 
     # Save the raw character data + the Path of Building import code.
@@ -100,7 +99,12 @@ def main():
 
     progress = (lambda m: print("  " + m, file=sys.stderr)) if not a.quiet else None
     client = TradeClient(league, verbose=not a.quiet)
-    pricer = Pricer(client, verbose=not a.quiet, progress=progress)
+    # Inject the poe.ninja economy (gem prices + chaos/divine rates) exactly as
+    # engine.prepare_from_cache does, so currency conversion uses poe.ninja rates and
+    # never falls back to the ban-risk trade 'exchange' endpoint. meta.league is the
+    # source (poe.ninja) league whose economy applies.
+    econ = poeninja.PoeNinjaEconomy(meta.league)
+    pricer = Pricer(client, verbose=not a.quiet, progress=progress, economy=econ)
     results = pricer.price_build(items)
 
     if not a.links_only:

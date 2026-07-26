@@ -543,7 +543,7 @@ bpc.on('meta',()=>{ if(bpc.state.items&&bpc.state.items.length){ mounted=false; 
 function buildTicket(){
   const s=bpc.state, m=s.meta; if(!m||!s.items.length) return;
   const groups=bpc.itemsByGroup();
-  const gateCodes={equipment:'A',flask:'B',jewel:'C',rune:'D',gem:'E'};
+  const gateCodes={equipment:'A',flask:'B',jewel:'C',gem:'D'};
 
   let legs='';
   groups.forEach((grp,gi)=>{
@@ -578,7 +578,7 @@ function buildTicket(){
         <div class="mcell"><span class="cap">Passenger</span><span class="val">${E(m.character||'—')}</span></div>
         <div class="mcell"><span class="cap">Class</span><span class="val">${E(m['class']||'—')}</span></div>
         <div class="mcell"><span class="cap">Level</span><span class="val mono">${E(m.level!=null?m.level:'—')}</span></div>
-        <div class="mcell"><span class="cap">Exchange</span><span class="val mono">${m.divine_to_exalted?('1 '+bpc.curImg('div')+' = '+bpc.nfmt(Math.round(m.divine_to_exalted),0)+' '+bpc.curImg('ex')):'—'}</span></div>
+        <div class="mcell"><span class="cap">Exchange</span><span class="val mono">${m.divine_to_chaos?('1 '+bpc.curImg('div')+' = '+bpc.nfmt(Math.round(m.divine_to_chaos),0)+' '+bpc.curImg('chaos')):'—'}</span></div>
       </div>
 
       <div class="route">
@@ -624,7 +624,7 @@ function buildTicket(){
 
 function legRow(it){
   const s=bpc.state, k=String(it.index), p=s.priced[k], on=!!s.enabled[k];
-  const priced=p&&p.exalted.median!=null;
+  const priced=p&&p.chaos.median!=null;
   const skipped=p&&p.method==='skipped';
   const rt=(it.rarity||it.category||'').toLowerCase();
   const cnt=it.count>1?` <span class="qty">×${it.count}</span>`:'';
@@ -647,7 +647,7 @@ function legRow(it){
     <div class="stamp standby" data-stamp-s="${E(k)}">Standby</div>
   </div>`;
 }
-function grpLabel(g){ return ({equipment:'Equipment',flask:'Flask',jewel:'Jewel',rune:'Rune',gem:'Gem'})[g]||''; }
+function grpLabel(g){ return ({equipment:'Equipment',flask:'Flask',jewel:'Jewel',gem:'Gem'})[g]||''; }
 
 /* ---- fare cell painter (granular; no structural rerender) ---- */
 function paintFare(k){
@@ -662,14 +662,14 @@ function paintFare(k){
     if(noteEl) noteEl.textContent='';
     return;
   }
-  const priced=p.exalted.median!=null;
+  const priced=p.chaos.median!=null;
   if(noteEl) noteEl.textContent=p.note||'';
   if(!priced){
     cell.innerHTML=`<span class="pend">${p.method==='skipped'?'standby (skipped)':'not priced'}</span>
       <span class="conf ${E(p.confidence)}">${E(p.confidence)}</span>`;
   } else {
-    cell.innerHTML=`<span class="med">${bpc.priceHTML(p.exalted.median)}</span>
-      <span class="rng">${bpc.priceHTML(p.exalted.min)} &ndash; ${bpc.priceHTML(p.exalted.high)}</span>
+    cell.innerHTML=`<span class="med">${bpc.priceHTML(p.chaos.median)}</span>
+      <span class="rng">${bpc.priceHTML(p.chaos.min)} &ndash; ${bpc.priceHTML(p.chaos.high)}</span>
       <span class="conf ${E(p.confidence)}">${E(p.confidence)}</span>`;
   }
   // checkbox visibility may have changed (e.g. skip)
@@ -700,7 +700,7 @@ function paintAllFares(){ bpc.state.items.forEach(it=>paintFare(String(it.index)
 /* ---- reflect enabled state + stamps ---- */
 function reflectRow(k){
   const leg=document.querySelector(`.leg[data-k="${cssEsc(k)}"]`); if(!leg) return;
-  const s=bpc.state, p=s.priced[k], priced=p&&p.exalted.median!=null;
+  const s=bpc.state, p=s.priced[k], priced=p&&p.chaos.median!=null;
   const on=!!s.enabled[k];
   const cb=leg.querySelector('.inc'); if(cb) cb.checked=on;
   leg.classList.toggle('off',priced && !on);
@@ -732,7 +732,7 @@ function paintFareTab(){
 function excludedSum(){
   const s=bpc.state; let ex=0;
   s.items.forEach(it=>{ const k=String(it.index),p=s.priced[k];
-    if(p&&p.exalted.median!=null && !s.enabled[k]) ex+=p.exalted.median*(it.count||1); });
+    if(p&&p.chaos.median!=null && !s.enabled[k]) ex+=p.chaos.median*(it.count||1); });
   return ex;
 }
 function updateFareTab(){
@@ -768,7 +768,7 @@ function paintGroupSums(){
     const el=document.querySelector(`[data-tsum="${cssEsc(grp.group)}"]`); if(!el) return;
     let med=0,inc=0,tot=0;
     grp.items.forEach(it=>{ const k=String(it.index),p=s.priced[k];
-      if(p&&p.exalted.median!=null){ tot++; if(s.enabled[k]){ inc++; med+=p.exalted.median*(it.count||1);} } });
+      if(p&&p.chaos.median!=null){ tot++; if(s.enabled[k]){ inc++; med+=p.chaos.median*(it.count||1);} } });
     el.innerHTML = tot? (bpc.priceHTML(med||null)+` &middot; ${inc}/${tot}`) : '';
     // toggle button label
     const btn=document.querySelector(`[data-toggle-group="${cssEsc(grp.group)}"]`);

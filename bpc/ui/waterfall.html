@@ -299,8 +299,8 @@
 "use strict";
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s)), E=bpc.esc;
 const RM = window.matchMedia && window.matchMedia("(prefers-reduced-motion:reduce)").matches;
-const GCOL={equipment:"#2dd4bf",flask:"#38bdf8",jewel:"#a78bfa",rune:"#fbbf24",gem:"#34d399"};
-const GLABEL={equipment:"Equipment",flask:"Flasks & Charms",jewel:"Jewels",rune:"Runes / Soul Cores",gem:"Gems"};
+const GCOL={equipment:"#2dd4bf",flask:"#38bdf8",jewel:"#a78bfa",gem:"#34d399"};
+const GLABEL={equipment:"Equipment",flask:"Flasks",jewel:"Jewels",gem:"Gems"};
 
 /* ---------- view-local state ---------- */
 let mutedGroups={};       // group -> true if folded out of the chart/list
@@ -365,7 +365,7 @@ function progressHTML(m){ return `<div class="progress"><span class="spinner"></
 bpc.on("meta",renderMeta);
 function renderMeta(m){
   let h=`<b>${E(m.character)}</b><span class="dot"></span>${E(m["class"]||"")}${m.level?" · lvl "+m.level:""}<span class="dot"></span>${E(m.league||"")}`;
-  if(m.divine_to_exalted) h+=`<span class="dot"></span><span class="rate">1 ${bpc.curImg("div")} = ${bpc.nfmt(Math.round(m.divine_to_exalted),0)} ${bpc.curImg("ex")}</span>`;
+  if(m.divine_to_chaos) h+=`<span class="dot"></span><span class="rate">1 ${bpc.curImg("div")} = ${bpc.nfmt(Math.round(m.divine_to_chaos),0)} ${bpc.curImg("chaos")}</span>`;
   if(m.pob_code) h+=`<span class="pob-chip" id="pobchip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg><span id="poblabel">Copy PoB code</span></span>`;
   $("#metaline").innerHTML=h;
   const chip=$("#pobchip");
@@ -390,11 +390,11 @@ function pricedRows(){
   const s=bpc.state, rows=[];
   s.items.forEach(it=>{
     const k=String(it.index), p=s.priced[k];
-    if(!p||p.exalted.median==null) return;
+    if(!p||p.chaos.median==null) return;
     const c=it.count||1;
     rows.push({k,it,p,group:it.group,
-      med:p.exalted.median*c, min:(p.exalted.min!=null?p.exalted.min:p.exalted.median)*c,
-      high:(p.exalted.high!=null?p.exalted.high:p.exalted.median)*c,
+      med:p.chaos.median*c, min:(p.chaos.min!=null?p.chaos.min:p.chaos.median)*c,
+      high:(p.chaos.high!=null?p.chaos.high:p.chaos.median)*c,
       enabled:!!s.enabled[k], muted:!!mutedGroups[it.group], conf:p.confidence});
   });
   return rows;
@@ -455,7 +455,7 @@ function renderBody(){
 
 function renderLegend(){
   const present={}; bpc.state.items.forEach(it=>{ if(bpc.isPriced(it)) present[it.group]=true; });
-  const order=["equipment","flask","jewel","rune","gem"].filter(g=>present[g]);
+  const order=["equipment","flask","jewel","gem"].filter(g=>present[g]);
   $("#legend").innerHTML=order.map(g=>`<span class="lg ${mutedGroups[g]?"muted":""}" data-g="${g}"><span class="sw" style="background:${GCOL[g]}"></span>${E(GLABEL[g])}</span>`).join("");
 }
 $("#body").addEventListener("click",e=>{
@@ -487,8 +487,8 @@ function renderGroups(){
     let gtot=0, anyPriced=false, allOn=true, anyOn=false;
     grp.items.forEach(it=>{
       const k=String(it.index), p=s.priced[k];
-      if(p&&p.exalted.median!=null){ anyPriced=true; const c=it.count||1;
-        if(s.enabled[k]){ gtot+=p.exalted.median*c; anyOn=true; } else allOn=false; }
+      if(p&&p.chaos.median!=null){ anyPriced=true; const c=it.count||1;
+        if(s.enabled[k]){ gtot+=p.chaos.median*c; anyOn=true; } else allOn=false; }
     });
     const muted=!!mutedGroups[grp.group];
     h+=`<div class="grp" data-g="${grp.group}" style="${muted?"opacity:.45":""}">
@@ -508,11 +508,11 @@ function renderGroups(){
     // attach metrics for sorting
     rowsForGrp=rowsForGrp.map(o=>{
       const p=o.p, c=o.it.count||1;
-      const priced=p&&p.exalted.median!=null;
+      const priced=p&&p.chaos.median!=null;
       return Object.assign(o,{
-        priced, med:priced?p.exalted.median*c:0,
-        min:priced&&p.exalted.min!=null?p.exalted.min*c:(priced?p.exalted.median*c:0),
-        high:priced&&p.exalted.high!=null?p.exalted.high*c:(priced?p.exalted.median*c:0),
+        priced, med:priced?p.chaos.median*c:0,
+        min:priced&&p.chaos.min!=null?p.chaos.min*c:(priced?p.chaos.median*c:0),
+        high:priced&&p.chaos.high!=null?p.chaos.high*c:(priced?p.chaos.median*c:0),
         conf:priced?p.confidence:"none"
       });
     });
@@ -533,7 +533,7 @@ function rowHTML(o,axisMax,col){
   const on=!!s.enabled[k];
   const cnt=it.count>1?`<span class="cnt">×${it.count}</span>`:"";
   const re=(s.advanced&&it.category==="rare")?`<button class="reaffix" data-k="${E(k)}">edit affixes</button>`:"";
-  const priced=p&&p.exalted.median!=null;
+  const priced=p&&p.chaos.median!=null;
   // name cell
   const nameInner=(priced&&p.trade_url)?`<a class="nmt" href="${E(p.trade_url)}" target="_blank" rel="noopener">${E(it.name)} ${cnt}</a>`
     :`<span class="nmt">${E(it.name)} ${cnt}</span>`;
@@ -557,7 +557,7 @@ function rowHTML(o,axisMax,col){
     <span class="nm">${nameInner}${re?'<div class="sub">'+re+'</div>':""}${sub}</span>
     <span class="dumb">${dumb}</span>
     <span class="price">
-      <div class="med">${bpc.priceHTML(p.exalted.median*(it.count||1))}</div>
+      <div class="med">${bpc.priceHTML(p.chaos.median*(it.count||1))}</div>
       <div class="mm">${o.min!=null?bpc.nfmt(o.min<10?o.min:Math.round(o.min),o.min<10?1:0):"·"} – ${o.high!=null?bpc.nfmt(o.high<10?o.high:Math.round(o.high),o.high<10?1:0):"·"} ex · ${badge}</div>
     </span>
   </div>`;

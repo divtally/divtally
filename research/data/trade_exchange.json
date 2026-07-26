@@ -1,0 +1,436 @@
+{
+  "id": "le7kjsV",
+  "complexity": null,
+  "result": {
+    "759e731a500ba8ae3074f375260a63f1df098fcf5d1e72a520ba7c": {
+      "id": "968feab30d759e731a500ba8ae3074f375260a63f1df098fcf5d1e72a520ba7c",
+      "item": null,
+      "listing": {
+        "indexed": "2026-07-26T20:34:11+00:00",
+        "account": {
+          "name": "sogekingusop#7660",
+          "online": {
+            "league": "Allflame"
+          },
+          "lastCharacterName": "Alsss",
+          "language": "en_US",
+          "realm": "pc"
+        },
+        "offers": [
+          {
+            "exchange": {
+              "currency": "chaos",
+              "amount": 1,
+              "whisper": "{0} Chaos Orb"
+            },
+            "item": {
+              "currency": "divine",
+              "amount": 1,
+              "stock": 4,
+              "id": "968feab30d759e731a500ba8ae3074f375260a63f1df098fcf5d1e72a520ba7c",
+              "whisper": "{0} Divine Orb"
+            }
+          }
+        ],
+        "whisper": "@Alsss Hi, I'd like to buy your {0} for my {1} in Allflame"
+      }
+    },
+    "7da61624683dc31be256a2d4e3a2cdc58d3e17b85114e24819379d": {
+      "id": "771272af087da61624683dc31be256a2d4e3a2cdc58d3e17b85114e24819379d",
+      "item": null,
+      "listing": {
+        "indexed": "2026-07-26T20:29:43+00:00",
+        "account": {
+          "name": "Pois0N_D#2847",
+          "online": {
+            "league": "Allflame"
+          },
+          "lastCharacterName": "Eva_Elfex_",
+          "language": "ru_RU",
+          "realm": "pc"
+        },
+        "offers": [
+          {
+            "exchange": {
+              "currency": "chaos",
+              "amount": 115,
+              "whisper": "{0} Сфера хаоса"
+            },
+            "item": {
+              "currency": "divine",
+              "amount": 1,
+              "stock": 5,
+              "id": "771272af087da61624683dc31be256a2d4e3a2cdc58d3e17b85114e24819379d",
+              "whisper": "{0} Божественная сфера"
+            }
+          }
+        ],
+        "whisper": "@Eva_Elfex_ Здравствуйте, хочу купить у вас {0} за {1} в лиге Allflame"
+      }
+    },
+    "59ec20d567d90291fafbd4e9e3d7a1a10e5fd77fe62c7b59e57931": {
+      "id": "fb3e9486f059ec20d567d90291fafbd4e9e3d7a1a10e5fd77fe62c7b59e57931",
+      "item": null,
+      "listing": {
+        "indexed": "2026-07-26T20:33:27+00:00",
+        "account": {
+          "name": "mental16#3253",
+          "online": {
+            "league": "Allflame"
+          },
+          "lastCharacterName": "ALL_CHIEFTAIN",
+          "language": "ko_KR",
+          "realm": "pc"
+        },
+        "offers": [
+          {
+            "exchange": {
+              "currency": "chaos",
+              "amount": 118,
+              "whisper": "{0} 카오스 오브"
+            },
+            "item": {
+              "currency": "divine",
+              "amount": 1,
+              "stock": 46,
+              "id": "fb3e9486f059ec20d567d90291fafbd4e9e3d7a1a10e5fd77fe62c7b59e57931",
+              "whisper": "{0} 신성한 오브"
+            }
+          }
+        ],
+        "whisper": "@ALL_CHIEFTAIN 안녕하세요, Allflame 리그의 {0}(을)를 {1}(으)로 구매하고 싶습니다"
+      }
+    },
+    "d51d1244da41a8aecfbf72e0f7dcb08a3165d711fcdd3b68ee0f77": {
+      "id": "5ba826bba3d51d1244da41a8aecfbf72e0f7dcb08a3165d711fcdd3b68ee0f77",
+      "item": null,
+      "listing": {
+        "indexed": "2026-07-26T20:34:10+00:00",
+        "account": {
+          "name": "basedmenttv#2797",
+          "online": {
+            "league": "Allflame"
+          },
+          "lastCharacterName": "kawtharBamo",
+          "language": "en_US",
+          "realm": "pc"
+        },
+        "offers": [
+          {
+            "exchange": {
+              "currency": "chaos",
+              "amount": 118,
+              "whisper": "{0} Chaos Orb"
+            },
+            "item": {
+              "currency": "divine",
+              "amount": 1,
+              "stock": 13,
+              "id": "5ba826bba3d51d1244da41a8aecfbf72e0f7dcb08a3165d711fcdd3b68ee0f77",
+              "whisper": "{0} Divine Orb"
+            }
+          }
+        ],
+        "whisper": "@kawtharBamo Hi, I'd like to buy your {0} for my {1} in Allflame"
+      }
+    },
+    "55f2cf28f5704ce92626b147ba5daf72b0d20b862cfdb64c205fb2": {
+      "id": "d1fb88c53b55f2cf28f5704ce92626b147ba5daf72b0d20b862cfdb64c205fb2",
+      "item": null,
+      "listing": {
+        "indexed": "2026-07-26T20:31:14+00:00",
+        "account": {
+          "name": "JuvEvil#2443",
+          "online": {
+            "league": "Allflame"
+          },
+          "lastCharacterName": "JuvCotA",
+          "language": "en_US",
+          "realm": "pc"
+        },
+        "offers": [
+          {
+            "exchange": {
+              "currency": "chaos",
+              "amount": 118,
+              "whisper": "{0} Chaos Orb"
+            },
+            "item": {
+              "currency": "divine",
+              "amount": 1,
+              "stock": 1,
+              "id": "d1fb88c53b55f2cf28f5704ce92626b147ba5daf72b0d20b862cfdb64c205fb2",
+              "whisper": "{0} Divine Orb"
+            }
+          }
+        ],
+        "whisper": "@JuvCotA Hi, I'd like to buy your {0} for my {1} in Allflame"
+      }
+    },
+    "63daa0c911e79502ca93e8aa7aa6a00fceb57ee95116979575be56": {
+      "id": "69cf9a60df63daa0c911e79502ca93e8aa7aa6a00fceb57ee95116979575be56",
+      "item": null,
+      "listing": {
+        "indexed": "2026-07-26T20:34:21+00:00",
+        "account": {
+          "name": "Mystique322#6199",
+          "online": {
+            "league": "Allflame"
+          },
+          "lastCharacterName": "ImMaleniaBladefMiquela",
+          "language": "en_US",
+          "realm": "pc"
+        },
+        "offers": [
+          {
+            "exchange": {
+              "currency": "chaos",
+              "amount": 120,
+              "whisper": "{0} Chaos Orb"
+            },
+            "item": {
+              "currency": "divine",
+              "amount": 1,
+              "stock": 30,
+              "id": "69cf9a60df63daa0c911e79502ca93e8aa7aa6a00fceb57ee95116979575be56",
+              "whisper": "{0} Divine Orb"
+            }
+          }
+        ],
+        "whisper": "@ImMaleniaBladefMiquela Hi, I'd like to buy your {0} for my {1} in Allflame"
+      }
+    },
+    "ee0f0a957cab9159a40648dd886804445dd5e3f7f48c6121f52d15": {
+      "id": "64f2c64684ee0f0a957cab9159a40648dd886804445dd5e3f7f48c6121f52d15",
+      "item": null,
+      "listing": {
+        "indexed": "2026-07-26T15:29:31+00:00",
+        "account": {
+          "name": "chrisshillson#6823",
+          "online": {
+            "league": "Allflame"
+          },
+          "lastCharacterName": "Jyggaboo",
+          "language": "en_US",
+          "realm": "pc"
+        },
+        "offers": [
+          {
+            "exchange": {
+              "currency": "chaos",
+              "amount": 120,
+              "whisper": "{0} Chaos Orb"
+            },
+            "item": {
+              "currency": "divine",
+              "amount": 1,
+              "stock": 1,
+              "id": "64f2c64684ee0f0a957cab9159a40648dd886804445dd5e3f7f48c6121f52d15",
+              "whisper": "{0} Divine Orb"
+            }
+          }
+        ],
+        "whisper": "@Jyggaboo Hi, I'd like to buy your {0} for my {1} in Allflame"
+      }
+    },
+    "f5352aa5770cb06fe585678a47b31199ff8b795ee6e9552513a8b1": {
+      "id": "b9749625d6f5352aa5770cb06fe585678a47b31199ff8b795ee6e9552513a8b1",
+      "item": null,
+      "listing": {
+        "indexed": "2026-07-26T18:01:39+00:00",
+        "account": {
+          "name": "Myaten#0369",
+          "online": {
+            "league": "Allflame"
+          },
+          "lastCharacterName": "Gecipisztoly",
+          "language": "en_US",
+          "realm": "pc"
+        },
+        "offers": [
+          {
+            "exchange": {
+              "currency": "chaos",
+              "amount": 120,
+              "whisper": "{0} Chaos Orb"
+            },
+            "item": {
+              "currency": "divine",
+              "amount": 1,
+              "stock": 1,
+              "id": "b9749625d6f5352aa5770cb06fe585678a47b31199ff8b795ee6e9552513a8b1",
+              "whisper": "{0} Divine Orb"
+            }
+          }
+        ],
+        "whisper": "@Gecipisztoly Hi, I'd like to buy your {0} for my {1} in Allflame"
+      }
+    },
+    "8f5dc6615b5cfaf8d913ada7efa93155324facbb87d216ea37aa64": {
+      "id": "138ad4dbc68f5dc6615b5cfaf8d913ada7efa93155324facbb87d216ea37aa64",
+      "item": null,
+      "listing": {
+        "indexed": "2026-07-26T19:55:34+00:00",
+        "account": {
+          "name": "Fuumon#7545",
+          "online": {
+            "league": "Allflame"
+          },
+          "lastCharacterName": "AtopeAllflame",
+          "language": "en_US",
+          "realm": "pc"
+        },
+        "offers": [
+          {
+            "exchange": {
+              "currency": "chaos",
+              "amount": 120,
+              "whisper": "{0} Chaos Orb"
+            },
+            "item": {
+              "currency": "divine",
+              "amount": 1,
+              "stock": 1,
+              "id": "138ad4dbc68f5dc6615b5cfaf8d913ada7efa93155324facbb87d216ea37aa64",
+              "whisper": "{0} Divine Orb"
+            }
+          }
+        ],
+        "whisper": "@AtopeAllflame Hi, I'd like to buy your {0} for my {1} in Allflame"
+      }
+    },
+    "144ece47c42e70210a664c7bc090f8125ce672af1d18e9c7d31e0b": {
+      "id": "0b2c6294a6144ece47c42e70210a664c7bc090f8125ce672af1d18e9c7d31e0b",
+      "item": null,
+      "listing": {
+        "indexed": "2026-07-26T20:32:21+00:00",
+        "account": {
+          "name": "wormor#7691",
+          "online": {
+            "league": "Allflame"
+          },
+          "lastCharacterName": "Daymein",
+          "language": "en_US",
+          "realm": "pc"
+        },
+        "offers": [
+          {
+            "exchange": {
+              "currency": "chaos",
+              "amount": 121,
+              "whisper": "{0} Chaos Orb"
+            },
+            "item": {
+              "currency": "divine",
+              "amount": 1,
+              "stock": 2,
+              "id": "0b2c6294a6144ece47c42e70210a664c7bc090f8125ce672af1d18e9c7d31e0b",
+              "whisper": "{0} Divine Orb"
+            }
+          }
+        ],
+        "whisper": "@Daymein Hi, I'd like to buy your {0} for my {1} in Allflame"
+      }
+    },
+    "0876132260231a6d69c4a5a777c6420a2d326e0e66bcddb88dfda1": {
+      "id": "85b73c2b090876132260231a6d69c4a5a777c6420a2d326e0e66bcddb88dfda1",
+      "item": null,
+      "listing": {
+        "indexed": "2026-07-26T20:26:32+00:00",
+        "account": {
+          "name": "MrMonAmore#1061",
+          "online": {
+            "league": "Allflame"
+          },
+          "lastCharacterName": "MonAllflame",
+          "language": "ru_RU",
+          "realm": "pc"
+        },
+        "offers": [
+          {
+            "exchange": {
+              "currency": "chaos",
+              "amount": 125,
+              "whisper": "{0} Сфера хаоса"
+            },
+            "item": {
+              "currency": "divine",
+              "amount": 1,
+              "stock": 2,
+              "id": "85b73c2b090876132260231a6d69c4a5a777c6420a2d326e0e66bcddb88dfda1",
+              "whisper": "{0} Божественная сфера"
+            }
+          }
+        ],
+        "whisper": "@MonAllflame Здравствуйте, хочу купить у вас {0} за {1} в лиге Allflame"
+      }
+    },
+    "442cecfbb4c0fe1853027ca253270c144b6c0a5ccc0672d4209acc": {
+      "id": "af8112a75a442cecfbb4c0fe1853027ca253270c144b6c0a5ccc0672d4209acc",
+      "item": null,
+      "listing": {
+        "indexed": "2026-07-26T18:05:04+00:00",
+        "account": {
+          "name": "marcostil#0349",
+          "online": {
+            "league": "Allflame"
+          },
+          "lastCharacterName": "SKYHELL_AW",
+          "language": "en_US",
+          "realm": "pc"
+        },
+        "offers": [
+          {
+            "exchange": {
+              "currency": "chaos",
+              "amount": 140,
+              "whisper": "{0} Chaos Orb"
+            },
+            "item": {
+              "currency": "divine",
+              "amount": 1,
+              "stock": 1,
+              "id": "af8112a75a442cecfbb4c0fe1853027ca253270c144b6c0a5ccc0672d4209acc",
+              "whisper": "{0} Divine Orb"
+            }
+          }
+        ],
+        "whisper": "@SKYHELL_AW Hi, I'd like to buy your {0} for my {1} in Allflame"
+      }
+    },
+    "80f2b24e133591d43ffb6888493d44cb45e8af925574eace754d6a": {
+      "id": "7f2e6f049180f2b24e133591d43ffb6888493d44cb45e8af925574eace754d6a",
+      "item": null,
+      "listing": {
+        "indexed": "2026-07-26T16:54:45+00:00",
+        "account": {
+          "name": "SafranSenf#3291",
+          "online": {
+            "league": "Allflame"
+          },
+          "lastCharacterName": "FairgravesNightmare",
+          "language": "en_US",
+          "realm": "pc"
+        },
+        "offers": [
+          {
+            "exchange": {
+              "currency": "chaos",
+              "amount": 670,
+              "whisper": "{0} Chaos Orb"
+            },
+            "item": {
+              "currency": "divine",
+              "amount": 1,
+              "stock": 1,
+              "id": "7f2e6f049180f2b24e133591d43ffb6888493d44cb45e8af925574eace754d6a",
+              "whisper": "{0} Divine Orb"
+            }
+          }
+        ],
+        "whisper": "@FairgravesNightmare Hi, I'd like to buy your {0} for my {1} in Allflame"
+      }
+    }
+  },
+  "total": 13
+}

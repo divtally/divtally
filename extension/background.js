@@ -1,6 +1,6 @@
-/* PoE2 Build Price Checker - Trade Bridge : background service worker.
+/* PoE1 Build Price Checker - Trade Bridge : background service worker.
  *
- * Performs the official trade2 search+fetch on the USER'S machine/IP (extensions with
+ * Performs the official trade search+fetch on the USER'S machine/IP (extensions with
  * host_permissions are exempt from page CORS), so the public website never proxies trade
  * calls through one shared IP (which would be rate-limited/banned). Ported from the Python
  * client (bpc/trade.py): same endpoints, same conservative sliding-window rate limiter, same
@@ -12,14 +12,15 @@
  */
 "use strict";
 
-const BASE = "https://www.pathofexile.com/api/trade2";
-const REALM = "poe2";
+const BASE = "https://www.pathofexile.com/api/trade";
+// PoE1 uses NO realm segment in the path (PC is default; xbox/sony would use ?realm=).
 
 // Conservative starting rules per endpoint: [maxHits, windowSeconds]. We only ever TIGHTEN
-// these from the authoritative X-Rate-Limit-Ip header. Mirrors _DEFAULT_RULES in trade.py.
+// these from the authoritative X-Rate-Limit-Ip header. Mirrors _DEFAULT_RULES in trade.py --
+// PoE1 windows (trade1.md sec 7): search adds a 600/6h window; fetch adds 50/300 + 1000/6h.
 const DEFAULT_RULES = {
-  search: [[5, 10], [15, 60], [30, 300]],
-  fetch:  [[12, 4], [16, 12]],
+  search: [[5, 10], [15, 60], [30, 300], [600, 21600]],
+  fetch:  [[12, 4], [16, 12], [50, 300], [1000, 21600]],
 };
 const MARGIN = 0.7;          // stay under MARGIN * each cap
 const FETCH_TIMEOUT_MS = 30000;
@@ -150,13 +151,13 @@ async function tradeRequest(bucket, method, url, body, attempt) {
 async function priceQuery(query, league) {
   if (!league) throw new Error("missing league");
   if (!query) throw new Error("missing query");
-  const sUrl = BASE + "/search/" + REALM + "/" + encodeURIComponent(league);
+  const sUrl = BASE + "/search/" + encodeURIComponent(league);
   const sres = await tradeRequest("search", "POST", sUrl, { query, sort: { price: "asc" } });
   const ids = (sres.result || []).slice(0, 10);          // API caps fetch at 10 ids
   const total = (sres.total != null) ? sres.total : (sres.result ? sres.result.length : 0);
   if (!ids.length) return { total: 0, amount: null, currency: null, listingId: sres.id || null };
 
-  const fUrl = BASE + "/fetch/" + ids.join(",") + "?query=" + encodeURIComponent(sres.id) + "&realm=" + REALM;
+  const fUrl = BASE + "/fetch/" + ids.join(",") + "?query=" + encodeURIComponent(sres.id);
   const fres = await tradeRequest("fetch", "GET", fUrl);
   for (const L of (fres.result || [])) {
     const pr = L && L.listing && L.listing.price;

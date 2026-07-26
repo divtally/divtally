@@ -511,15 +511,14 @@ const E=bpc.esc;
 const num=s=>{s=(s==null?'':String(s)).trim();if(!s)return null;const n=Number(s);return isNaN(n)?null:n;};
 
 /* group -> page name + sigil glyph */
-const GROUP_LABEL={equipment:"Equipment",flask:"Flasks & Charms",jewel:"Jewels",rune:"Runes / Soul Cores",gem:"Gems"};
-const GROUP_SIGIL={equipment:"⚔",flask:"⚗",jewel:"◈",rune:"ᚱ",gem:"◇"};
+const GROUP_LABEL={equipment:"Equipment",flask:"Flasks",jewel:"Jewels",gem:"Gems"};
+const GROUP_SIGIL={equipment:"⚔",flask:"⚗",jewel:"◈",gem:"◇"};
 const RARITY_COLOR={rare:"var(--r-rare)",magic:"var(--r-magic)",unique:"var(--r-unique)",gem:"var(--r-gem)",
-  rune:"var(--r-currency)",currency:"var(--r-currency)",normal:"var(--r-normal)"};
+  currency:"var(--r-currency)",normal:"var(--r-normal)"};
 function rcOf(it){return RARITY_COLOR[it.category]||RARITY_COLOR[(it.rarity||'').toLowerCase()]||"var(--r-normal)";}
 function sigilGlyph(it){
   if(it.category==='unique')return "✪";
   if(it.group==='gem')return "◇";
-  if(it.group==='rune')return "ᚱ";
   if(it.group==='flask')return "⚗";
   if(it.group==='jewel')return "◈";
   return GROUP_SIGIL[it.group]||"❖";
@@ -594,7 +593,7 @@ bpc.on('meta',m=>{
   $('#empty').style.display='none';
   $('#npname').textContent=m.character||'Unknown';
   let meta=`${E(m['class']||'')} · lvl ${E(m.level||'?')} · ${E(m.league||'')}`;
-  if(m.divine_to_exalted) meta+=` · <span class="rate">1 ${bpc.curImg('div')} = ${bpc.nfmt(Math.round(m.divine_to_exalted),0)} ${bpc.curImg('ex')}</span>`;
+  if(m.divine_to_chaos) meta+=` · <span class="rate">1 ${bpc.curImg('div')} = ${bpc.nfmt(Math.round(m.divine_to_chaos),0)} ${bpc.curImg('chaos')}</span>`;
   $('#npmeta').innerHTML=meta;
   $('#emblem').textContent=(m.character||'?').slice(0,1).toUpperCase();
   $('#champHero').textContent=m.character||'Champion Card';
@@ -637,7 +636,7 @@ function cardHTML(it){
   const on=!!bpc.state.enabled[k];
   const rc=rcOf(it);
   const cnt=it.count>1?`<span class="cnt">×${it.count}</span>`:'';
-  const priced=p&&p.exalted.median!=null;
+  const priced=p&&p.chaos.median!=null;
   const isRare=bpc.state.advanced&&it.category==='rare';
 
   // stat block
@@ -647,9 +646,9 @@ function cardHTML(it){
   }else{
     const conf=p.confidence||'none';
     sb=`<div class="statblock">
-        <div class="sb-row"><span class="k">MIN</span><span class="v mono">${bpc.priceHTML(p.exalted.min)}</span></div>
-        <div class="sb-row med"><span class="k">MED</span><span class="v mono">${bpc.priceHTML(p.exalted.median)}</span></div>
-        <div class="sb-row"><span class="k">MAX</span><span class="v mono">${bpc.priceHTML(p.exalted.high)}</span></div>
+        <div class="sb-row"><span class="k">MIN</span><span class="v mono">${bpc.priceHTML(p.chaos.min)}</span></div>
+        <div class="sb-row med"><span class="k">MED</span><span class="v mono">${bpc.priceHTML(p.chaos.median)}</span></div>
+        <div class="sb-row"><span class="k">MAX</span><span class="v mono">${bpc.priceHTML(p.chaos.high)}</span></div>
         <div class="sb-foot">
           <span class="pip ${E(conf)}"><span class="dot"></span>${E(conf)}</span>
           ${p.trade_url?`<a class="sb-link" href="${E(p.trade_url)}" target="_blank" rel="noopener">trade ↗</a>`:''}
@@ -733,7 +732,7 @@ bpc.on('enabled',()=>{updateSleeveStates();});
 function updateSleeveStates(){
   document.querySelectorAll('#grid .sleeve[data-sleeve]').forEach(sl=>{
     const k=sl.dataset.sleeve;const p=bpc.state.priced[k];const on=!!bpc.state.enabled[k];
-    const priced=p&&p.exalted.median!=null;
+    const priced=p&&p.chaos.median!=null;
     sl.classList.toggle('out',priced&&!on);
     const tg=sl.querySelector('.tog');
     if(tg){tg.classList.toggle('off',!on);tg.textContent=on?'✓':'✕';}
@@ -839,7 +838,7 @@ function renderDeck(){
   h+=`<div style="display:flex;flex-direction:column;gap:8px;max-width:430px;margin:0 auto">`;
   rares.forEach((r,i)=>{
     const it=bpc.state.items.find(x=>String(x.index)===r.key)||{};
-    const p=r.priced;const md=p&&p.exalted.median!=null?bpc.priceHTML(p.exalted.median):(r.decided?'<span class="bpc-dash">&mdash;</span>':'pending');
+    const p=r.priced;const md=p&&p.chaos.median!=null?bpc.priceHTML(p.chaos.median):(r.decided?'<span class="bpc-dash">&mdash;</span>':'pending');
     h+=`<button class="chip ${r.decided?'on':''}" data-open="${E(r.key)}" style="text-align:left;cursor:pointer">
       <div class="chip-top">
         <span class="chip-cb">${r.decided?'✓':(i+1)}</span>

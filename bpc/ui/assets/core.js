@@ -37,8 +37,8 @@
   var STATUS_ORDER = ["available", "securable", "onlineleague", "online", "any"];
   var TIER_LABEL = { min: "min (budget)", median: "median (typical)", high: "high (~90th pct)" };
   var TIER_ORDER = ["min", "median", "high"];
-  var GROUPS = [["equipment", "Equipment"], ["flask", "Flasks & Charms"], ["jewel", "Jewels"],
-                ["rune", "Runes / Soul Cores"], ["gem", "Gems"]];
+  var GROUPS = [["equipment", "Equipment"], ["flask", "Flasks"], ["jewel", "Jewels"],
+                ["gem", "Gems"]];
 
   function lsget(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function lsset(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
@@ -84,8 +84,8 @@
     // 'tier' is display-only (all tiers are already computed) — never trigger a re-search.
     if (opts.rerun !== false && name !== "tier") rerun();
   }
-  // current-tier exalted value of a priced row (null if unpriced)
-  function tierEx(p) { return (p && p.exalted) ? p.exalted[state.tier] : null; }
+  // current-tier chaos value of a priced row (null if unpriced)
+  function tierEx(p) { return (p && p.chaos) ? p.chaos[state.tier] : null; }
 
   // ---- currency formatting ----
   function esc(s) {
@@ -94,11 +94,11 @@
     });
   }
   function nfmt(n, d) { return Number(n).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d }); }
-  function divRate() { return (state.meta && state.meta.divine_to_exalted) ? state.meta.divine_to_exalted : 0; }
+  function divRate() { return (state.meta && state.meta.divine_to_chaos) ? state.meta.divine_to_chaos : 0; }
   function curImg(kind) {
-    var m = state.meta || {}, src = kind === "div" ? m.divine_img : m.exalted_img;
+    var m = state.meta || {}, src = kind === "div" ? m.divine_img : m.chaos_img;
     return src ? '<img class="bpc-cur" src="' + esc(src) + '" alt="' + kind + '" title="' +
-      (kind === "div" ? "Divine Orb" : "Exalted Orb") + '">' : esc(kind);
+      (kind === "div" ? "Divine Orb" : "Chaos Orb") + '">' : esc(kind);
   }
   // structured: {empty} | {ex, exStr, div|null, divStr|null}
   function price(ex) {
@@ -114,13 +114,13 @@
   function priceHTML(ex) {
     var p = price(ex);
     if (p.empty) return '<span class="bpc-dash">—</span>';
-    var exPart = p.exStr + " " + curImg("ex");
+    var exPart = p.exStr + " " + curImg("chaos");
     if (p.div != null) return p.divStr + " " + curImg("div") + ' <span class="bpc-exsub">(' + exPart + ")</span>";
     return exPart;
   }
 
   // ---- totals + include/exclude ----
-  function isPriced(it) { var p = state.priced[String(it.index)]; return !!(p && p.exalted.median != null); }
+  function isPriced(it) { var p = state.priced[String(it.index)]; return !!(p && p.chaos.median != null); }
   // a skill granted by gear/passives (blank-gem) -- not bought, so default it OUT of the total
   function itemGranted(k) { var it = state.items.find(function (x) { return String(x.index) === String(k); }); return !!(it && it.granted); }
   // min/median/high are the REMAINING spend (included items not yet purchased); spent* is what
@@ -130,19 +130,19 @@
     var mn = 0, md = 0, hi = 0, sMn = 0, sMd = 0, sHi = 0, inc = 0, tot = 0, bought = 0;
     state.items.forEach(function (it) {
       var k = String(it.index), p = state.priced[k];
-      if (!p || p.exalted.median == null) return;
+      if (!p || p.chaos.median == null) return;
       tot++;
       if (!state.enabled[k]) return;
       inc++; var c = it.count || 1;
       if (state.purchased[k]) {
         bought++;
-        if (p.exalted.min != null) sMn += p.exalted.min * c;
-        sMd += p.exalted.median * c;
-        if (p.exalted.high != null) sHi += p.exalted.high * c;
+        if (p.chaos.min != null) sMn += p.chaos.min * c;
+        sMd += p.chaos.median * c;
+        if (p.chaos.high != null) sHi += p.chaos.high * c;
       } else {
-        if (p.exalted.min != null) mn += p.exalted.min * c;
-        md += p.exalted.median * c;
-        if (p.exalted.high != null) hi += p.exalted.high * c;
+        if (p.chaos.min != null) mn += p.chaos.min * c;
+        md += p.chaos.median * c;
+        if (p.chaos.high != null) hi += p.chaos.high * c;
       }
     });
     return { min: mn, median: md, high: hi, included: inc, priced: tot,
@@ -182,7 +182,7 @@
       var k = String(it.index);
       // "enable all" still leaves gear/passive-granted skills OUT (they aren't bought); a
       // disable-all turns everything off. Non-gem items have no `granted` flag (-> included).
-      if (state.priced[k] && state.priced[k].exalted.median != null) state.enabled[k] = on ? !it.granted : false;
+      if (state.priced[k] && state.priced[k].chaos.median != null) state.enabled[k] = on ? !it.granted : false;
     });
     emit("enabled", { group: group, on: !!on }); emit("totals", totals());
   }
@@ -239,7 +239,7 @@
     }, 1000);
   }
 
-  function sigOf(p) { return p.method + "|" + p.exalted.min + "|" + p.exalted.median + "|" + p.exalted.high + "|" + p.note + "|" + p.trade_url; }
+  function sigOf(p) { return p.method + "|" + p.chaos.min + "|" + p.chaos.median + "|" + p.chaos.high + "|" + p.note + "|" + p.trade_url; }
 
   function ingest(j) {
     if (j.state === "error") { state.phase = "error"; state.error = j.error || "error"; emit("error", state.error); emit("phase", "error"); emit("state", state); stopPoll(); return; }
@@ -258,7 +258,7 @@
       if (state._sig[k] === sig) return;
       state._sig[k] = sig; state.priced[k] = np[k]; changed.push(k);
       // auto-include priced items, EXCEPT skills granted by gear/passives (not bought)
-      if (np[k].exalted.median != null && !(k in state.enabled)) state.enabled[k] = !itemGranted(k);
+      if (np[k].chaos.median != null && !(k in state.enabled)) state.enabled[k] = !itemGranted(k);
     });
 
     if (firstMeta) { loadPurchased(); emit("meta", state.meta); }
@@ -283,7 +283,7 @@
     if (state.currentRare != null) return;
     for (var i = 0; i < state.rareOrder.length; i++) {
       var k = state.rareOrder[i], r = state.rares[k];
-      var priced = state.priced[k] && state.priced[k].exalted.median != null;
+      var priced = state.priced[k] && state.priced[k].chaos.median != null;
       // only prompt for rares that genuinely need a choice — never for ones already priced
       // (e.g. a build loaded from its saved result shows up "priced", not "awaiting").
       if (!state.decided.has(k) && r && r.status === "awaiting" && !priced) { openRare(k); return; }
@@ -322,7 +322,7 @@
   }
   function skipRare(k) {
     k = String(k);
-    state.priced[k] = { exalted: { min: null, median: null, high: null }, confidence: "none", note: "skipped (not priced)", method: "skipped", trade_url: "", sample_size: 0, total_found: 0 };
+    state.priced[k] = { chaos: { min: null, median: null, high: null }, confidence: "none", note: "skipped (not priced)", method: "skipped", trade_url: "", sample_size: 0, total_found: 0 };
     state._sig[k] = sigOf(state.priced[k]);
     emit("priced", { keys: [k], state: state }); emit("totals", totals());
     submitRare(k, { skip: true });
@@ -386,7 +386,7 @@
   }
   function mockPriceRare(k, payload) {
     if (payload && payload.skip) return;
-    state.priced[k] = { exalted: { min: 12, median: 34, high: 88 }, confidence: "medium", note: "(demo) re-priced", method: "rare_custom", trade_url: "https://www.pathofexile.com/trade2", sample_size: 14, total_found: 120 };
+    state.priced[k] = { chaos: { min: 12, median: 34, high: 88 }, confidence: "medium", note: "(demo) re-priced", method: "rare_custom", trade_url: "https://www.pathofexile.com/trade", sample_size: 14, total_found: 120 };
     state._sig[k] = sigOf(state.priced[k]);
     emit("priced", { keys: [k], state: state }); emit("totals", totals());
   }

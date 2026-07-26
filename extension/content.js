@@ -1,4 +1,4 @@
-/* PoE2 Build Price Checker - Trade Bridge : content script.
+/* PoE1 Build Price Checker - Trade Bridge : content script.
  *
  * Injected into the public/staging site (and the local dev site). It bridges the PAGE
  * (which can only use window.postMessage) and the extension SERVICE WORKER (which can only
@@ -11,7 +11,7 @@
  *   ext   -> page : { source:"bpc-ext", type:"hello", version }            (announced on load)
  *                   { source:"bpc-ext", type:"pong",  reqId, version }
  *                   { source:"bpc-ext", type:"price-result", reqId, results:[...] | error }
- * Each `query` is the trade2 `query` object (status/type/name/stats/filters) -- exactly the
+ * Each `query` is the trade `query` object (status/type/name/stats/filters) -- exactly the
  * inner object the site already builds for its clickable ?q= links.
  */
 (function () {

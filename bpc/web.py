@@ -1,4 +1,4 @@
-"""Local web UI for the PoE2 build price checker.
+"""Local web UI for the PoE1 build price checker.
 
     python -m bpc.web            # then open http://127.0.0.1:8765
     python -m bpc.web --port 9000 --no-browser
@@ -21,7 +21,7 @@ from queue import Empty, Queue
 from urllib.parse import urlparse, parse_qs
 
 from . import __version__, cache, engine, poeninja, report, util
-from .models import (CAT_GEM, CAT_MAGIC, CAT_RARE, CAT_RUNE, CAT_UNIQUE, PriceResult)
+from .models import (CAT_GEM, CAT_MAGIC, CAT_RARE, CAT_UNIQUE, PriceResult)
 from .trade import TradeClient
 
 _jobs = {}                      # job_id -> dict(...)
@@ -107,7 +107,7 @@ def _html_escape(s):
 
 _GALLERY_TMPL = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PoE2 Build Price Checker - choose a look</title>
+<title>PoE1 Build Price Checker - choose a look</title>
 <style>
   :root{--bg:#0b0d12;--panel:#141821;--bd:#252b38;--fg:#e8ecf4;--mut:#8b93a7}
   *{box-sizing:border-box}
@@ -154,12 +154,12 @@ def _set_error(job_id, msg):
 
 def _result_dict(r: PriceResult) -> dict:
     f = report._finite
-    d = {"exalted": {"min": f(r.tier.minimum), "median": f(r.tier.median),
-                     "high": f(r.tier.high)},
+    d = {"chaos": {"min": f(r.tier.minimum), "median": f(r.tier.median),
+                   "high": f(r.tier.high)},
          "confidence": r.confidence, "note": r.note, "method": r.method,
          "trade_url": r.trade_url, "sample_size": r.sample_size,
          "total_found": r.total_found}
-    if r.extra:                       # e.g. skills carry kind/level/sockets/cut/lineage
+    if r.extra:                       # e.g. gems carry kind/level/quality/total_chaos/gems
         d.update(r.extra)
     return d
 
@@ -183,13 +183,13 @@ def _load_saved_result(meta, cache_key):
 
 
 # A saved result is keyed by item INDEX. If a normalize/pricing change reorders or re-counts the
-# items (e.g. the gem-pricing rework, rune extraction), an old saved `priced` no longer lines up
+# items (e.g. the gem-pricing rework), an old saved `priced` no longer lines up
 # with the freshly-normalized items -- so seeding would show, and link, each slot to the WRONG
-# item's price (a jewel opening a skill-gem search, a rune opening an armour search, ...). Guard:
+# item's price (a jewel opening a skill-gem search, a flask opening an armour search, ...). Guard:
 # every saved entry's pricing METHOD must be consistent with the category of the item now sitting
 # at that index. On any mismatch we refuse to seed and re-price instead (self-healing: the fresh
 # run rewrites a correctly-aligned result).
-_METHOD_OK = {CAT_GEM: ("skill",), CAT_RUNE: ("exchange",), CAT_UNIQUE: ("unique",),
+_METHOD_OK = {CAT_GEM: ("skill",), CAT_UNIQUE: ("unique",),
               CAT_RARE: ("rare",), CAT_MAGIC: ("magic",)}
 
 
@@ -228,16 +228,12 @@ def _save_result(job_id):
 
 
 def _price_task(pricer, kind, payload, items_by_idx, gems):
-    if kind == "gems":
-        return pricer.price_gems_aggregate(gems)
     idx = payload[0] if kind == "rare_custom" else payload
     it = items_by_idx[idx]
     if kind == "skill":
         return pricer.price_skill(it)
     if kind == "unique":
         return pricer.price_unique(it)
-    if kind == "rune":
-        return pricer.price_rune(it)
     if kind == "magic":
         return pricer.price_magic(it)
     if kind == "rare_default":
@@ -307,7 +303,9 @@ def _run_job(job_id, url, league, refresh, advanced, cache_key="", status="onlin
                    "count": it.count, "rarity": it.rarity, "icon": it.icon}
             if it.category == CAT_GEM:
                 row["level"] = it.gem_level
-                row["sockets"] = it.gem_sockets
+                row["quality"] = it.gem_quality
+                row["corrupted"] = it.corrupted
+                row["sockets"] = len(it.supports)   # PoE1 gems have no sockets; carry support count
                 row["supports"] = it.supports
                 # Skills you BOUGHT live in the gem panel (inventoryId "SkillSlots"); skills
                 # granted by gear/passives/weapon-defaults sit elsewhere (DefaultAttackSkills,
@@ -317,8 +315,7 @@ def _run_job(job_id, url, league, refresh, advanced, cache_key="", status="onlin
                 row["granted"] = not _inv.startswith("SkillSlot")
             else:                                   # affixes for the hover tooltip
                 mods = {"implicit": [util.strip_rich(m).strip() for m in (it.implicit_mods or [])],
-                        "explicit": [util.strip_rich(m).strip() for m in (it.explicit_mods or [])],
-                        "rune": [util.strip_rich(m).strip() for m in (it.rune_mods or [])]}
+                        "explicit": [util.strip_rich(m).strip() for m in (it.explicit_mods or [])]}
                 if any(mods.values()):
                     row["mods"] = mods
             skeleton.append(row)
@@ -351,8 +348,6 @@ def _run_job(job_id, url, league, refresh, advanced, cache_key="", status="onlin
                 pass                                # seeded: nothing to search
             elif it.category == CAT_GEM:
                 q.put(("skill", i))
-            elif it.category == CAT_RUNE:
-                q.put(("rune", i))
             elif it.category == CAT_MAGIC:
                 q.put(("magic", i))
             else:
@@ -365,9 +360,9 @@ def _run_job(job_id, url, league, refresh, advanced, cache_key="", status="onlin
             else:
                 j["meta"] = {"character": meta.character, "class": meta.char_class,
                              "level": meta.level, "league": meta.league,
-                             "divine_to_exalted": report._finite(div),
+                             "divine_to_chaos": report._finite(div),
                              "status": pricer.status,
-                             "exalted_img": pricer.currency_image("exalted"),
+                             "chaos_img": pricer.currency_image("chaos"),
                              "divine_img": pricer.currency_image("divine"),
                              "source_url": getattr(meta, "source_url", "") or "",
                              "pob_code": getattr(meta, "pob_export", "") or ""}
@@ -430,7 +425,7 @@ def _run_job(job_id, url, league, refresh, advanced, cache_key="", status="onlin
                 priced_entry = _result_dict(result)
             except Exception as e:                  # never let one item kill the worker thread
                 progress(f"  could not price {name}: {type(e).__name__}: {e}")
-                priced_entry = {"exalted": {"min": None, "median": None, "high": None},
+                priced_entry = {"chaos": {"min": None, "median": None, "high": None},
                                 "confidence": "none", "method": "error", "trade_url": "",
                                 "sample_size": 0, "total_found": 0,
                                 "note": f"pricing failed ({type(e).__name__})"}
@@ -513,7 +508,7 @@ class Handler(BaseHTTPRequestHandler):
                 leagues = []
             self._send(200, json.dumps({"leagues": leagues}))
         elif path.path == "/api/stats":
-            # full trade2 stat dictionary (id/text grouped by type) so the picker can add
+            # full PoE1 trade stat dictionary (id/text grouped by type) so the picker can add
             # filters for mods not on the build's item. Disk-cached a day; league-agnostic.
             try:
                 data = TradeClient("Standard").stats_data()
@@ -571,7 +566,7 @@ class Handler(BaseHTTPRequestHandler):
                     # skip entirely: mark priced with no price, no trade search
                     rare["status"] = "priced"
                     job["priced"][idx] = {
-                        "exalted": {"min": None, "median": None, "high": None},
+                        "chaos": {"min": None, "median": None, "high": None},
                         "confidence": "none", "note": "skipped (not priced)",
                         "method": "skipped", "trade_url": "", "sample_size": 0,
                         "total_found": 0}
@@ -590,7 +585,7 @@ class Handler(BaseHTTPRequestHandler):
 PAGE = r"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PoE2 Build Price Checker</title>
+<title>PoE1 Build Price Checker</title>
 <style>
   :root{--bg:#15171c;--panel:#1d2027;--line:#2c313c;--fg:#d6d8de;--mut:#8b909c;
         --acc:#c79a4b;--green:#54b06a;--amber:#d6a23a;--grey:#6b7280;--red:#c9554e;}
@@ -699,7 +694,7 @@ PAGE = r"""<!doctype html>
   .ptoggle input{vertical-align:-2px;margin-right:6px}
 </style></head>
 <body><div class="wrap">
-  <h1>PoE2 Build Price Checker</h1>
+  <h1>PoE1 Build Price Checker</h1>
   <div class="tag">Paste a poe.ninja character link, a Path of Building code, or a pobb.in
     link to estimate its cost (min / median / high).</div>
   <form id="f">
@@ -730,8 +725,8 @@ PAGE = r"""<!doctype html>
 </div>
 <script>
 const $=s=>document.querySelector(s);
-const GROUPS=[['equipment','Equipment'],['flask','Flasks & Charms'],['jewel','Jewels'],
-              ['rune','Runes / Soul Cores'],['gem','Gems']];
+const GROUPS=[['equipment','Equipment'],['flask','Flasks'],['jewel','Jewels'],
+              ['gem','Gems']];
 let polling=null, JOB=null, jobId=null, advanced=false;
 let lastSource=null;     // the current build's source ({url} or {cache_key}) so control changes can re-run it
 let rendered=false, enabled={}, filled={}, rareOrder=[], curRare=0, picking=false;
@@ -739,19 +734,19 @@ let curRareKey=null, usePseudo=true, decided=new Set();
 let RECENT=[], showAllRecent=false;
 function setBusy(b){ $('#go').disabled=b; }
 function pnum(s){ s=(s||'').trim(); if(s==='') return null; const n=Number(s); return isNaN(n)?null:n; }
-function divr(){ return JOB&&JOB.meta? JOB.meta.divine_to_exalted : null; }
+function divr(){ return JOB&&JOB.meta? JOB.meta.divine_to_chaos : null; }
 function cssesc(s){ return String(s).replace(/"/g,'\\"'); }
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function nfmt(n,d){ return n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}); }
-// currency icon (exalted/divine) like the trade site; falls back to text if no image
+// currency icon (chaos/divine) like the trade site; falls back to text if no image
 function curImg(kind){
-  const src = (JOB&&JOB.meta) ? (kind==='div'?JOB.meta.divine_img:JOB.meta.exalted_img) : '';
-  return src ? '<img class="cur" src="'+esc(src)+'" alt="'+kind+'" title="'+(kind==='div'?'Divine Orb':'Exalted Orb')+'">' : esc(kind);
+  const src = (JOB&&JOB.meta) ? (kind==='div'?JOB.meta.divine_img:JOB.meta.chaos_img) : '';
+  return src ? '<img class="cur" src="'+esc(src)+'" alt="'+kind+'" title="'+(kind==='div'?'Divine Orb':'Chaos Orb')+'">' : esc(kind);
 }
-// returns HTML (with orb icons): exalted, switching to a divine form once worth >= 0.5 div
+// returns HTML (with orb icons): chaos, switching to a divine form once worth >= 0.5 div
 function fmt(ex,div){
   if(ex==null) return '-';
-  const exStr=(ex>=10? nfmt(Math.round(ex),0) : nfmt(ex,1))+' '+curImg('ex');
+  const exStr=(ex>=10? nfmt(Math.round(ex),0) : nfmt(ex,1))+' '+curImg('chaos');
   if(div && ex>=div*0.5){
     const v=ex/div, vStr=(v<100? nfmt(v,1) : nfmt(Math.round(v),0))+' '+curImg('div');
     return vStr+' <span class="exsub">('+exStr+')</span>';
@@ -844,12 +839,12 @@ const STATUS_LABEL={available:'Instant Buyout and In Person', securable:'Instant
 function metaHead(){
   const m=JOB.meta, div=divr();
   const stat = m.status? ' &nbsp;|&nbsp; listings: '+esc(STATUS_LABEL[m.status]||m.status) : '';
-  const pob = m.pob_code ? '<div class="pobbox"><div class="pobhd">Path of Building 2 import code'+
+  const pob = m.pob_code ? '<div class="pobbox"><div class="pobhd">Path of Building import code'+
     ' <button class="pobcopy" type="button" title="Copy import code" aria-label="Copy import code">'+COPY_SVG+'</button></div>'+
     '<textarea class="pobtext" readonly rows="2" spellcheck="false" onclick="this.select()">'+esc(m.pob_code)+'</textarea></div>' : '';
   return '<div class="meta"><h2>'+esc(m.character)+' <span class="sub">'+esc(m['class'])+
     ' &middot; level '+m.level+'</span></h2><div class="sub">League: '+esc(m.league)+
-    (div? ' &nbsp;|&nbsp; 1 '+curImg('div')+' = '+nfmt(Math.round(div),0)+' '+curImg('ex'):'')+stat+'</div>'+pob+'</div>';
+    (div? ' &nbsp;|&nbsp; 1 '+curImg('div')+' = '+nfmt(Math.round(div),0)+' '+curImg('chaos'):'')+stat+'</div>'+pob+'</div>';
 }
 function renderSkeleton(){
   rareOrder=JOB.items.filter(it=>it.category==='rare').map(it=>String(it.index));
@@ -882,14 +877,14 @@ function renderSkeleton(){
 function fillPriced(){
   const div=divr();
   for(const k in JOB.priced){
-    const p=JOB.priced[k], priced=p.exalted.median!=null;
-    const sig=p.method+'|'+p.exalted.min+'|'+p.exalted.median+'|'+p.exalted.high+'|'+p.note+'|'+p.trade_url;
+    const p=JOB.priced[k], priced=p.chaos.median!=null;
+    const sig=p.method+'|'+p.chaos.min+'|'+p.chaos.median+'|'+p.chaos.high+'|'+p.note+'|'+p.trade_url;
     if(filled[k]===sig) continue;                 // re-render when the price changes (re-search)
     const row=document.querySelector('tr[data-k="'+cssesc(k)+'"]'); if(!row) continue;
     filled[k]=sig;
-    row.querySelector('.c-min').innerHTML=fmt(p.exalted.min,div);
-    row.querySelector('.c-med').innerHTML=fmt(p.exalted.median,div);
-    row.querySelector('.c-high').innerHTML=fmt(p.exalted.high,div);
+    row.querySelector('.c-min').innerHTML=fmt(p.chaos.min,div);
+    row.querySelector('.c-med').innerHTML=fmt(p.chaos.median,div);
+    row.querySelector('.c-high').innerHTML=fmt(p.chaos.high,div);
     row.querySelector('.c-conf').innerHTML='<span class="badge '+esc(p.confidence)+'">'+esc(p.confidence)+'</span>';
     row.querySelector('.note').textContent=p.note||'';
     if(p.trade_url){
@@ -914,13 +909,13 @@ function recompute(){
   const div=divr(); let mn=0,md=0,hi=0,inc=0,tot=0;
   for(const it of JOB.items){
     const k=String(it.index), p=JOB.priced[k];
-    if(!p || p.exalted.median==null) continue;
+    if(!p || p.chaos.median==null) continue;
     tot++;
     const row=document.querySelector('tr[data-k="'+cssesc(k)+'"]');
     if(enabled[k]){
       inc++; const c=it.count||1;
-      if(p.exalted.min!=null) mn+=p.exalted.min*c;
-      md+=p.exalted.median*c; if(p.exalted.high!=null) hi+=p.exalted.high*c;
+      if(p.chaos.min!=null) mn+=p.chaos.min*c;
+      md+=p.chaos.median*c; if(p.chaos.high!=null) hi+=p.chaos.high*c;
       if(row){ row.classList.add('on'); row.classList.remove('off'); }
     }else if(row){ row.classList.add('off'); row.classList.remove('on'); }
   }
@@ -928,7 +923,7 @@ function recompute(){
     $('#thigh').innerHTML=fmt(hi,div); $('#tinc').textContent=inc+' of '+tot+' priced items included'; }
   document.querySelectorAll('input.gall').forEach(g=>{
     const ks=JOB.items.filter(it=>it.group===g.dataset.g).map(it=>String(it.index))
-      .filter(k=>JOB.priced[k]&&JOB.priced[k].exalted.median!=null);
+      .filter(k=>JOB.priced[k]&&JOB.priced[k].chaos.median!=null);
     g.checked = ks.length>0 && ks.every(k=>enabled[k]);
   });
 }
@@ -1051,7 +1046,7 @@ document.addEventListener('change',e=>{
   }else if(t.classList.contains('gall')){
     const grp=t.dataset.g;
     JOB.items.forEach(it=>{ const k=String(it.index);
-      if(it.group===grp && JOB.priced[k] && JOB.priced[k].exalted.median!=null){
+      if(it.group===grp && JOB.priced[k] && JOB.priced[k].chaos.median!=null){
         enabled[k]=t.checked;
         const cb=document.querySelector('input.row[data-k="'+cssesc(k)+'"]'); if(cb) cb.checked=t.checked;
       }});
@@ -1105,7 +1100,7 @@ def _bind(host, port):
 
 
 def main(argv=None):
-    p = argparse.ArgumentParser(prog="bpc.web", description="Local web UI for the PoE2 build price checker.")
+    p = argparse.ArgumentParser(prog="bpc.web", description="Local web UI for the PoE1 build price checker.")
     p.add_argument("--port", type=int, default=8765)
     p.add_argument("--host", default="127.0.0.1")
     p.add_argument("--no-browser", action="store_true")
@@ -1113,7 +1108,7 @@ def main(argv=None):
 
     srv, port = _bind(args.host, args.port)
     url = f"http://{args.host}:{port}"
-    print(f"PoE2 Build Price Checker is running.\n  Open: {url}\n  (Ctrl+C here to stop)",
+    print(f"PoE1 Build Price Checker is running.\n  Open: {url}\n  (Ctrl+C here to stop)",
           flush=True)
     # Pre-warm the (league-agnostic, disk-cached) trade stat dictionary in the background so
     # /api/stats is never a cold fetch racing a pricing search. Best-effort; ignore failures.

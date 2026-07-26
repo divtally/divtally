@@ -452,12 +452,12 @@ function heatStyle(share){            // share 0..1
 function pctOf(k){
   const t=bpc.totals(); const md=t.median;
   const p=bpc.state.priced[k];
-  if(!p||p.exalted.median==null) return null;
+  if(!p||p.chaos.median==null) return null;
   if(!bpc.state.enabled[k]) return 0;
   if(md<=0) return null;
   const it=bpc.state.items.find(x=>String(x.index)===String(k));
   const c=(it&&it.count)||1;
-  return (p.exalted.median*c)/md;       // fraction
+  return (p.chaos.median*c)/md;       // fraction
 }
 function pctText(frac){
   if(frac==null) return '<span class="bpc-dash">&mdash;</span>';
@@ -474,14 +474,14 @@ function confDagger(conf){
 }
 
 function itemValHTML(p){
-  if(!p||p.exalted.median==null) return `<span class="unp">not priced</span>`;
-  return bpc.priceHTML(p.exalted.median);
+  if(!p||p.chaos.median==null) return `<span class="unp">not priced</span>`;
+  return bpc.priceHTML(p.chaos.median);
 }
 
 function rowHTML(it){
   const k=String(it.index), s=bpc.state, p=s.priced[k];
   const on=!!s.enabled[k];
-  const priced=!!(p&&p.exalted.median!=null);
+  const priced=!!(p&&p.chaos.median!=null);
   const cnt=(it.count>1)?` <span class="cnt">&times;${it.count}</span>`:'';
   const isRare=s.advanced&&it.category==='rare';
   const edit=isRare?` <button class="editafx" data-k="${E(k)}" type="button" title="edit affixes">edit</button>`:'';
@@ -532,8 +532,8 @@ function buildLabel(){
 
   // char line
   let charLine=`<b>Character:</b> ${E(m.character||'—')} &nbsp;<span class="sep">|</span>&nbsp; <b>Class:</b> ${E(m['class']||'—')} &nbsp;<span class="sep">|</span>&nbsp; <b>Lvl</b> ${E(m.level||'—')}<br><span class="sep">League:</span> ${E(m.league||'—')}`;
-  if(m.divine_to_exalted){
-    charLine+=` &nbsp;<span class="sep">|</span>&nbsp; <span class="rate">1 ${bpc.curImg('div')} = ${bpc.nfmt(Math.round(m.divine_to_exalted),0)} ${bpc.curImg('ex')}</span>`;
+  if(m.divine_to_chaos){
+    charLine+=` &nbsp;<span class="sep">|</span>&nbsp; <span class="rate">1 ${bpc.curImg('div')} = ${bpc.nfmt(Math.round(m.divine_to_chaos),0)} ${bpc.curImg('chaos')}</span>`;
   }
 
   let h=`<div class="label" id="thelabel">`;
@@ -558,7 +558,7 @@ function buildLabel(){
     const groupShare=groupSharePct(grp.group);
     const groupFrac=groupShare.frac;
     const heat=heatStyle(groupFrac);
-    const anyPriced=grp.items.some(it=>{const p=s.priced[String(it.index)];return p&&p.exalted.median!=null;});
+    const anyPriced=grp.items.some(it=>{const p=s.priced[String(it.index)];return p&&p.chaos.median!=null;});
     const groupOn=grp.items.some(it=>s.enabled[String(it.index)]);
     h+=`<div class="grp">
         <div class="grp-row${gi===0?' first':''}" data-grp="${E(grp.group)}">
@@ -618,7 +618,7 @@ function groupSharePct(group){
   let sum=0;
   s.items.filter(it=>it.group===group).forEach(it=>{
     const k=String(it.index), p=s.priced[k];
-    if(p&&p.exalted.median!=null&&s.enabled[k]) sum+=p.exalted.median*((it.count)||1);
+    if(p&&p.chaos.median!=null&&s.enabled[k]) sum+=p.chaos.median*((it.count)||1);
   });
   if(md<=0) return {frac:null,sum};
   return {frac:sum/md,sum};
@@ -652,7 +652,7 @@ function refreshAllRows(){
     const frac=pctOf(k);
     const p=bpc.state.priced[k];
     cell.innerHTML=pctText(frac)+(p?confDagger(p.confidence):'');
-    cell.setAttribute('style', (!!bpc.state.enabled[k]&&p&&p.exalted.median!=null)?heatStyle(frac):'');
+    cell.setAttribute('style', (!!bpc.state.enabled[k]&&p&&p.chaos.median!=null)?heatStyle(frac):'');
   });
   bpc.itemsByGroup().forEach(grp=>{
     const gc=document.querySelector(`.gpct[data-gpct="${cssEsc(grp.group)}"]`);
@@ -671,7 +671,7 @@ function patchTotals(){
     const frac=pctOf(k);
     const p=bpc.state.priced[k];
     cell.innerHTML=pctText(frac)+(p?confDagger(p.confidence):'');
-    cell.setAttribute('style',(!!bpc.state.enabled[k]&&p&&p.exalted.median!=null)?heatStyle(frac):'');
+    cell.setAttribute('style',(!!bpc.state.enabled[k]&&p&&p.chaos.median!=null)?heatStyle(frac):'');
   });
   bpc.itemsByGroup().forEach(grp=>{
     const gc=document.querySelector(`.gpct[data-gpct="${cssEsc(grp.group)}"]`);

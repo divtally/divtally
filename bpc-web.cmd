@@ -1,5 +1,5 @@
 @echo off
-REM Launch the PoE2 build price checker web UI (opens http://127.0.0.1:8765).
+REM Launch the PoE1 build price checker web UI (opens http://127.0.0.1:8765).
 REM Optional args pass through, e.g.: bpc-web.cmd --port 9000 --no-browser
 python "%~dp0run.py" --web %*
 if errorlevel 1 (

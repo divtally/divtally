@@ -96,7 +96,7 @@ function render(){
   const s=bpc.state; if(!s.meta){ return; }
   const m=s.meta;
   let h=`<div class="meta"><b>${E(m.character)}</b> — ${E(m['class'])} lvl ${m.level} · League ${E(m.league)}`;
-  if(m.divine_to_exalted) h+=` · 1 ${bpc.curImg('div')} = ${bpc.nfmt(Math.round(m.divine_to_exalted),0)} ${bpc.curImg('ex')}`;
+  if(m.divine_to_chaos) h+=` · 1 ${bpc.curImg('div')} = ${bpc.nfmt(Math.round(m.divine_to_chaos),0)} ${bpc.curImg('chaos')}`;
   if(m.pob_code) h+=`<div class="pobbox"><button id="pobcopy">copy PoB</button><textarea class="pob" readonly>${E(m.pob_code)}</textarea></div>`;
   h+=`</div>`;
   for(const grp of bpc.itemsByGroup()){
@@ -106,14 +106,14 @@ function render(){
       const cnt=it.count>1?` ×${it.count}`:'';
       const re=(s.advanced&&it.category==='rare')?`<button class="reaffix" data-k="${E(k)}">edit affixes</button>`:'';
       if(!p){ h+=`<tr data-k="${E(k)}"><td></td><td>${E(it.name)}${cnt}${re}</td><td class="num" colspan="4" style="color:var(--mut)">…</td></tr>`; continue; }
-      const priced=p.exalted.median!=null;
+      const priced=p.chaos.median!=null;
       h+=`<tr data-k="${E(k)}" class="${on?'':'off'}">
         <td>${priced?`<input type="checkbox" class="inc" data-k="${E(k)}" ${on?'checked':''}>`:''}</td>
         <td>${p.trade_url?`<a href="${E(p.trade_url)}" target="_blank" rel="noopener">${E(it.name)}</a>`:E(it.name)}${cnt}${re}
             ${p.note?`<div class="note">${E(p.note)}</div>`:''}</td>
-        <td class="num">${bpc.priceHTML(p.exalted.min)}</td>
-        <td class="num">${bpc.priceHTML(p.exalted.median)}</td>
-        <td class="num">${bpc.priceHTML(p.exalted.high)}</td>
+        <td class="num">${bpc.priceHTML(p.chaos.min)}</td>
+        <td class="num">${bpc.priceHTML(p.chaos.median)}</td>
+        <td class="num">${bpc.priceHTML(p.chaos.high)}</td>
         <td><span class="badge ${E(p.confidence)}">${E(p.confidence)}</span></td></tr>`;
     }
     h+=`</tbody></table>`;

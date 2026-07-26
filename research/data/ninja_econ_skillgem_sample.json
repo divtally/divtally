@@ -1,0 +1,1173 @@
+{
+  "_endpoint": "https://poe.ninja/poe1/api/economy/stash/current/item/overview",
+  "_league": "Allflame",
+  "_note": "trimmed sample of buckets",
+  "lines": [
+    {
+      "id": 142120,
+      "name": "Awakened Enhance Support",
+      "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9TdXBwb3J0L1N1cHBvcnRQbHVzL2VuaGFuY2VwbHVzIiwidyI6MSwiaCI6MSwic2NhbGUiOjF9XQ/d3de7b3bd1/enhanceplus.png",
+      "levelRequired": 80,
+      "variant": "5c",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": 0,
+        "data": []
+      },
+      "corrupted": true,
+      "gemLevel": 5,
+      "chaosValue": 15375,
+      "exaltedValue": 21307,
+      "divineValue": 150.0,
+      "count": 1,
+      "detailsId": "awakened-enhance-support-5c",
+      "listingCount": 1
+    },
+    {
+      "id": 2926,
+      "name": "Empower Support",
+      "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9TdXBwb3J0L0VtcG93ZXIiLCJ3IjoxLCJoIjoxLCJzY2FsZSI6MX1d/c2b1b38b15/Empower.png",
+      "levelRequired": 60,
+      "variant": "4c",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": 17.68,
+        "data": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          0,
+          17.68
+        ]
+      },
+      "corrupted": true,
+      "gemLevel": 4,
+      "chaosValue": 779.8,
+      "exaltedValue": 1081,
+      "divineValue": 7.61,
+      "count": 37,
+      "detailsId": "empower-support-4c",
+      "listingCount": 37
+    },
+    {
+      "id": 95798,
+      "name": "Awakened Enhance Support",
+      "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9TdXBwb3J0L1N1cHBvcnRQbHVzL2VuaGFuY2VwbHVzIiwidyI6MSwiaCI6MSwic2NhbGUiOjF9XQ/d3de7b3bd1/enhanceplus.png",
+      "levelRequired": 72,
+      "variant": "1",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": 0,
+        "data": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          0
+        ]
+      },
+      "gemLevel": 1,
+      "chaosValue": 512.5,
+      "exaltedValue": 710.2,
+      "divineValue": 5.0,
+      "count": 5,
+      "detailsId": "awakened-enhance-support-1",
+      "listingCount": 5
+    },
+    {
+      "id": 110047,
+      "name": "Arc of Oscillating",
+      "icon": "https://web.poecdn.com/gen/image/WzMwLDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9BcmMiLCJ3IjoxLCJoIjoxLCJzY2FsZSI6MSwiZ2QiOjE0fV0/a70f06f791/Arc.png",
+      "levelRequired": 72,
+      "variant": "21/20c",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": 0,
+        "data": []
+      },
+      "corrupted": true,
+      "gemLevel": 21,
+      "gemQuality": 20,
+      "chaosValue": 512.5,
+      "exaltedValue": 710.2,
+      "divineValue": 5.0,
+      "count": 1,
+      "detailsId": "arc-of-oscillating-21-20c",
+      "tradeFilter": {
+        "query": {
+          "type": {
+            "option": "Arc",
+            "discriminator": "alt_y"
+          },
+          "filters": {
+            "misc_filters": {
+              "filters": {
+                "gem_level": {
+                  "min": 21
+                },
+                "quality": {
+                  "min": 20
+                },
+                "corrupted": {
+                  "option": true
+                }
+              }
+            }
+          }
+        }
+      },
+      "listingCount": 1
+    },
+    {
+      "id": 3258,
+      "name": "Empower Support",
+      "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9TdXBwb3J0L0VtcG93ZXIiLCJ3IjoxLCJoIjoxLCJzY2FsZSI6MX1d/c2b1b38b15/Empower.png",
+      "levelRequired": 45,
+      "variant": "3",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": 0,
+        "data": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          0
+        ]
+      },
+      "gemLevel": 3,
+      "chaosValue": 201.8,
+      "exaltedValue": 279.7,
+      "divineValue": 1.97,
+      "count": 21,
+      "detailsId": "empower-support-3",
+      "listingCount": 21
+    },
+    {
+      "id": 2694,
+      "name": "Empower Support",
+      "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9TdXBwb3J0L0VtcG93ZXIiLCJ3IjoxLCJoIjoxLCJzY2FsZSI6MX1d/c2b1b38b15/Empower.png",
+      "levelRequired": 45,
+      "variant": "3c",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": -7.22,
+        "data": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          0,
+          -7.22
+        ]
+      },
+      "corrupted": true,
+      "gemLevel": 3,
+      "chaosValue": 140.0,
+      "exaltedValue": 194.0,
+      "divineValue": 1.37,
+      "count": 62,
+      "detailsId": "empower-support-3c",
+      "listingCount": 62
+    },
+    {
+      "id": 3509,
+      "name": "Determination",
+      "icon": "https://web.poecdn.com/gen/image/WzMwLDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9EZXRlcm1pbmF0aW9uIiwidyI6MSwiaCI6MSwic2NhbGUiOjF9XQ/9d35188568/Determination.png",
+      "levelRequired": 72,
+      "variant": "21/20c",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": 0,
+        "data": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          0
+        ]
+      },
+      "corrupted": true,
+      "gemLevel": 21,
+      "gemQuality": 20,
+      "chaosValue": 117.4,
+      "exaltedValue": 162.7,
+      "divineValue": 1.15,
+      "count": 7,
+      "detailsId": "determination-21-20c",
+      "listingCount": 7
+    },
+    {
+      "id": 2924,
+      "name": "Empower Support",
+      "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9TdXBwb3J0L0VtcG93ZXIiLCJ3IjoxLCJoIjoxLCJzY2FsZSI6MX1d/c2b1b38b15/Empower.png",
+      "levelRequired": 10,
+      "variant": "2",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": 0,
+        "data": []
+      },
+      "gemLevel": 2,
+      "chaosValue": 111.4,
+      "exaltedValue": 154.4,
+      "divineValue": 1.09,
+      "count": 3,
+      "detailsId": "empower-support-2",
+      "listingCount": 3
+    },
+    {
+      "id": 2610,
+      "name": "Empower Support",
+      "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9TdXBwb3J0L0VtcG93ZXIiLCJ3IjoxLCJoIjoxLCJzY2FsZSI6MX1d/c2b1b38b15/Empower.png",
+      "levelRequired": 1,
+      "variant": "1",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": 373.7,
+        "data": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          0,
+          373.7
+        ]
+      },
+      "gemLevel": 1,
+      "chaosValue": 90.0,
+      "exaltedValue": 124.7,
+      "divineValue": 0.88,
+      "count": 169,
+      "detailsId": "empower-support-1",
+      "listingCount": 169
+    },
+    {
+      "id": 4643,
+      "name": "Determination",
+      "icon": "https://web.poecdn.com/gen/image/WzMwLDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9EZXRlcm1pbmF0aW9uIiwidyI6MSwiaCI6MSwic2NhbGUiOjF9XQ/9d35188568/Determination.png",
+      "levelRequired": 70,
+      "variant": "20/23c",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": 0,
+        "data": []
+      },
+      "corrupted": true,
+      "gemLevel": 20,
+      "gemQuality": 23,
+      "chaosValue": 84.5,
+      "exaltedValue": 117.1,
+      "divineValue": 0.82,
+      "count": 3,
+      "detailsId": "determination-20-23c",
+      "listingCount": 3
+    },
+    {
+      "id": 3024,
+      "name": "Spark",
+      "icon": "https://web.poecdn.com/gen/image/WzMwLDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9TcGFyayIsInciOjEsImgiOjEsInNjYWxlIjoxfV0/0c52dd0d69/Spark.png",
+      "levelRequired": 70,
+      "variant": "20/20",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": 0,
+        "data": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          0,
+          null
+        ]
+      },
+      "gemLevel": 20,
+      "gemQuality": 20,
+      "chaosValue": 82.0,
+      "exaltedValue": 113.6,
+      "divineValue": 0.8,
+      "count": 2,
+      "detailsId": "spark-20-20",
+      "listingCount": 2
+    },
+    {
+      "id": 3649,
+      "name": "Determination",
+      "icon": "https://web.poecdn.com/gen/image/WzMwLDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9EZXRlcm1pbmF0aW9uIiwidyI6MSwiaCI6MSwic2NhbGUiOjF9XQ/9d35188568/Determination.png",
+      "levelRequired": 70,
+      "variant": "20/20",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": 0,
+        "data": []
+      },
+      "gemLevel": 20,
+      "gemQuality": 20,
+      "chaosValue": 80.0,
+      "exaltedValue": 110.9,
+      "divineValue": 0.78,
+      "count": 1,
+      "detailsId": "determination-20-20",
+      "listingCount": 1
+    },
+    {
+      "id": 4059,
+      "name": "Determination",
+      "icon": "https://web.poecdn.com/gen/image/WzMwLDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9EZXRlcm1pbmF0aW9uIiwidyI6MSwiaCI6MSwic2NhbGUiOjEsImltYnVlZCI6dHJ1ZX1d/6bfbdfe127/Determination.png",
+      "levelRequired": 70,
+      "variant": "20/20c",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": 0,
+        "data": []
+      },
+      "corrupted": true,
+      "gemLevel": 20,
+      "gemQuality": 20,
+      "chaosValue": 76.0,
+      "exaltedValue": 105.3,
+      "divineValue": 0.74,
+      "count": 4,
+      "detailsId": "determination-20-20c",
+      "listingCount": 4
+    },
+    {
+      "id": 110119,
+      "name": "Arc of Oscillating",
+      "icon": "https://web.poecdn.com/gen/image/WzMwLDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9BcmMiLCJ3IjoxLCJoIjoxLCJzY2FsZSI6MSwiZ2QiOjE0fV0/a70f06f791/Arc.png",
+      "levelRequired": 19,
+      "variant": "1/20",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": 0,
+        "data": []
+      },
+      "gemLevel": 1,
+      "gemQuality": 20,
+      "chaosValue": 70.0,
+      "exaltedValue": 97.01,
+      "divineValue": 0.68,
+      "count": 2,
+      "detailsId": "arc-of-oscillating-1-20",
+      "tradeFilter": {
+        "query": {
+          "type": {
+            "option": "Arc",
+            "discriminator": "alt_y"
+          },
+          "filters": {
+            "misc_filters": {
+              "filters": {
+                "gem_level": {
+                  "min": 1
+                },
+                "quality": {
+                  "min": 20
+                }
+              }
+            }
+          }
+        }
+      },
+      "listingCount": 2
+    },
+    {
+      "id": 2934,
+      "name": "Empower Support",
+      "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9TdXBwb3J0L0VtcG93ZXIiLCJ3IjoxLCJoIjoxLCJzY2FsZSI6MX1d/c2b1b38b15/Empower.png",
+      "levelRequired": 10,
+      "variant": "2c",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": -12.26,
+        "data": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          0,
+          -12.26
+        ]
+      },
+      "corrupted": true,
+      "gemLevel": 2,
+      "chaosValue": 68.0,
+      "exaltedValue": 94.24,
+      "divineValue": 0.66,
+      "count": 11,
+      "detailsId": "empower-support-2c",
+      "listingCount": 11
+    },
+    {
+      "id": 3439,
+      "name": "Empower Support",
+      "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9TdXBwb3J0L0VtcG93ZXIiLCJ3IjoxLCJoIjoxLCJzY2FsZSI6MX1d/c2b1b38b15/Empower.png",
+      "levelRequired": 1,
+      "variant": "1c",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": 0,
+        "data": []
+      },
+      "corrupted": true,
+      "gemLevel": 1,
+      "chaosValue": 60.0,
+      "exaltedValue": 83.15,
+      "divineValue": 0.59,
+      "count": 1,
+      "detailsId": "empower-support-1c",
+      "listingCount": 1
+    },
+    {
+      "id": 4014,
+      "name": "Determination",
+      "icon": "https://web.poecdn.com/gen/image/WzMwLDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9EZXRlcm1pbmF0aW9uIiwidyI6MSwiaCI6MSwic2NhbGUiOjF9XQ/9d35188568/Determination.png",
+      "levelRequired": 72,
+      "variant": "21c",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": -54.37,
+        "data": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          0,
+          -54.37
+        ]
+      },
+      "corrupted": true,
+      "gemLevel": 21,
+      "chaosValue": 52.7,
+      "exaltedValue": 73.03,
+      "divineValue": 0.51,
+      "count": 28,
+      "detailsId": "determination-21c",
+      "listingCount": 28
+    },
+    {
+      "id": 3231,
+      "name": "Arc",
+      "icon": "https://web.poecdn.com/gen/image/WzMwLDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9BcmMiLCJ3IjoxLCJoIjoxLCJzY2FsZSI6MX1d/b906e66011/Arc.png",
+      "levelRequired": 72,
+      "variant": "21/20c",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": 0,
+        "data": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          0
+        ]
+      },
+      "corrupted": true,
+      "gemLevel": 21,
+      "gemQuality": 20,
+      "chaosValue": 45.0,
+      "exaltedValue": 62.36,
+      "divineValue": 0.44,
+      "count": 12,
+      "detailsId": "arc-21-20c",
+      "listingCount": 12
+    },
+    {
+      "id": 3732,
+      "name": "Arc",
+      "icon": "https://web.poecdn.com/gen/image/WzMwLDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9BcmMiLCJ3IjoxLCJoIjoxLCJzY2FsZSI6MX1d/b906e66011/Arc.png",
+      "levelRequired": 70,
+      "variant": "20/20",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": 0,
+        "data": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          0
+        ]
+      },
+      "gemLevel": 20,
+      "gemQuality": 20,
+      "chaosValue": 34.9,
+      "exaltedValue": 48.36,
+      "divineValue": 0.34,
+      "count": 11,
+      "detailsId": "arc-20-20",
+      "listingCount": 11
+    },
+    {
+      "id": 4132,
+      "name": "Spark",
+      "icon": "https://web.poecdn.com/gen/image/WzMwLDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9TcGFyayIsInciOjEsImgiOjEsInNjYWxlIjoxfV0/0c52dd0d69/Spark.png",
+      "levelRequired": 72,
+      "variant": "21/20c",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": 0,
+        "data": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          0
+        ]
+      },
+      "corrupted": true,
+      "gemLevel": 21,
+      "gemQuality": 20,
+      "chaosValue": 15.0,
+      "exaltedValue": 20.79,
+      "divineValue": 0.15,
+      "count": 27,
+      "detailsId": "spark-21-20c",
+      "listingCount": 27
+    },
+    {
+      "id": 3640,
+      "name": "Determination",
+      "icon": "https://web.poecdn.com/gen/image/WzMwLDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9EZXRlcm1pbmF0aW9uIiwidyI6MSwiaCI6MSwic2NhbGUiOjF9XQ/9d35188568/Determination.png",
+      "levelRequired": 70,
+      "variant": "20",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": 0,
+        "data": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          0
+        ]
+      },
+      "gemLevel": 20,
+      "chaosValue": 12.6,
+      "exaltedValue": 17.46,
+      "divineValue": 0.12,
+      "count": 82,
+      "detailsId": "determination-20",
+      "listingCount": 82
+    },
+    {
+      "id": 4454,
+      "name": "Arc",
+      "icon": "https://web.poecdn.com/gen/image/WzMwLDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9BcmMiLCJ3IjoxLCJoIjoxLCJzY2FsZSI6MX1d/b906e66011/Arc.png",
+      "levelRequired": 70,
+      "variant": "20/23c",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": 0,
+        "data": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          0
+        ]
+      },
+      "corrupted": true,
+      "gemLevel": 20,
+      "gemQuality": 23,
+      "chaosValue": 12.5,
+      "exaltedValue": 17.32,
+      "divineValue": 0.12,
+      "count": 7,
+      "detailsId": "arc-20-23c",
+      "listingCount": 7
+    },
+    {
+      "id": 3944,
+      "name": "Determination",
+      "icon": "https://web.poecdn.com/gen/image/WzMwLDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9EZXRlcm1pbmF0aW9uIiwidyI6MSwiaCI6MSwic2NhbGUiOjF9XQ/9d35188568/Determination.png",
+      "levelRequired": 70,
+      "variant": "20c",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": 0,
+        "data": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          0
+        ]
+      },
+      "corrupted": true,
+      "gemLevel": 20,
+      "chaosValue": 10.0,
+      "exaltedValue": 13.86,
+      "divineValue": 0.1,
+      "count": 46,
+      "detailsId": "determination-20c",
+      "listingCount": 46
+    },
+    {
+      "id": 3857,
+      "name": "Arc",
+      "icon": "https://web.poecdn.com/gen/image/WzMwLDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9BcmMiLCJ3IjoxLCJoIjoxLCJzY2FsZSI6MSwiaW1idWVkIjp0cnVlfV0/1ec87ba432/Arc.png",
+      "levelRequired": 70,
+      "variant": "20/20c",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": 0,
+        "data": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          0
+        ]
+      },
+      "corrupted": true,
+      "gemLevel": 20,
+      "gemQuality": 20,
+      "chaosValue": 8.5,
+      "exaltedValue": 11.78,
+      "divineValue": 0.08,
+      "count": 8,
+      "detailsId": "arc-20-20c",
+      "listingCount": 8
+    },
+    {
+      "id": 2827,
+      "name": "Spark",
+      "icon": "https://web.poecdn.com/gen/image/WzMwLDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9TcGFyayIsInciOjEsImgiOjEsInNjYWxlIjoxLCJpbWJ1ZWQiOnRydWV9XQ/c8d746813e/Spark.png",
+      "levelRequired": 70,
+      "variant": "20/20c",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": 0,
+        "data": []
+      },
+      "corrupted": true,
+      "gemLevel": 20,
+      "gemQuality": 20,
+      "chaosValue": 7.1,
+      "exaltedValue": 9.84,
+      "divineValue": 0.07,
+      "count": 2,
+      "detailsId": "spark-20-20c",
+      "listingCount": 2
+    },
+    {
+      "id": 4339,
+      "name": "Spark",
+      "icon": "https://web.poecdn.com/gen/image/WzMwLDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9TcGFyayIsInciOjEsImgiOjEsInNjYWxlIjoxfV0/0c52dd0d69/Spark.png",
+      "levelRequired": 70,
+      "variant": "20/23c",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": 0,
+        "data": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          0
+        ]
+      },
+      "corrupted": true,
+      "gemLevel": 20,
+      "gemQuality": 23,
+      "chaosValue": 7.0,
+      "exaltedValue": 9.7,
+      "divineValue": 0.07,
+      "count": 14,
+      "detailsId": "spark-20-23c",
+      "listingCount": 14
+    },
+    {
+      "id": 3122,
+      "name": "Arc",
+      "icon": "https://web.poecdn.com/gen/image/WzMwLDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9BcmMiLCJ3IjoxLCJoIjoxLCJzY2FsZSI6MX1d/b906e66011/Arc.png",
+      "levelRequired": 70,
+      "variant": "20",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": -69.7,
+        "data": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          0,
+          -69.7
+        ]
+      },
+      "gemLevel": 20,
+      "chaosValue": 5.0,
+      "exaltedValue": 6.93,
+      "divineValue": 0.05,
+      "count": 37,
+      "detailsId": "arc-20",
+      "listingCount": 37
+    },
+    {
+      "id": 127117,
+      "name": "Determination",
+      "icon": "https://web.poecdn.com/gen/image/WzMwLDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9EZXRlcm1pbmF0aW9uIiwidyI6MSwiaCI6MSwic2NhbGUiOjF9XQ/9d35188568/Determination.png",
+      "levelRequired": 24,
+      "variant": "1/23c",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": 0,
+        "data": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          0
+        ]
+      },
+      "corrupted": true,
+      "gemLevel": 1,
+      "gemQuality": 23,
+      "chaosValue": 5.0,
+      "exaltedValue": 6.93,
+      "divineValue": 0.05,
+      "count": 8,
+      "detailsId": "determination-1-23c",
+      "listingCount": 8
+    },
+    {
+      "id": 2645,
+      "name": "Arc",
+      "icon": "https://web.poecdn.com/gen/image/WzMwLDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9BcmMiLCJ3IjoxLCJoIjoxLCJzY2FsZSI6MX1d/b906e66011/Arc.png",
+      "levelRequired": 72,
+      "variant": "21c",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": 0,
+        "data": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          0
+        ]
+      },
+      "corrupted": true,
+      "gemLevel": 21,
+      "chaosValue": 4.7,
+      "exaltedValue": 6.51,
+      "divineValue": 0.05,
+      "count": 19,
+      "detailsId": "arc-21c",
+      "listingCount": 19
+    },
+    {
+      "id": 2634,
+      "name": "Determination",
+      "icon": "https://web.poecdn.com/gen/image/WzMwLDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9EZXRlcm1pbmF0aW9uIiwidyI6MSwiaCI6MSwic2NhbGUiOjF9XQ/9d35188568/Determination.png",
+      "levelRequired": 24,
+      "variant": "1/20",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": 0,
+        "data": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          0,
+          0
+        ]
+      },
+      "gemLevel": 1,
+      "gemQuality": 20,
+      "chaosValue": 4.0,
+      "exaltedValue": 5.54,
+      "divineValue": 0.04,
+      "count": 20,
+      "detailsId": "determination-1-20",
+      "listingCount": 20
+    },
+    {
+      "id": 2796,
+      "name": "Arc",
+      "icon": "https://web.poecdn.com/gen/image/WzMwLDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9BcmMiLCJ3IjoxLCJoIjoxLCJzY2FsZSI6MX1d/b906e66011/Arc.png",
+      "levelRequired": 12,
+      "variant": "1/20",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": 0,
+        "data": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          0,
+          0
+        ]
+      },
+      "gemLevel": 1,
+      "gemQuality": 20,
+      "chaosValue": 4.0,
+      "exaltedValue": 5.54,
+      "divineValue": 0.04,
+      "count": 26,
+      "detailsId": "arc-1-20",
+      "listingCount": 26
+    },
+    {
+      "id": 4038,
+      "name": "Arc",
+      "icon": "https://web.poecdn.com/gen/image/WzMwLDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9BcmMiLCJ3IjoxLCJoIjoxLCJzY2FsZSI6MX1d/b906e66011/Arc.png",
+      "levelRequired": 70,
+      "variant": "20c",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": 0,
+        "data": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          0
+        ]
+      },
+      "corrupted": true,
+      "gemLevel": 20,
+      "chaosValue": 4.0,
+      "exaltedValue": 5.54,
+      "divineValue": 0.04,
+      "count": 6,
+      "detailsId": "arc-20c",
+      "listingCount": 6
+    },
+    {
+      "id": 3550,
+      "name": "Spark",
+      "icon": "https://web.poecdn.com/gen/image/WzMwLDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9TcGFyayIsInciOjEsImgiOjEsInNjYWxlIjoxfV0/0c52dd0d69/Spark.png",
+      "levelRequired": 70,
+      "variant": "20",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": -79.31,
+        "data": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          0,
+          -79.31
+        ]
+      },
+      "gemLevel": 20,
+      "chaosValue": 3.0,
+      "exaltedValue": 4.16,
+      "divineValue": 0.03,
+      "count": 44,
+      "detailsId": "spark-20",
+      "listingCount": 44
+    },
+    {
+      "id": 4164,
+      "name": "Spark",
+      "icon": "https://web.poecdn.com/gen/image/WzMwLDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9TcGFyayIsInciOjEsImgiOjEsInNjYWxlIjoxfV0/0c52dd0d69/Spark.png",
+      "levelRequired": 70,
+      "variant": "20c",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": 0,
+        "data": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          0
+        ]
+      },
+      "corrupted": true,
+      "gemLevel": 20,
+      "chaosValue": 2.4,
+      "exaltedValue": 3.33,
+      "divineValue": 0.02,
+      "count": 7,
+      "detailsId": "spark-20c",
+      "listingCount": 7
+    },
+    {
+      "id": 3564,
+      "name": "Spark",
+      "icon": "https://web.poecdn.com/gen/image/WzMwLDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9TcGFyayIsInciOjEsImgiOjEsInNjYWxlIjoxfV0/0c52dd0d69/Spark.png",
+      "levelRequired": 1,
+      "variant": "1/20",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": -33.33,
+        "data": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          0,
+          -33.33
+        ]
+      },
+      "gemLevel": 1,
+      "gemQuality": 20,
+      "chaosValue": 2.0,
+      "exaltedValue": 2.77,
+      "divineValue": 0.02,
+      "count": 46,
+      "detailsId": "spark-1-20",
+      "listingCount": 46
+    },
+    {
+      "id": 109919,
+      "name": "Arc of Oscillating",
+      "icon": "https://web.poecdn.com/gen/image/WzMwLDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9BcmMiLCJ3IjoxLCJoIjoxLCJzY2FsZSI6MSwiZ2QiOjE0fV0/a70f06f791/Arc.png",
+      "levelRequired": 12,
+      "variant": "1",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": 100,
+        "data": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          0,
+          100
+        ]
+      },
+      "gemLevel": 1,
+      "chaosValue": 2.0,
+      "exaltedValue": 2.77,
+      "divineValue": 0.02,
+      "count": 65,
+      "detailsId": "arc-of-oscillating-1",
+      "tradeFilter": {
+        "query": {
+          "type": {
+            "option": "Arc",
+            "discriminator": "alt_y"
+          },
+          "filters": {
+            "misc_filters": {
+              "filters": {
+                "gem_level": {
+                  "min": 1
+                }
+              }
+            }
+          }
+        }
+      },
+      "listingCount": 65
+    },
+    {
+      "id": 127090,
+      "name": "Arc",
+      "icon": "https://web.poecdn.com/gen/image/WzMwLDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9BcmMiLCJ3IjoxLCJoIjoxLCJzY2FsZSI6MX1d/b906e66011/Arc.png",
+      "levelRequired": 12,
+      "variant": "1/23c",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": -33.33,
+        "data": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          0,
+          -33.33
+        ]
+      },
+      "corrupted": true,
+      "gemLevel": 1,
+      "gemQuality": 23,
+      "chaosValue": 2.0,
+      "exaltedValue": 2.77,
+      "divineValue": 0.02,
+      "count": 20,
+      "detailsId": "arc-1-23c",
+      "listingCount": 20
+    },
+    {
+      "id": 4147,
+      "name": "Spark",
+      "icon": "https://web.poecdn.com/gen/image/WzMwLDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9TcGFyayIsInciOjEsImgiOjEsInNjYWxlIjoxfV0/0c52dd0d69/Spark.png",
+      "levelRequired": 72,
+      "variant": "21c",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": -46.67,
+        "data": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          0,
+          -46.67
+        ]
+      },
+      "corrupted": true,
+      "gemLevel": 21,
+      "chaosValue": 1.6,
+      "exaltedValue": 2.22,
+      "divineValue": 0.02,
+      "count": 18,
+      "detailsId": "spark-21c",
+      "listingCount": 18
+    },
+    {
+      "id": 61182,
+      "name": "Spark",
+      "icon": "https://web.poecdn.com/gen/image/WzMwLDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9TcGFyayIsInciOjEsImgiOjEsInNjYWxlIjoxfV0/0c52dd0d69/Spark.png",
+      "levelRequired": 1,
+      "variant": "1",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": 0,
+        "data": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          0,
+          0
+        ]
+      },
+      "gemLevel": 1,
+      "chaosValue": 1.0,
+      "exaltedValue": 1.39,
+      "divineValue": 0.01,
+      "count": 205,
+      "detailsId": "spark-1",
+      "listingCount": 205
+    },
+    {
+      "id": 61286,
+      "name": "Arc",
+      "icon": "https://web.poecdn.com/gen/image/WzMwLDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9BcmMiLCJ3IjoxLCJoIjoxLCJzY2FsZSI6MX1d/b906e66011/Arc.png",
+      "levelRequired": 12,
+      "variant": "1",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": 0,
+        "data": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          0,
+          0
+        ]
+      },
+      "gemLevel": 1,
+      "chaosValue": 1.0,
+      "exaltedValue": 1.39,
+      "divineValue": 0.01,
+      "count": 138,
+      "detailsId": "arc-1",
+      "listingCount": 138
+    },
+    {
+      "id": 61404,
+      "name": "Determination",
+      "icon": "https://web.poecdn.com/gen/image/WzMwLDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9EZXRlcm1pbmF0aW9uIiwidyI6MSwiaCI6MSwic2NhbGUiOjF9XQ/9d35188568/Determination.png",
+      "levelRequired": 24,
+      "variant": "1",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": 0,
+        "data": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          0,
+          0
+        ]
+      },
+      "gemLevel": 1,
+      "chaosValue": 1.0,
+      "exaltedValue": 1.39,
+      "divineValue": 0.01,
+      "count": 258,
+      "detailsId": "determination-1",
+      "listingCount": 258
+    },
+    {
+      "id": 127077,
+      "name": "Spark",
+      "icon": "https://web.poecdn.com/gen/image/WzMwLDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9TcGFyayIsInciOjEsImgiOjEsInNjYWxlIjoxfV0/0c52dd0d69/Spark.png",
+      "levelRequired": 1,
+      "variant": "1/23c",
+      "itemClass": 4,
+      "sparkLine": {
+        "totalChange": -80,
+        "data": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          0,
+          -80
+        ]
+      },
+      "corrupted": true,
+      "gemLevel": 1,
+      "gemQuality": 23,
+      "chaosValue": 1.0,
+      "exaltedValue": 1.39,
+      "divineValue": 0.01,
+      "count": 25,
+      "detailsId": "spark-1-23c",
+      "listingCount": 25
+    }
+  ]
+}

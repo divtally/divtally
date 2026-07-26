@@ -1,6 +1,6 @@
 """Tiny JSON disk cache with TTL.
 
-Used to (a) cache trade2 reference data (data/stats, data/static) for a long time and
+Used to (a) cache trade reference data (data/stats, data/static) for a long time and
 (b) cache price-search results briefly so re-running a build, or builds that share an
 item, do not re-hit the rate-limited trade API.
 """
@@ -17,7 +17,7 @@ def _base_dir() -> str:
     # exit, so persist the cache in a stable per-user location instead.
     if getattr(sys, "frozen", False):
         root = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
-        return os.path.join(root, "PoE2BuildPriceChecker")
+        return os.path.join(root, "PoE1BuildPriceChecker")
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 

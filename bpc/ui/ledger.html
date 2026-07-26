@@ -523,7 +523,7 @@ function lineHTML(it){
       <div class="row"><span class="nm">${E(it.name)}${cnt}</span>
       <span class="leader"></span><span class="pr unpriced">printing…</span></div></div>`;
   }
-  const priced = p.exalted.median!=null;
+  const priced = p.chaos.median!=null;
   const voided = priced && !on;
   const cls = ['line', confClass(p)];
   if(!priced) cls.push('unpriced');
@@ -531,7 +531,7 @@ function lineHTML(it){
 
   let priceCell;
   if(priced){
-    priceCell = bpc.priceHTML(p.exalted.median);
+    priceCell = bpc.priceHTML(p.chaos.median);
   }else{
     priceCell = `<span class="bpc-dash">not priced</span>`;
   }
@@ -575,8 +575,8 @@ function render(){
     $('#register').innerHTML =
       `<b>${E(m.character)}</b> &nbsp;·&nbsp; ${E(m['class']||'')} ${m.level?('LV '+m.level):''}`
       + (m.league?`<br><span style="color:var(--ink-faint)">${E(m.league)} LEAGUE</span>`:'');
-    if(m.divine_to_exalted){
-      h+=`<div class="itemcount" style="margin:2px 0 0">EXCHANGE RATE &nbsp; 1 ${bpc.curImg('div')} = ${bpc.nfmt(Math.round(m.divine_to_exalted),0)} ${bpc.curImg('ex')}</div>`;
+    if(m.divine_to_chaos){
+      h+=`<div class="itemcount" style="margin:2px 0 0">EXCHANGE RATE &nbsp; 1 ${bpc.curImg('div')} = ${bpc.nfmt(Math.round(m.divine_to_chaos),0)} ${bpc.curImg('chaos')}</div>`;
     }
   }
 
@@ -605,7 +605,7 @@ function render(){
   }
 
   h+=`<div class="thanks">★ THANK YOU EXILE ★</div>
-      <div class="footsig">no refunds · prices in exalted &amp; divine · est. wraeclast</div>`;
+      <div class="footsig">no refunds · prices in chaos &amp; divine · est. wraeclast</div>`;
 
   out.innerHTML=h;
   if(m.pob_code) paintBarcode(m.pob_code);
@@ -622,12 +622,12 @@ function updateTotals(){
   s.items.forEach(it=>{
     const k=String(it.index), p=s.priced[k];
     totItems++;
-    if(p && p.exalted.median!=null){ items++; if(!s.enabled[k]) voided++; }
+    if(p && p.chaos.median!=null){ items++; if(!s.enabled[k]) voided++; }
   });
   const gv = bpc.price(t.median);
   const grand = gv.empty ? '<span class="bpc-dash">—</span>'
-    : (gv.div!=null ? `${gv.divStr} ${bpc.curImg('div')} <span class="bpc-exsub">/ ${gv.exStr} ${bpc.curImg('ex')}</span>`
-                    : `${gv.exStr} ${bpc.curImg('ex')}`);
+    : (gv.div!=null ? `${gv.divStr} ${bpc.curImg('div')} <span class="bpc-exsub">/ ${gv.exStr} ${bpc.curImg('chaos')}</span>`
+                    : `${gv.exStr} ${bpc.curImg('chaos')}`);
 
   box.innerHTML =
     `<div class="totrow"><span class="tl">subtotal min</span><span class="td"></span><span class="tv">${bpc.priceHTML(t.min)}</span></div>

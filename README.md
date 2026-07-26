@@ -1,17 +1,17 @@
-# buildpricechecker (bpc)
+# buildpricechecker (bpc) - Path of Exile 1
 
-Estimate the currency cost of a **Path of Exile 2** build by pasting a
-[poe.ninja](https://poe.ninja/poe2/builds) character link. It pulls the character's
-gear/flasks/jewels/runes/gems and prices each item against the official
-**pathofexile.com trade2** API, reporting three budget tiers:
+Estimate the currency cost of a **Path of Exile 1** build by pasting a
+[poe.ninja](https://poe.ninja/poe1/builds) character link. It pulls the character's
+gear/flasks/jewels/gems and prices each item against the official
+**pathofexile.com trade** API, reporting three budget tiers:
 
 | Tier | Meaning |
 |------|---------|
 | **min** | cheapest realistic listing (scam-low outliers trimmed) |
 | **median** | typical going price |
-| **high** | ~90th percentile — a clearly better-rolled / corrupted copy |
+| **high** | ~90th percentile — a clearly better-rolled / corrupted / linked copy |
 
-All prices are normalised to **Exalted Orbs** (the PoE2 base currency) and also shown
+All prices are normalised to **Chaos Orbs** (PoE1's trade index standard) and also shown
 in **Divine Orbs** for readability.
 
 ## Install
@@ -19,7 +19,7 @@ in **Divine Orbs** for readability.
 Requires Python 3.9+ and `requests`:
 
 ```powershell
-cd C:\scripts\buildpricechecker
+cd C:\scripts\buildpricechecker-poe1
 pip install -r requirements.txt
 ```
 
@@ -58,18 +58,27 @@ drop a self-contained `*.html` into `bpc/ui/` (it drives the shared engine at
 `/assets/core.js`) and it appears in the gallery. Append `?mock` to any version URL
 (e.g. `/v/ledger?mock`) to preview a full demo build with no trade calls.
 
-When you price a poe.ninja build, the page also shows that character's **Path of Building 2
+When you price a poe.ninja build, the page also shows that character's **Path of Building
 import code** (with a **Copy** button) for reference, so you can paste it straight into PoB.
 
 **League & listings dropdowns:** next to the link, pick the trade **league** (Auto = the
-build's own league) and the **listing status** — the same options the PoE2 trade site
-offers (Instant Buyout and In Person / Instant Buyout / In Person (Online in League) /
-In Person (Online) / Any). Both apply to every item search and are remembered between
-sessions (along with the advanced checkbox). **Changing any control — league, listing
-status, advanced affix search, or fresh pull — immediately re-runs whatever build is
-currently loaded with the new setting**, so you can flip from In Person (Online) to Any
-(or switch leagues) and see it re-price on the spot. This works for a build you pasted
-*and* for one you loaded from the Recent list.
+build's own league) and the **listing status** — the same options the PoE1 trade site
+offers:
+
+| Listing status | Meaning |
+|----------------|---------|
+| **Instant Buyout and In Person** | any listing with a price (buyout or negotiable) |
+| **Instant Buyout** | only fixed buyout listings |
+| **In Person (Online in League)** | seller online, playing in this league |
+| **In Person (Online)** *(default)* | seller currently online |
+| **Any** | every listing, online or not |
+
+Both apply to every item search and are remembered between sessions (along with the
+advanced checkbox). **Changing any control — league, listing status, advanced affix
+search, or fresh pull — immediately re-runs whatever build is currently loaded with the
+new setting**, so you can flip from In Person (Online) to Any (or switch leagues) and see
+it re-price on the spot. This works for a build you pasted *and* for one you loaded from
+the Recent list.
 
 **Recent builds:** the page lists your 5 most recently searched builds; **See more**
 expands to every cached snapshot (the same character priced on different days appears
@@ -88,7 +97,7 @@ this build cost without the Mageblood / mirror-tier rare?"
 **Advanced affix search** (checkbox next to the link): rares are queued for you one at a
 time. For each rare you see its affixes — tick the ones a comparable item must have and set
 min/max per affix — then "Search this item" and you're immediately shown the next rare. The
-uniques/runes/gems price in the background the whole time, so the table keeps filling while
+uniques and gems price in the background the whole time, so the table keeps filling while
 you choose; each rare you submit is queued and priced without breaking the flow. **Skip
 (don't price)** leaves that rare out entirely (no search). Leave the box unchecked and rares
 are priced automatically, requiring **all** of the item's affixes to be present (extras
@@ -103,14 +112,14 @@ When a rare has resistance mods, the picker shows a **"combine resistances into 
 total"** toggle (on by default). It collapses the individual fire/cold/lightning/"all
 elemental" rolls into the trade site's combined **+#% total Elemental Resistance** pseudo
 stat (and a **total Chaos Resistance** pseudo), prefilled with the item's actual total — so
-you match an item's *overall* resistance instead of each specific roll, which is how PoE2's
+you match an item's *overall* resistance instead of each specific roll, which is how the
 trade search natively groups them. Untick it to go back to individual resistance affixes.
 
 ### Command line
 
 ```powershell
 # pass the URL as an argument
-.\bpc.cmd "https://poe.ninja/poe2/builds/runesofaldur/character/example-0416/ResurrectGodAura"
+.\bpc.cmd "https://poe.ninja/poe1/builds/allflame/character/example-0416/TestCharacter"
 
 # or just run it and paste when prompted
 .\bpc.cmd
@@ -122,8 +131,8 @@ python -m bpc.web              # web UI
 
 The one input field accepts any of:
 - a **poe.ninja character link** (it contains `/character/` — browse
-  https://poe.ninja/poe2/builds, click a character, copy the URL);
-- a **Path of Building 2 import code** (PoB → Import/Export → "Generate"/"Copy");
+  https://poe.ninja/poe1/builds, click a character, copy the URL);
+- a **Path of Building import code** (PoB → Import/Export → "Generate"/"Copy");
 - a **PoB paste link** — pobb.in, pastebin, or a poe.ninja PoB link.
 
 It auto-detects which one you pasted. PoB codes carry no league, so those price against
@@ -132,13 +141,17 @@ the current softcore league by default (use the league box to override).
 ### Options
 
 ```
---league NAME   price against a different trade league (e.g. "Standard", "HC Runes of Aldur")
+--league NAME   price against a different trade league (e.g. "Standard", "Hardcore")
 --status WHICH  listing status: online (default) | any | onlineleague | available | securable
 --json          emit machine-readable JSON instead of the table (includes trade_url per item)
 --fresh         fresh pull: ignore all caches and fetch everything fresh (alias: --refresh)
--q, --quiet      suppress progress output
+-q, --quiet     suppress progress output
 --version
 ```
+
+(`--status` maps to the trade site's statuses: `online` = In Person (Online),
+`onlineleague` = In Person (Online in League), `available` = Instant Buyout and In Person,
+`securable` = Instant Buyout, `any` = Any.)
 
 If the build is on a league that the trade site doesn't list (e.g. an SSF league, which
 maps to its tradeable equivalent automatically, or a since-rolled-over league), bpc tells
@@ -146,55 +159,62 @@ you the available leagues and you can re-run with `--league`.
 
 ## How it works
 
-1. **Input** — the poe.ninja link is parsed into `(league, account, character)`.
-   `poe.ninja/poe2/api/data/index-state` resolves the league to a data snapshot, then
-   `poe.ninja/poe2/api/builds/<version>/character?...` returns the full character JSON
-   (the same item data poe.ninja shows, including a Path of Building export).
-2. **Pricing** — each item is priced via the official trade2 API:
+1. **Input** — the poe.ninja link is parsed into `(slug, account, character)`.
+   `poe.ninja/poe1/api/data/index-state` resolves the league slug to a data snapshot
+   version, then `poe.ninja/poe1/api/builds/<version>/character?account=...` returns the
+   full character JSON (the same item data poe.ninja shows, including a Path of Building
+   export).
+2. **Pricing** — each item is priced via the official pathofexile.com trade API:
    * **Uniques** — searched by name + base type; the listing distribution gives the tiers.
      Most uniques have fixed affixes, so name is enough. A few are **version uniques**
-     (e.g. Darkness Enthroned's "…as though it was a Body Armour", or Loreweave's
-     ring-derived mods) where copies differ. These are detected automatically — a build
-     mod whose pattern isn't shared by most current listings is treated as version-specific
-     and the search is narrowed to the build's exact version (when enough are listed;
-     otherwise the broad price is shown and flagged with a trade link). No hardcoded list.
+     (e.g. Watcher's Eye's variable aura mods, or Loreweave's ring-derived resistance mods)
+     where copies differ. These are detected automatically — a build mod whose pattern
+     isn't shared by most current listings is treated as version-specific and the search is
+     narrowed to the build's exact version (when enough are listed; otherwise the broad
+     price is shown and flagged with a trade link). No hardcoded list.
    * **Rares** — searched by base type (or item category). By default a comparable must
      carry **all** of the item's searchable affixes (extras allowed); in *advanced* mode
      you choose the affixes and min/max per item. **Defences** (armour / evasion / energy
-     shield / ward) are matched by the item's **total value** (via trade equipment filters),
+     shield / ward) are matched by the item's **total value** (via the trade `armour_filters`),
      not by the individual defence affixes — that's how the trade site searches them and it
      sidesteps the local-vs-global stat ambiguity. Resistances can be folded into a pseudo
      total. Genuinely uncommon/crafted items that nothing matches are left unpriced with a
      trade link rather than a misleading number.
-   * **Runes / Soul Cores** — priced from the bulk currency exchange.
-   * **Magic flasks/charms** — priced by base type (these are typically cheap).
-   * **Gems** — listed per **active skill** (with its support gems), priced from **poe.ninja
-     economy data** (no trade searches, so no ban risk). Each skill's cost is the *uncut*
-     DIY price — the Uncut Skill Gem at its level **+** the Jeweller's Orbs for its support
-     sockets (Lesser→3, Greater→4, Perfect→5) — plus any **lineage** support gems (the only
-     supports worth pricing). That uncut total feeds the build total. Normal support gems are
-     free. Clicking a skill opens a pre-built trade search for it (right level + sockets) with
-     no API call. (poe.ninja tracks only uncut gems, so the finished "cut" gem is a link, not
-     a number.)
-3. **Currency** — divine/chaos/mirror/etc. listing prices are converted to Exalted using
-   live exchange rates.
+   * **Links** — a **5-link / 6-link** is a major price component in PoE1. Any body armour
+     or two-handed weapon with 5+ linked sockets carries a link filter in its search, so a
+     6-link is compared against other 6-links (not the cheap unlinked base).
+   * **Magic flasks** — priced by base type (these are typically cheap).
+   * **Gems** — PoE1 skill gems are real tradeable items, so each is priced by
+     **name + level + quality + corruption** from **poe.ninja economy data** (no trade
+     searches, so no ban risk). Every socketed gem in a skill setup is priced, not just the
+     active one: the **Awakened / Empower / Enlighten / Enhance** support gems are often the
+     biggest single cost in a build. Clicking a skill opens a pre-built trade search for
+     that gem (right level + quality) with no API call. A gem poe.ninja doesn't track shows
+     as a link, not a number.
+3. **Currency** — divine/chaos/mirror/etc. listing prices are normalised to **Chaos**
+   using live **poe.ninja** economy rates (the trade bulk-exchange endpoint is only a
+   fallback for a currency poe.ninja doesn't list). Totals are shown in Chaos and in Divine.
 
 ### Rate limiting
 
 The trade API is strict (violations cause temporary IP bans). The client reads GGG's
 `X-Rate-Limit` headers, stays well under every window, honours `Retry-After`, and caches
-results (reference data for a day, prices for 30 min, league/rates for hours) so repeat
-runs are fast and cheap. A full fresh build takes ~1–4 minutes; re-runs are near-instant.
-Nothing here requires logging in (no POESESSID).
+results (reference data for a day, prices for ~30 min, league/rates for hours) so repeat
+runs are fast and cheap. Because gem prices *and* currency rates come from poe.ninja (not
+the trade API), a build uses fewer trade searches than the item count alone would suggest.
+A full fresh build takes ~1–4 minutes; re-runs are near-instant. Nothing here requires
+logging in (no POESESSID).
 
 ## Limitations / accuracy
 
 * **Rare pricing is approximate.** A specific rare's exact mod combination is often
   unique, so we price "an item roughly this good." Treat rare rows as ballparks; the
   per-item confidence and `trade_url` (in `--json`) let you verify.
-* **Uniques and the big-ticket items are accurate** (real listing distributions).
+* **Uniques and the big-ticket items are accurate** (real listing distributions), and
+  5L/6L body armours / weapons are priced with their link count.
 * poe.ninja snapshots are not real-time; a character's gear may be a few hours/days old.
-* Gem cost is a rough aggregate and ignores specific gem levels/quality and spirit gems.
+* **Gem prices come from poe.ninja economy snapshots**, matched to the nearest tracked
+  level/quality/corruption bucket — close, but not the exact listing you'd find on trade.
 * Prices move constantly; this is a snapshot estimate, not a quote.
 
 ## Project layout
@@ -204,11 +224,11 @@ bpc/
   cli.py        CLI entry point / argument handling / output encoding
   web.py        local web UI (stdlib http.server; serialised pricing jobs)
   engine.py     shared pipeline (URL -> items -> pricing) used by cli + web
-  poeninja.py   URL parsing + character fetch + item normalisation
-  trade.py      trade2 client: rate limiter, search/fetch/exchange, data caches
+  poeninja.py   URL parsing + character fetch + item normalisation + gem/currency economy
+  trade.py      trade client (pathofexile.com/api/trade): rate limiter, search/fetch/exchange, caches
   statmap.py    map item mod text -> trade stat-filter ids (for rares)
-  pricing.py    per-item query building + distribution -> min/median/high
-  currency.py   exchange-rate lookups + Exalted/Divine formatting
+  pricing.py    per-item query building + distribution -> min/median/high (+ gem/link pricing)
+  currency.py   exchange-rate lookups + Chaos/Divine formatting
   report.py     terminal table + JSON rendering
   models.py     dataclasses (Item / PriceResult / BuildEstimate)
   cache.py      tiny JSON disk cache with TTL

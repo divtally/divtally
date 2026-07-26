@@ -1,4 +1,4 @@
-"""Map an item's human-readable mods to trade2 stat-filter ids, so rare items can be
+"""Map an item's human-readable mods to trade stat-filter ids, so rare items can be
 priced by searching for similar items.
 
 This is necessarily approximate: we match explicit mod text against the trade "stats"
@@ -10,10 +10,10 @@ from . import util
 from .trade import TradeClient
 
 # Keyword priority for choosing which matched mods to constrain on (higher = keep).
-# These are the affixes that actually drive a PoE2 rare's price.
+# These are the affixes that actually drive a PoE1 rare's price.
 _PRIORITY = [
     ("maximum life", 100), ("maximum energy shield", 95), ("maximum mana", 40),
-    ("to spirit", 90), ("resistance", 70), ("to all", 75),
+    ("resistance", 70), ("to all", 75),
     ("increased energy shield", 60), ("increased evasion", 45),
     ("increased armour", 45), ("increased physical damage", 80),
     ("increased spell damage", 80), ("increased attack speed", 85),
@@ -21,19 +21,21 @@ _PRIORITY = [
     ("increased damage", 70), ("to strength", 35), ("to dexterity", 35),
     ("to intelligence", 35), ("attributes", 50), ("movement speed", 80),
     ("increased rarity", 55), ("level of all", 88), ("to level of", 88),
-    ("to spirit per socket", 90), ("accuracy", 25), ("life regeneration", 30),
+    ("accuracy", 25), ("life regenerat", 30), ("mana regenerat", 25),
+    ("chance to", 40), ("increased mana", 30),
 ]
 
 
 # On armour pieces (helmet/chest/gloves/boots/shield) these defence affixes are LOCAL
 # mods whose display text collides with a different GLOBAL trade stat id, so matching
 # them by text yields the wrong filter and zero results. Demote them on armour so we
-# search by unambiguous global mods (resistances, life, attributes) instead.
+# search by unambiguous global mods (resistances, life, attributes) instead. (Defence
+# TOTALS are searched via armour_filters, not these affixes.)
 _LOCAL_DEFENCE = [
     "to maximum energy shield", "to evasion rating", "to armour",
     "increased energy shield", "increased evasion rating", "increased armour",
     "increased evasion and energy shield", "increased armour and energy shield",
-    "increased armour and evasion",
+    "increased armour and evasion", "increased armour, evasion and energy shield",
 ]
 
 
@@ -65,8 +67,11 @@ class StatMapper:
         self._build(client.stats_data())
 
     def _build(self, stats_data: dict) -> None:
-        wanted = {"explicit", "implicit", "pseudo", "rune", "fractured"}
-        grouped = wanted | {"enchant", "crafted", "desecrated"}
+        # PoE1 stat groups (from /api/trade/data/stats): Pseudo, Explicit, Implicit, Imbued,
+        # Fractured, Enchant, Scourge, Crafted, Mercenary, Veiled, Delve, Ultimatum, Sanctum,
+        # Crucible. There is NO rune / desecrated group (those were PoE2).
+        wanted = {"explicit", "implicit", "pseudo", "fractured"}
+        grouped = wanted | {"enchant", "crafted", "veiled", "crucible", "scourge"}
         for grp in stats_data.get("result", []):
             label = (grp.get("label") or "").lower()
             for e in grp.get("entries", []):

@@ -237,7 +237,7 @@ function pad(s,w,align){ s=String(s); if(s.length>w) s=s.slice(0,w-1)+'…'; con
 function rarClass(it){
   const c=(it.category||'').toLowerCase();
   if(c==='unique') return 'r-unique'; if(c==='rare') return 'r-rare'; if(c==='magic') return 'r-magic';
-  if(c==='gem') return 'r-gem'; if(c==='rune'||c==='currency') return 'r-currency'; return 'r-normal';
+  if(c==='gem') return 'r-gem'; if(c==='currency') return 'r-currency'; return 'r-normal';
 }
 /* plain-ex string for table cells (no orb icons inside box columns) */
 function exCell(ex){
@@ -322,7 +322,7 @@ function renderResults(){
    + '<span class="k">char</span> <b>'+E(m.character)+'</b> '
    + '<span class="k">·</span> '+E(m['class'])+' <span class="k">lvl</span> '+m.level
    + ' <span class="k">·</span> <span class="k">league</span> '+E(m.league);
-  if(m.divine_to_exalted) h+=' <span class="k">·</span> 1 '+bpc.curImg('div')+' = '+bpc.nfmt(Math.round(m.divine_to_exalted),0)+' '+bpc.curImg('ex');
+  if(m.divine_to_chaos) h+=' <span class="k">·</span> 1 '+bpc.curImg('div')+' = '+bpc.nfmt(Math.round(m.divine_to_chaos),0)+' '+bpc.curImg('chaos');
   h+='</div>';
   if(pobCode){
     h+='<div class="pobline">  pob-import-code ['+pobCode.length+' chars]  <span class="copy" data-act="pob">[copy]</span></div>';
@@ -349,7 +349,7 @@ function renderResults(){
 
     grp.items.forEach((it,idx)=>{
       const k=String(it.index), p=s.priced[k], on=!!s.enabled[k];
-      const priced = p && p.exalted.median!=null;
+      const priced = p && p.chaos.median!=null;
       const cntName = it.name + (it.count>1?(' ×'+it.count):'');
       const isRareAdv = s.advanced && it.category==='rare';
       const rownum = idx+1;
@@ -367,9 +367,9 @@ function renderResults(){
         minS=pad('—',COL.min,'r'); medS=pad('not priced',COL.med,'r'); highS=pad('—',COL.high,'r');
         confS=pad('○',COL.conf);
       } else {
-        minS=pad(exCell(p.exalted.min)||'—',COL.min,'r');
-        medS=pad(exCell(p.exalted.median)||'—',COL.med,'r');
-        highS=pad(exCell(p.exalted.high)||'—',COL.high,'r');
+        minS=pad(exCell(p.chaos.min)||'—',COL.min,'r');
+        medS=pad(exCell(p.chaos.median)||'—',COL.med,'r');
+        highS=pad(exCell(p.chaos.high)||'—',COL.high,'r');
         confS=pad(confGlyph(p.confidence),COL.conf);
       }
       const confCls = p ? ('conf-'+p.confidence) : 'conf-none';
@@ -385,7 +385,7 @@ function renderResults(){
       h+='<div class="row '+(priced&&!on?'off':'')+'" data-k="'+E(k)+'" data-row="'+rownum+'">'
         +'<span class="box">│</span> '+pad('',0)+ wrapInc(inc) +' '
         +'<span class="box">│</span> '+itemCell+' '
-        +'<span class="box">│</span> <span class="cellnum '+(exCell(p&&p.exalted.min)?'':'dash')+'">'+E(minS)+'</span> '
+        +'<span class="box">│</span> <span class="cellnum '+(exCell(p&&p.chaos.min)?'':'dash')+'">'+E(minS)+'</span> '
         +'<span class="box">│</span> <span class="cellnum">'+E(medS)+'</span> '
         +'<span class="box">│</span> <span class="cellnum">'+E(highS)+'</span> '
         +'<span class="box">│</span> <span class="'+confCls+'">'+E(confS)+'</span> <span class="box">│</span></div>';
@@ -445,7 +445,7 @@ scroll.addEventListener('click',e=>{
   if(e.target.closest('a[data-noselect]')) return; // let link open
   const row=e.target.closest('.row');
   if(row){ const k=row.dataset.k; const s=bpc.state.priced[k];
-    if(s && s.exalted.median!=null) bpc.setEnabled(k, !bpc.state.enabled[k]); }
+    if(s && s.chaos.median!=null) bpc.setEnabled(k, !bpc.state.enabled[k]); }
 });
 function doCopyPob(elm){
   if(!pobCode) return;
@@ -661,8 +661,8 @@ bpc.on('priced', d=>{
     const p=bpc.state.priced[k];
     if(it && p){
       pricedCount++;
-      if(p.exalted.median!=null){
-        const ex=exCell(p.exalted.median);
+      if(p.chaos.median!=null){
+        const ex=exCell(p.chaos.median);
         logJob('pricing '+rarColored(it)+' <span class="dim">…</span> <span class="num">'+E(ex||'—')+'</span>');
       } else if(p.method!=='skipped'){
         logJob('pricing '+rarColored(it)+' <span class="warn">no match</span>', 'warn');
@@ -689,7 +689,7 @@ bpc.on('enabled', ()=>{ // toggle de-emphasis without full rerender (avoid picke
   if(!resultsEl) return;
   resultsEl.querySelectorAll('.row').forEach(rw=>{
     const k=rw.dataset.k, p=s.priced[k];
-    const priced=p&&p.exalted.median!=null;
+    const priced=p&&p.chaos.median!=null;
     rw.classList.toggle('off', priced && !s.enabled[k]);
     // update checkbox glyph
     const cb=rw.querySelector('.cbx');
@@ -913,11 +913,11 @@ function cmdToggle(arg, on){
   arg=(arg||'').trim();
   if(!bpc.state.items.length){ logJob('no build loaded', 'warn'); return; }
   if(!arg || arg==='all' || arg==='*'){
-    bpc.state.items.forEach(it=>{ const p=bpc.state.priced[String(it.index)]; if(p&&p.exalted.median!=null) bpc.setEnabled(String(it.index), on); });
+    bpc.state.items.forEach(it=>{ const p=bpc.state.priced[String(it.index)]; if(p&&p.chaos.median!=null) bpc.setEnabled(String(it.index), on); });
     logJob((on?'included':'excluded')+' <span class="num">all</span> priced items'); return;
   }
   // group name?
-  const groups={equipment:'equipment',equip:'equipment',flask:'flask',flasks:'flask',jewel:'jewel',jewels:'jewel',rune:'rune',runes:'rune',gem:'gem',gems:'gem'};
+  const groups={equipment:'equipment',equip:'equipment',flask:'flask',flasks:'flask',jewel:'jewel',jewels:'jewel',gem:'gem',gems:'gem'};
   let matched=0;
   const tokens=arg.split(/[\s,]+/).filter(Boolean);
   tokens.forEach(tok=>{
@@ -929,7 +929,7 @@ function cmdToggle(arg, on){
       // index within currently displayed numbering = item.index? We numbered rows per group 1..n.
       // Interpret N as the global item index (matches `exclude 4` in concept = belt index 4).
       const it=bpc.state.items.find(x=>String(x.index)===tok);
-      if(it){ const p=bpc.state.priced[tok]; if(p&&p.exalted.median!=null){ bpc.setEnabled(tok,on); matched++; } }
+      if(it){ const p=bpc.state.priced[tok]; if(p&&p.chaos.median!=null){ bpc.setEnabled(tok,on); matched++; } }
       return;
     }
     if(/\*/.test(tok) || groups[low]){
@@ -939,13 +939,13 @@ function cmdToggle(arg, on){
       bpc.state.items.forEach(it=>{
         const nameMatch=rx.test(it.name.toLowerCase());
         const grpMatch=gk && it.group===gk;
-        if(nameMatch||grpMatch){ const k=String(it.index); const p=bpc.state.priced[k]; if(p&&p.exalted.median!=null){ bpc.setEnabled(k,on); matched++; } }
+        if(nameMatch||grpMatch){ const k=String(it.index); const p=bpc.state.priced[k]; if(p&&p.chaos.median!=null){ bpc.setEnabled(k,on); matched++; } }
       });
       return;
     }
     // plain word -> substring/glob on name
     const rx=globToRx(low.indexOf('*')>=0?low:('*'+low+'*'));
-    bpc.state.items.forEach(it=>{ if(rx.test(it.name.toLowerCase())){ const k=String(it.index); const p=bpc.state.priced[k]; if(p&&p.exalted.median!=null){ bpc.setEnabled(k,on); matched++; } } });
+    bpc.state.items.forEach(it=>{ if(rx.test(it.name.toLowerCase())){ const k=String(it.index); const p=bpc.state.priced[k]; if(p&&p.chaos.median!=null){ bpc.setEnabled(k,on); matched++; } } });
   });
   if(matched) logJob((on?'included':'excluded')+' <span class="num">'+matched+'</span> item'+(matched>1?'s':''));
   else logJob('no priced items matched "<span class="errln">'+E(arg)+'</span>"', 'warn');
@@ -1110,8 +1110,8 @@ if(location.search.indexOf('mock')>=0){
       logJob('resolving build · <b style="color:var(--grn)">'+E(bpc.state.meta.character)+'</b>');
       logJob('resolving <span class="num">'+bpc.state.items.length+'</span> items');
       // stagger a few "pricing" lines for flavor then render
-      const its=bpc.state.items.filter(it=>{ const p=bpc.state.priced[String(it.index)]; return p&&p.exalted.median!=null; }).slice(0,6);
-      its.forEach(it=>{ const p=bpc.state.priced[String(it.index)]; logJob('pricing '+rarColored(it)+' <span class="dim">…</span> <span class="num">'+E(exCell(p.exalted.median)||'—')+'</span>'); });
+      const its=bpc.state.items.filter(it=>{ const p=bpc.state.priced[String(it.index)]; return p&&p.chaos.median!=null; }).slice(0,6);
+      its.forEach(it=>{ const p=bpc.state.priced[String(it.index)]; logJob('pricing '+rarColored(it)+' <span class="dim">…</span> <span class="num">'+E(exCell(p.chaos.median)||'—')+'</span>'); });
       logJob('done <span class="ok">·</span> <span class="num">'+(bpc.state.searches||'')+'</span> trade searches used');
       // render results immediately (do not block on the typed log)
       renderResults();

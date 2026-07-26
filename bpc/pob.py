@@ -1,10 +1,10 @@
-"""Parse a Path of Building 2 (community) import code / XML into priceable items.
+"""Parse a Path of Building (PoE1 community) import code / XML into priceable items.
 
-A PoB code is URL-safe base64 of zlib-compressed XML rooted at <PathOfBuilding2>. Each
+A PoB code is URL-safe base64 of zlib-compressed XML rooted at <PathOfBuilding>. Each
 <Item> holds the in-game item text (Rarity / name / base / Item Level / Implicits:N /
-mods, with {enchant}{rune}{fractured} prefixes / Corrupted). Equipment/flask/charm slots
-come from <ItemSet><Slot>, jewels from <Spec><Sockets><Socket>, socketed runes from the
-host item's 'Rune:' lines, gems from the active <SkillSet>'s <Gem> nodes.
+mods, with {enchant}{fractured}{crafted} prefixes / Corrupted). Equipment/flask slots
+come from <ItemSet><Slot>, jewels from <Spec><Sockets><Socket>, gems from the active
+<SkillSet>'s <Gem> nodes. (PoE1 has no runes / soul cores / charms.)
 """
 import base64
 import re
@@ -12,7 +12,7 @@ import xml.etree.ElementTree as ET
 import zlib
 from typing import List, Optional, Tuple
 
-from .models import (CAT_GEM, CAT_NORMAL, CAT_RUNE, FRAME_RARITY, BuildMeta, Item,
+from .models import (CAT_GEM, CAT_NORMAL, FRAME_RARITY, BuildMeta, Item,
                      CAT_MAGIC, CAT_RARE, CAT_UNIQUE)
 
 
@@ -23,10 +23,15 @@ class PobError(RuntimeError):
 _RARITY_FRAME = {"NORMAL": 0, "MAGIC": 1, "RARE": 2, "UNIQUE": 3, "RELIC": 3}
 _CAT_BY_FRAME = {0: CAT_NORMAL, 1: CAT_MAGIC, 2: CAT_RARE, 3: CAT_UNIQUE}
 
-# header/property lines that appear before the mod block (not mods themselves)
-_PROP_PREFIXES = ("Spirit:", "Armour:", "Evasion:", "Energy Shield:", "Ward:", "Requires",
+# header/property lines that appear before the mod block (not mods themselves). PoE1 adds
+# the *BasePercentile / Catalyst lines PoB emits for uniques (docs/research/pob1.md 5.2);
+# without them they leak into the mod block and corrupt the Implicits boundary.
+_PROP_PREFIXES = ("Armour:", "Evasion:", "Energy Shield:", "Ward:", "Requires",
                   "Quality", "Sockets:", "LevelReq:", "Unique ID:", "Item Level:",
-                  "Charm Slots:", "Stack Size:", "Radius:", "Limited to:")
+                  "Stack Size:", "Radius:", "Limited to:",
+                  "ArmourBasePercentile", "EvasionBasePercentile",
+                  "EnergyShieldBasePercentile", "WardBasePercentile",
+                  "Catalyst:", "CatalystQuality:")
 
 # PoB slot name -> (group, inventoryId, display). 'Weapon 2*' resolved dynamically (shield).
 _SLOT_MAP = {
@@ -46,7 +51,6 @@ _SLOT_MAP = {
 }
 for _i in range(1, 6):
     _SLOT_MAP[f"Flask {_i}"] = ("flask", "Flask", "Flask")
-    _SLOT_MAP[f"Charm {_i}"] = ("flask", "Charm", "Charm")
 
 
 def decode(code: str) -> str:
@@ -123,7 +127,6 @@ def _parse_item_text(text: str, all_types) -> Optional[dict]:
 
     ilvl = 0
     corrupted = False
-    runes: List[str] = []
     defences: dict = {}
     impl_count = 0
     impl_seen = False
@@ -140,11 +143,6 @@ def _parse_item_text(text: str, all_types) -> Optional[dict]:
         if dm and not impl_seen:                # item's total defence value (searchable)
             defences[{"Armour": "ar", "Evasion": "ev",
                       "Energy Shield": "es", "Ward": "ward"}[dm.group(1)]] = int(dm.group(2))
-            continue
-        if ln.startswith("Rune:") or ln.startswith("Soul Core:"):
-            rn = ln.split(":", 1)[1].strip()
-            if rn and rn.lower() not in ("none", "nil", ""):
-                runes.append(rn)
             continue
         if ln.startswith("Implicits:"):
             m = re.search(r"\d+", ln)
@@ -163,11 +161,10 @@ def _parse_item_text(text: str, all_types) -> Optional[dict]:
             mods.append({"text": text_, "tags": tags})
 
     implicit_mods = [m["text"] for m in mods[:impl_count]]
-    # explicit affixes exclude rune-/enchant-granted lines (not base item affixes)
-    explicit_mods = [m["text"] for m in mods[impl_count:]
-                     if "rune" not in m["tags"] and "enchant" not in m["tags"]]
+    # explicit affixes exclude enchant-granted lines (not base item affixes)
+    explicit_mods = [m["text"] for m in mods[impl_count:] if "enchant" not in m["tags"]]
     return {"frame": frame, "name": name, "base": base, "type_line": type_line,
-            "ilvl": ilvl, "corrupted": corrupted, "runes": runes, "defences": defences,
+            "ilvl": ilvl, "corrupted": corrupted, "defences": defences,
             "implicit_mods": implicit_mods, "explicit_mods": explicit_mods}
 
 
@@ -231,7 +228,7 @@ def parse(code_or_xml: str, types: dict) -> Tuple[BuildMeta, List[Item]]:
             if slot.startswith("Weapon 2") and base in armour_types:
                 inv, disp = "Offhand", "Off-hand"     # shield / focus, not a weapon
         elif is_jewel or base in jewel_types:
-            group, inv, disp = "jewel", "Jewel", "Jewel"
+            group, inv, disp = "jewel", "PassiveJewels", "Jewel"
         elif base in flask_types:
             group, inv, disp = "flask", "Flask", "Flask"
         else:
@@ -244,13 +241,10 @@ def parse(code_or_xml: str, types: dict) -> Tuple[BuildMeta, List[Item]]:
             explicit_mods=parsed["explicit_mods"], implicit_mods=parsed["implicit_mods"],
             corrupted=parsed["corrupted"], ilvl=parsed["ilvl"],
             defences=parsed["defences"], raw={"inventoryId": inv}))
-        # socketed runes -> their own priceable items
-        for rune_name in parsed["runes"]:
-            items.append(Item(name="", base_type=rune_name, type_line=rune_name,
-                              frame_type=5, rarity="Currency", category=CAT_RUNE,
-                              group="rune", slot="Rune", raw={}))
 
-    # gems: active skill set only, skipping item-/tree-granted skills and granted gems
+    # gems: active skill set only, skipping item-/tree-granted skills. PoB sets count="nil"
+    # for normal single gems, so gate on enabled (+ a non-empty name), NOT count -- otherwise
+    # every gem is dropped (docs/research/pob1.md 4/5). Level/quality drive PoE1 gem pricing.
     skills_el = root.find("Skills")
     gem_scope = skills_el
     if skills_el is not None:
@@ -263,16 +257,24 @@ def parse(code_or_xml: str, types: dict) -> Tuple[BuildMeta, List[Item]]:
             if sk.get("source"):                # granted by an item or the tree
                 continue
             for gem in sk.findall("Gem"):
-                if (gem.get("count") or "1") in ("nil", "0", ""):
+                if (gem.get("enabled") or "").lower() == "false":
                     continue
                 name = gem.get("nameSpec") or ""
                 if not name:
                     continue
                 sid, gid = (gem.get("skillId") or "").lower(), (gem.get("gemId") or "").lower()
                 support = sid.startswith("support") or "supportgem" in gid
+                try:
+                    lvl = int(gem.get("level") or 0)
+                except (TypeError, ValueError):
+                    lvl = 0
+                try:
+                    qual = int(gem.get("quality") or 0)
+                except (TypeError, ValueError):
+                    qual = 0
                 items.append(Item(name="", base_type=name, type_line=name, frame_type=4,
                                   rarity="Gem", category=CAT_GEM, group="gem", slot="",
-                                  support=support, raw={}))
+                                  support=support, gem_level=lvl, gem_quality=qual, raw={}))
 
     meta = BuildMeta(account="", character="Path of Building import",
                      league="", char_class=klass, level=level, pob_export="")

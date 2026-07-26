@@ -1,4 +1,4 @@
-"""Client for the official PoE2 trade API (www.pathofexile.com/api/trade2).
+"""Client for the official PoE1 trade API (www.pathofexile.com/api/trade).
 
 Everything here is unauthenticated GET/POST. The single most important job of this
 module is to NEVER trip GGG's rate limiter (a violation yields IP bans of 5-30 min).
@@ -21,19 +21,22 @@ import requests
 
 from . import cache
 
-BASE = "https://www.pathofexile.com/api/trade2"
-REALM = "poe2"
+# PoE1 realm: /api/trade (NOT /api/trade2, and no /poe2/ path segment). PC is the default
+# realm; xbox/sony would use ?realm=xbox|sony (unused here).
+BASE = "https://www.pathofexile.com/api/trade"
 
 # Contact info in the UA is good etiquette and what GGG asks for.
-USER_AGENT = ("buildpricechecker/0.1 (PoE2 build cost estimator; "
+USER_AGENT = ("buildpricechecker/0.1 (PoE1 build cost estimator; "
               "contact: divtally@gmail.com)")
 
 # Conservative starting rules per logical endpoint: list of (max_hits, window_secs).
 # update_rules() only ever tightens these from the authoritative response headers.
-# (Reference 'data' endpoints aren't separately documented; use a search-like floor.)
+# Seeded from the LIVE X-Rate-Limit-Ip headers observed 2026-07-26 (docs/research/trade1.md
+# section 7): search adds a 4th 6h window, fetch adds 300s + 6h windows, exchange matches.
+# (Reference 'data' endpoints send no rate headers; use a search-like floor anyway.)
 _DEFAULT_RULES = {
-    "search":   [(5, 10), (15, 60), (30, 300)],
-    "fetch":    [(12, 4), (16, 12)],
+    "search":   [(5, 10), (15, 60), (30, 300), (600, 21600)],
+    "fetch":    [(12, 4), (16, 12), (50, 300), (1000, 21600)],
     "exchange": [(5, 15), (10, 90), (30, 300)],
     "data":     [(5, 10), (15, 60)],
 }
@@ -99,7 +102,8 @@ class RateLimiter:
         conservative defaults. We only ever TIGHTEN: every default window is kept, and
         for any window the effective cap is the min of default and server. This prevents
         a malformed/short header from silently widening the limiter past GGG's real cap
-        (which would risk an IP ban)."""
+        (which would risk an IP ban). PoE1 headers are the same 3-part hits:window:penalty
+        format PoE2 used, so parsing bits[0]:bits[1] is unchanged."""
         if not rule_header:
             return
         # start from the floor so default windows are never dropped
@@ -185,11 +189,11 @@ class TradeClient:
 
     # ---- reference data (cached on disk for a day) -----------------------
     def static_data(self) -> dict:
-        return cache.cached("trade2:data:static", 86400,
+        return cache.cached("trade:data:static", 86400,
                             lambda: self._request("data", "GET", f"{BASE}/data/static"))
 
     def stats_data(self) -> dict:
-        return cache.cached("trade2:data:stats", 86400,
+        return cache.cached("trade:data:stats", 86400,
                             lambda: self._request("data", "GET", f"{BASE}/data/stats"))
 
     @staticmethod
@@ -200,28 +204,28 @@ class TradeClient:
             r = s.get(f"{BASE}/data/leagues", timeout=30)
             r.raise_for_status()
             return r.json().get("result", [])
-        return cache.cached("trade2:data:leagues", 600, fetch)  # leagues rarely change
+        return cache.cached("trade:data:leagues", 600, fetch)  # leagues rarely change
 
     # ---- search + fetch --------------------------------------------------
     def search(self, query: dict) -> dict:
-        url = f"{BASE}/search/{REALM}/{urllib.parse.quote(self.league)}"
+        url = f"{BASE}/search/{urllib.parse.quote(self.league)}"
         body = {"query": query, "sort": {"price": "asc"}}
         hdr = {"Content-Type": "application/json",
                "Origin": "https://www.pathofexile.com",
-               "Referer": f"https://www.pathofexile.com/trade2/search/{REALM}"}
+               "Referer": "https://www.pathofexile.com/trade/search"}
         self.search_count += 1
         return self._request("search", "POST", url, json_body=body, headers=hdr)
 
     def fetch(self, ids: List[str], query_id: str) -> List[dict]:
         if not ids:
             return []
-        idpart = ",".join(ids[:10])  # API caps at 10 ids per fetch
-        url = f"{BASE}/fetch/{idpart}?query={query_id}&realm={REALM}"
+        idpart = ",".join(ids[:10])  # API caps at 10 ids per fetch (11 -> HTTP 400)
+        url = f"{BASE}/fetch/{idpart}?query={query_id}"
         data = self._request("fetch", "GET", url)
         return data.get("result", []) or []
 
-    def exchange(self, want: str, have: str = "exalted") -> dict:
-        url = f"{BASE}/exchange/{REALM}/{urllib.parse.quote(self.league)}"
+    def exchange(self, want: str, have: str = "chaos") -> dict:
+        url = f"{BASE}/exchange/{urllib.parse.quote(self.league)}"
         body = {"query": {"status": {"option": "online"}, "have": [have], "want": [want]},
                 "sort": {"have": "asc"}, "engine": "new"}
         hdr = {"Content-Type": "application/json"}

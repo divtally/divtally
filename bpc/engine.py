@@ -1,5 +1,5 @@
 """Shared pipeline used by both the CLI and the web UI:
-URL -> poe.ninja items -> trade2 pricing -> (meta, results, converter).
+URL -> poe.ninja items -> trade pricing -> (meta, results, converter).
 
 Keeping this in one place means the two front-ends behave identically and the
 rate-limit-sensitive trade logic has a single code path.
@@ -21,7 +21,7 @@ from .trade import TradeClient, TradeError
 Progress = Optional[Callable[[str], None]]
 
 # Only these hosts may be fetched server-side for a PoB paste (no arbitrary URLs / SSRF).
-_POB_LINK_HOSTS = ("pobb.in", "pastebin.com", "poe.ninja", "poe2.ninja")
+_POB_LINK_HOSTS = ("pobb.in", "pastebin.com", "poe.ninja")
 
 
 class EstimateError(RuntimeError):
@@ -68,12 +68,11 @@ def prepare(url: str, league: Optional[str] = None, refresh: bool = False,
 
     meta, items = poeninja.normalize(data)
     meta.source_url = url
-    items = poeninja.dedupe_runes(items)
 
     trade_league = resolve_trade_league(meta.league, league)
     client = TradeClient(trade_league, verbose=False)
-    pricer = Pricer(client, verbose=False, progress=progress, status=status)
-    pricer.economy = poeninja.PoeNinjaEconomy(meta.league)   # gem prices w/o the trade API
+    econ = poeninja.PoeNinjaEconomy(meta.league)             # gem prices + chaos rates, no trade API
+    pricer = Pricer(client, verbose=False, progress=progress, status=status, economy=econ)
     return meta, items, pricer, trade_league
 
 
@@ -116,11 +115,10 @@ def prepare_from_cache(cache_key: str, league: Optional[str] = None,
     meta, items = poeninja.normalize(data)
     meta.source_url = poeninja.build_url_from_cache_key(cache_key) or "(loaded from local cache)"
     meta.cache_key = cache_key
-    items = poeninja.dedupe_runes(items)
     trade_league = resolve_trade_league(meta.league, league)
     client = TradeClient(trade_league, verbose=False)
-    pricer = Pricer(client, verbose=False, progress=progress, status=status)
-    pricer.economy = poeninja.PoeNinjaEconomy(meta.league)   # gem prices w/o the trade API
+    econ = poeninja.PoeNinjaEconomy(meta.league)             # gem prices + chaos rates, no trade API
+    pricer = Pricer(client, verbose=False, progress=progress, status=status, economy=econ)
     return meta, items, pricer, trade_league
 
 
@@ -189,9 +187,8 @@ def prepare_from_pob(code_or_xml: str, league: Optional[str] = None, refresh: bo
         raise EstimateError(str(e))
     meta.league = trade_league
     meta.source_url = "(Path of Building import)"
-    items = poeninja.dedupe_runes(items)
-    pricer = Pricer(client, verbose=False, progress=progress, status=status)
-    pricer.economy = poeninja.PoeNinjaEconomy(meta.league)   # gem prices w/o the trade API
+    econ = poeninja.PoeNinjaEconomy(meta.league)             # gem prices + chaos rates, no trade API
+    pricer = Pricer(client, verbose=False, progress=progress, status=status, economy=econ)
     return meta, items, pricer, trade_league
 
 
@@ -208,7 +205,7 @@ def prepare_auto(text: str, league: Optional[str] = None, refresh: bool = False,
         host, path = p.netloc.lower(), p.path.lower()
         if "poe.ninja" in host and "/character/" in path:
             return prepare(t, league, refresh, progress, status)
-        if ("pobb.in" in host or "pastebin.com" in host or "poe2.ninja" in host
+        if ("pobb.in" in host or "pastebin.com" in host
                 or ("poe.ninja" in host and "/pob/" in path)):
             code = _fetch_pob_link(t, progress)
             return prepare_from_pob(code, league, refresh, progress, status)

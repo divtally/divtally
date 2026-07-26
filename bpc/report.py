@@ -8,9 +8,9 @@ from .currency import CurrencyConverter
 from .models import BuildMeta, PriceResult
 
 # (group order for the terminal report; web has its own copy)
-_GROUP_ORDER = ["equipment", "flask", "jewel", "rune", "gem"]
-_GROUP_TITLE = {"equipment": "Equipment", "flask": "Flasks & Charms",
-                "jewel": "Jewels", "rune": "Runes / Soul Cores", "gem": "Gems"}
+_GROUP_ORDER = ["equipment", "flask", "jewel", "gem"]
+_GROUP_TITLE = {"equipment": "Equipment", "flask": "Flasks",
+                "jewel": "Jewels", "gem": "Gems"}
 
 
 def _row_price(conv: CurrencyConverter, v: Optional[float]) -> str:
@@ -62,7 +62,7 @@ def render_text(meta: BuildMeta, results: List[PriceResult],
     lines.append("=" * width)
     lines.append(f" {meta.character}  -  {meta.char_class} (level {meta.level})")
     lines.append(f" League: {meta.league}"
-                 + (f"   |   1 divine = {div:,.0f} exalted" if div else ""))
+                 + (f"   |   1 divine = {div:,.0f} chaos" if div else ""))
     if meta.source_url:
         lines.append(f" Source: {meta.source_url}")
     lines.append("=" * width)
@@ -118,7 +118,7 @@ def build_payload(meta: BuildMeta, results: List[PriceResult],
     return {
         "character": meta.character, "class": meta.char_class, "level": meta.level,
         "league": meta.league, "source_url": meta.source_url,
-        "divine_to_exalted": _finite(conv.divine_rate()), "currency_unit": "exalted",
+        "divine_to_chaos": _finite(conv.divine_rate()), "currency_unit": "chaos",
         "items": [{
             "name": r.item.display_name, "group": r.item.group,
             "category": r.item.category, "rarity": r.item.rarity,
@@ -126,9 +126,9 @@ def build_payload(meta: BuildMeta, results: List[PriceResult],
             "method": r.method, "confidence": r.confidence,
             "sample_size": r.sample_size, "total_found": r.total_found,
             "note": r.note, "trade_url": r.trade_url,
-            "exalted": tier(r),
+            "chaos": tier(r),
         } for r in results],
-        "totals_exalted": {
+        "totals_chaos": {
             "min": _finite(_sum_tier(results, "minimum")),
             "median": _finite(_sum_tier(results, "median")),
             "high": _finite(_sum_tier(results, "high")),
@@ -158,7 +158,7 @@ def render_html(meta: BuildMeta, results: List[PriceResult],
     out.append('<div class="meta">')
     out.append(f'<h2>{e(meta.character)} <span class="sub">{e(meta.char_class)} '
                f'&middot; level {meta.level}</span></h2>')
-    rate_txt = f' &nbsp;|&nbsp; 1 divine = {div:,.0f} exalted' if div else ''
+    rate_txt = f' &nbsp;|&nbsp; 1 divine = {div:,.0f} chaos' if div else ''
     out.append(f'<div class="sub">League: {e(meta.league)}{rate_txt}</div>')
     out.append('</div>')
 

@@ -10,8 +10,8 @@ from . import __version__, engine, poeninja, report
 
 
 def _force_utf8() -> None:
-    # Windows consoles default to cp1252 and choke on item names (e.g. "Maelström")
-    # and box-drawing/arrow glyphs. Make stdout/stderr tolerant.
+    # Windows consoles default to cp1252 and choke on item names (e.g. Cyrillic account
+    # names) and box-drawing/arrow glyphs. Make stdout/stderr tolerant.
     for stream in (sys.stdout, sys.stderr):
         try:
             stream.reconfigure(encoding="utf-8", errors="replace")
@@ -23,7 +23,7 @@ def main(argv=None) -> int:
     _force_utf8()
     p = argparse.ArgumentParser(
         prog="bpc",
-        description="Estimate the cost of a PoE2 build from a poe.ninja character link.")
+        description="Estimate the cost of a PoE1 build from a poe.ninja character link.")
     p.add_argument("url", nargs="?",
                    help="poe.ninja character link, Path of Building code, or pobb.in link")
     p.add_argument("--league", help="override the trade league (e.g. 'Standard')")
