@@ -211,5 +211,123 @@ console.log("· CASE 9 — rareTradeUrl builds one ?q= from the same query, reus
   eq(decoded.sort, { price: "asc" }, "sorted price asc, like the server");
 }
 
+// =====================================================================
+//  D-0016 — priority tiers -> groups (item 3), category<->base scope
+//  (item 2), rare price distribution (item 4). All pure + offline.
+// =====================================================================
+// A rare with API `priority` hints (contract §3) + a `scopes` payload (rare/magic carry both).
+const TRARE = {
+  scopes: { category: { id: "weapon.wand", label: "Wand" }, base: { type: "Opal Wand", label: "Opal Wand" } },
+  affixes: [
+    { kind: "stat", text: "+45 to maximum Life",  stat_id: "explicit.stat_life",    value: 45, default_min: 45, default_max: null, searchable: true,  resist: false, negated: false, priority: "required" },
+    { kind: "stat", text: "+30% to Fire Damage",  stat_id: "explicit.stat_firedmg", value: 30, default_min: 30, default_max: null, searchable: true,  resist: false, negated: false, priority: "nice" },
+    { kind: "stat", text: "+12% to Cast Speed",   stat_id: "explicit.stat_cast",    value: 12, default_min: 12, default_max: null, searchable: true,  resist: false, negated: false, priority: "notimp" },
+    { kind: "stat", text: "1 Added Passive is X", stat_id: null,                     value: null, default_min: null, default_max: null, searchable: false, resist: false, negated: false, priority: "skip", reason: "no trade filter matches this mod" },
+  ],
+  pseudo: [],
+};
+// its DEFAULT (category-scoped) query — what the API hands the row as origQuery
+const TORIG = { status: { option: "online" },
+  filters: { type_filters: { filters: { category: { option: "weapon.wand" } } } },
+  stats: [{ type: "and", filters: [ { id: "explicit.stat_life" }, { id: "explicit.stat_firedmg" }, { id: "explicit.stat_cast" } ] }] };
+
+console.log("· D-0016 item 3 — rareDefaultPicks prefills each tier from the API priority");
+{
+  const d = bpc.rareDefaultPicks(TRARE);
+  eq(d.affix[0].tier, "required", "priority required -> tier required");
+  eq(d.affix[1].tier, "nice", "priority nice -> tier nice");
+  eq(d.affix[2].tier, "nice", "priority notimp -> tier nice (D-0015: never auto-excluded)");
+  eq(d.affix[3].tier, "notneeded", "priority skip (unsearchable) -> tier not-needed");
+}
+
+console.log("· D-0016 item 3 — tier assignment -> groups (required=AND, nice=count)");
+{
+  const picks = bpc.tierGroups(TRARE, bpc.rareDefaultPicks(TRARE));
+  eq(picks.groups.length, 2, "one AND + one count group");
+  eq(picks.groups[0].type, "and", "group 0 = AND (required)");
+  eq(picks.groups[1].type, "count", "group 1 = count (nice-to-have)");
+  eq(picks.groups[1].min, 2, "count default N = the nice count (all of them; strictest)");
+  const q = bpc.buildRareQuery(TRARE, TORIG, picks);
+  ok(q.stats.length === 2, "built query has two stat groups");
+  const andG = q.stats.find(g => g.type === "and"), cG = q.stats.find(g => g.type === "count");
+  eq(andG.filters.map(f => f.id).sort(), ["explicit.stat_life"], "AND group holds only the required affix");
+  eq(cG.filters.map(f => f.id).sort(), ["explicit.stat_cast", "explicit.stat_firedmg"], "count group holds the nice affixes");
+  eq(cG.value, { min: 2 }, "count group carries group-level value.min = 2");
+}
+
+console.log("· D-0016 item 3 — count 'match at least N' spinner loosens/clamps");
+{
+  const base = bpc.rareDefaultPicks(TRARE); base.countMin = 1;   // user drops N from 2 to 1
+  const picks = bpc.tierGroups(TRARE, base);
+  eq(picks.groups[1].min, 1, "countMin=1 loosens the nice group to 'match at least 1'");
+  eq(bpc.buildRareQuery(TRARE, TORIG, picks).stats.find(g => g.type === "count").value, { min: 1 }, "the loosened N flows into the query");
+  const hi = bpc.rareDefaultPicks(TRARE); hi.countMin = 9;       // above #nice
+  eq(bpc.tierGroups(TRARE, hi).groups[1].min, 2, "countMin above #nice clamps to #nice");
+  const lo = bpc.rareDefaultPicks(TRARE); lo.countMin = 0;       // below 1
+  eq(bpc.tierGroups(TRARE, lo).groups[1].min, 1, "countMin below 1 clamps to 1 (never a 0-of-N no-op)");
+}
+
+console.log("· D-0016 item 3 — a NOT-NEEDED affix is dropped (that IS a user action)");
+{
+  const p = bpc.rareDefaultPicks(TRARE); p.affix[1].tier = "notneeded";   // demote Fire Damage
+  const q = bpc.buildRareQuery(TRARE, TORIG, bpc.tierGroups(TRARE, p));
+  const ids = q.stats.reduce((a, g) => a.concat(g.filters.map(f => f.id)), []);
+  ok(ids.indexOf("explicit.stat_firedmg") < 0, "the not-needed affix is gone from the query");
+  ok(ids.indexOf("explicit.stat_life") >= 0 && ids.indexOf("explicit.stat_cast") >= 0, "the rest remain");
+  eq(q.stats.find(g => g.type === "count").value, { min: 1 }, "one remaining nice -> count(min 1)");
+}
+
+console.log("· D-0016 item 3 — all-required tiers == the previous single-AND behaviour");
+{
+  const p = bpc.rareDefaultPicks(TRARE);
+  Object.keys(p.affix).forEach(i => { if (p.affix[i]) p.affix[i].tier = "required"; });
+  const grouped = bpc.buildRareQuery(TRARE, TORIG, bpc.tierGroups(TRARE, p));
+  const flat = bpc.buildRareQuery(TRARE, TORIG);           // legacy all-ticked single-AND query
+  eqQ(grouped, flat, "all-required tiers reproduce the previous single-AND query");
+  ok(grouped.stats.length === 1 && grouped.stats[0].type === "and", "exactly one AND group");
+}
+
+console.log("· D-0016 item 2 — scope selector: category <-> base, both drive the query");
+{
+  const baseQ = bpc.applyScope(TRARE, TORIG, "base");
+  eq(baseQ.type, "Opal Wand", "base scope sets type = the exact base");
+  ok(!baseQ.filters || !baseQ.filters.type_filters, "base scope drops the category type_filters");
+  const catQ = bpc.applyScope(TRARE, TORIG, "category");
+  eq(catQ.filters.type_filters.filters.category, { option: "weapon.wand" }, "category scope keeps the category option");
+  ok(catQ.type === undefined, "category scope has no exact type");
+  const qb = bpc.buildRareQuery(TRARE, bpc.applyScope(TRARE, TORIG, "base"), bpc.rareDefaultPicks(TRARE));
+  eq(qb.type, "Opal Wand", "buildRareQuery on the base scope emits type=base");
+  ok(!qb.filters || !qb.filters.type_filters, "…and no category filter");
+  const qc = bpc.buildRareQuery(TRARE, bpc.applyScope(TRARE, TORIG, "category"), bpc.rareDefaultPicks(TRARE));
+  eq(qc.filters.type_filters.filters.category, { option: "weapon.wand" }, "buildRareQuery on the category scope emits the category option");
+  ok(qc.type === undefined, "…and no exact type");
+  // a scope swap must preserve status + the 5/6-link socket_filters (never invented, never dropped)
+  const withLinks = JSON.parse(JSON.stringify(TORIG));
+  withLinks.filters.socket_filters = { filters: { links: { min: 6 } } };
+  const bl = bpc.applyScope(TRARE, withLinks, "base");
+  eq(bl.filters.socket_filters, { filters: { links: { min: 6 } } }, "scope swap preserves the 5/6-link socket_filters");
+  eq(bl.status, { option: "online" }, "scope swap preserves status");
+  // an unavailable scope returns the query unchanged (never invents)
+  const noBase = { scopes: { category: { id: "jewel", label: "Any Jewel" }, base: null } };
+  eqQ(bpc.applyScope(noBase, TORIG, "base"), TORIG, "requesting an absent scope leaves the query unchanged");
+}
+
+console.log("· D-0016 item 4 — rare tiers from the extension's prices[] (local distribution math)");
+{
+  // scam-low (1) + typo-high (9999) get trimmed; kept = [20,22,25,30]
+  const prices = [ { amount: 1, currency: "chaos" }, { amount: 20, currency: "chaos" }, { amount: 22, currency: "chaos" },
+                   { amount: 25, currency: "chaos" }, { amount: 30, currency: "chaos" }, { amount: 9999, currency: "chaos" } ];
+  const t = bpc.rareTiersFromPrices(prices, 100);
+  eq(t.min, 20, "min = cheapest KEPT (scam-low 1 trimmed, not the raw cheapest)");
+  eq(t.median, 23.5, "median of the kept set [20,22,25,30]");
+  eq(t.high, 28.5, "high = linear-interp 90th percentile of the kept set");
+  eq(t.sample, 4, "two outliers trimmed -> 4 kept");
+  eq(bpc.rareTiersFromPrices([{ amount: 1, currency: "div" }, { amount: 1, currency: "div" }], 100).median, 100, "divine converts at the given rate (1 div = 100c)");
+  ok(bpc.rareTiersFromPrices([], 100) === null, "no prices -> null (falls back to single value)");
+  ok(bpc.rareTiersFromPrices(null, 100) === null, "missing prices -> null");
+  ok(bpc.rareTiersFromPrices([{ amount: 5, currency: "exalted" }], 100) === null, "all-non-convertible -> null (never fabricated)");
+  eq(bpc.tiersFromChaos([10]), { min: 10, median: 10, high: 10, sample: 1 }, "single value -> min=median=high");
+}
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

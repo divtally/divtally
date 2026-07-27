@@ -7,6 +7,10 @@ The function lives in `public/api/` (self-contained Vercel Python project); see
 
 **Status:** Locked v1.0 (2026-07-26). Verified end-to-end locally against
 `research/data` fixtures (offline) and one live poe.ninja PoE1 character (see notes).
+**Additive update 2026-07-27 (D-0016):** the default rare/magic search scope is now the item
+**category** (generic, e.g. `weapon.wand`) instead of the exact base, with the exact base kept
+as a user option; a new `rares[].scopes` field exposes both (§2.5, §2.6.1). Uniques are
+unchanged. See `docs/notes-v2-api.md`.
 
 ---
 
@@ -166,11 +170,14 @@ For rares, magic items, and uniques, this is the **exact** body to POST to
 user's IP. **Rate-limit discipline is the extension's responsibility.**
 
 Query construction is faithful to the local engine:
-- **rares** → require every *searchable* affix (AND group) + each total defence value at
-  ≥85% (`armour_filters`) + a `socket_filters.links.min` for 5/6-links.
+- **rares** → scoped to the item **category** by default (generic, e.g. `weapon.wand`; §2.6.1),
+  with the exact base as the user alternative; require every *searchable* affix (AND group) +
+  each total defence value at ≥85% (`armour_filters`) + a `socket_filters.links.min` for
+  5/6-links.
 - **uniques** → `name` + base `type` (+ links) (+ any build-defining `+# to Level of all …
-  Skills` roll pinned to the build's value).
-- **magic** → base `type` only.
+  Skills` roll pinned to the build's value). *(D-0016 leaves uniques on name+type.)*
+- **magic** → the item **category** by default (exact base available; §2.6.1), no affix
+  filters.
 - **gems** → `type`=gem name + `type_filters.category` (gem.activegem/gem.supportgem) +
   `misc_filters` (`gem_level.min`, `quality.min`, `corrupted`).
 
@@ -187,8 +194,9 @@ and the tool hides nothing.
 "6": {
   "status": "priced" | "unpriced",       // "priced" => poe.ninja gave a number (uniques only)
   "name": "…", "kind": "rare" | "unique" | "magic",
-  "scope": "base: Thicket Bow" | "unique: Mageblood" | "category",
-  "scope_q": { "type": "Thicket Bow" } | { "name":"…","type":"…" } | { "filters": {…} },
+  "scope": "category: Wand" | "base: Opal Wand" | "unique: Mageblood",  // human label of scope_q
+  "scope_q": { "filters": {…category…} } | { "type":"…" } | { "name":"…","type":"…" },  // the DEFAULT scope
+  "scopes": { "category": {"id","label"}|null, "base": {"type","label"}|null },  // rare/magic ONLY (§2.6.1)
   "affixes": [ AffixOption, … ],          // the item's mods + total-defence values, display order
   "pseudo":  [ PseudoOption, … ]          // combined resistance totals (may be [])
 }
@@ -229,7 +237,10 @@ unique carries a total-defence `equip` option plus a folded elemental-resistance
 ```jsonc
 "6": {                                    // magic item — magic now gets a picker entry too
   "status":"unpriced", "kind":"magic", "name":"Upgraded Thicket Bow",
-  "scope":"base: Thicket Bow", "scope_q":{"type":"Thicket Bow"},
+  "scope":"category: Bow",                 // D-0016 default = the item category, not the base
+  "scope_q":{"filters":{"type_filters":{"filters":{"category":{"option":"weapon.bow"}}}}},
+  "scopes":{"category":{"id":"weapon.bow","label":"Bow"},   // weapon subcategory [INFERRED] from base
+            "base":{"type":"Thicket Bow","label":"Thicket Bow"}},
   "affixes":[ { "kind":"stat", "text":"+8% to Quality of Socketed Gems",
                 "stat_id":"explicit.stat_3828613551", "value":8.0, "default_min":8.0,
                 "default_max":null, "searchable":true, "resist":false, "negated":false,
@@ -252,6 +263,35 @@ unique carries a total-defence `equip` option plus a folded elemental-resistance
 (`equip` affixes carry `key` = `ar`/`ev`/`es`/`ward` instead of `stat_id`; searched via
 `armour_filters`. An unsearchable affix — e.g. `"1 Added Passive Skill is a Jewel Socket"` — is
 still listed with `searchable:false`, `stat_id:null`, `default_min:null` and a `reason`.)
+
+### 2.6.1 `rares[].scopes` — category vs exact base (D-0016)
+For **rare and magic** entries only (uniques search by name+type and omit this field), `scopes`
+carries the two search scopes so a picker can let the user choose which to run:
+
+```jsonc
+"scopes": {
+  "category": { "id": "weapon.wand", "label": "Wand" },   // the DEFAULT (generic) — or null
+  "base":     { "type": "Opal Wand", "label": "Opal Wand" }  // the exact-base option — or null
+}
+```
+
+- **`category` is the default.** `scope`, `scope_q`, the item's top-level `trade_query`, and
+  `trade_url` are all scoped to `category.id` — a trade `type_filters.filters.category.option`,
+  i.e. the site's "Item Category" dropdown — whenever the item's slot maps to one. Generic on
+  purpose: *any wand*, not *Opal Wand*. `id` is always a real trade category (taken from the
+  trade `data/filters` "Item Category" list — no invented ids); `label` is that option's exact
+  display text.
+- **`base` is the exact-base alternative** the user can switch to — a `scope_q` of
+  `{ "type": <base> }`. Null only when the base isn't a recognised trade type.
+- **Fallback:** when the slot maps to no category (`category: null`), the default *is* the
+  exact base (`scope_q` = `{ "type": <base> }`), so a search can always be built.
+- **Weapon subcategory** (`weapon.wand` / `weapon.bow` / `weapon.sceptre` / `weapon.claw`) is
+  **[INFERRED]** from the base name's last word — the trade items endpoint groups every weapon
+  under one label, so the base name is the only class signal in bundled data. Ambiguous weapon
+  classes (sword / axe / mace / staff / dagger — one- vs two-handed, or base vs rune/war
+  variants, can't be told apart from the base name) stay the generic `weapon` ("Any Weapon"),
+  which is still a correct scope. A quiver in the off-hand slot is scoped to `armour.quiver`
+  (not `armour.shield`). Full mapped/unmapped table: `docs/notes-v2-api.md`.
 
 ### 2.7 `warnings[]`
 Array of human-readable strings (empty in v1.0; reserved for soft issues).
@@ -405,7 +445,8 @@ below with `…`.
                  "confidence":"none", "method":"rare-unpriced", "source":"trade",
                  "note":"rares are priced on your machine via the trade link / extension …" },
       "trade_url":"https://www.pathofexile.com/trade/search/Allflame?q=…",
-      "trade_query": { "query": { "type":"Large Cluster Jewel",
+      "trade_query": { "query": {                       // D-0016 default: category scope, not "type"
+        "filters":{"type_filters":{"filters":{"category":{"option":"jewel"}}}},
         "status":{"option":"online"},
         "stats":[{"type":"and","filters":[ {"id":"explicit.stat_1719521705"},
           {"id":"explicit.stat_3258414199"}, {"id":"enchant.stat_3948993189|16"}, … ]}] },
@@ -413,7 +454,10 @@ below with `…`.
   ],
   "rares": {
     "12": { "status":"unpriced", "name":"Phoenix Star, Large Cluster Jewel", "kind":"rare",
-            "scope":"base: Large Cluster Jewel", "scope_q":{"type":"Large Cluster Jewel"},
+            "scope":"category: Any Jewel",
+            "scope_q":{"filters":{"type_filters":{"filters":{"category":{"option":"jewel"}}}}},
+            "scopes":{"category":{"id":"jewel","label":"Any Jewel"},
+                      "base":{"type":"Large Cluster Jewel","label":"Large Cluster Jewel"}},
             "affixes":[ {"kind":"stat","text":"Adds 3 Passive Skills","stat_id":"…",
               "value":3,"searchable":true,"resist":false,"negated":false,"prefer":true,
               "priority":"nice","reason":""}, … ], "pseudo":[] }

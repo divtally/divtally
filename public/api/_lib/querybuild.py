@@ -12,9 +12,11 @@ What it produces per item:
                  ALSO carries the exact trade_query (name+base+links+skill-level rolls) so
                  the extension can verify / refine on the user's machine.
   * rares     -> NOT priced here (no honest poe.ninja source). Carries the exact default
-                 trade_query (require every searchable affix + defence totals + links) and
-                 its clickable trade_url, for the extension to execute client-side.
-  * magic     -> NOT priced (cheap); carries a base-type trade_query + trade_url.
+                 trade_query (scoped to the item CATEGORY by default per D-0016, exact base
+                 available; require every searchable affix + defence totals + links) and its
+                 clickable trade_url, for the extension to execute client-side.
+  * magic     -> NOT priced (cheap); carries a category-scoped trade_query + trade_url
+                 (exact base available), no affix filters.
 
 The pure query-construction methods are ported verbatim from bpc/pricing.py, with
 `self.client.league` -> `self.league` (there is no TradeClient). Trade-search methods
@@ -36,7 +38,11 @@ _ARMOUR_INV = {"Helm", "BodyArmour", "Gloves", "Boots", "Offhand"}
 _PSEUDO_ELEM_RES = "pseudo.pseudo_total_elemental_resistance"
 _PSEUDO_CHAOS_RES = "pseudo.pseudo_total_chaos_resistance"
 
-# itemData.inventoryId -> trade category option (fallback when base type is unknown).
+# itemData.inventoryId -> trade `type_filters.category` option id. D-0016: this is now the
+# DEFAULT search scope for rares/magic (generic "Item Category"), with the exact base type as
+# the user-selectable alternative -- it used to be only a fallback when the base was unknown.
+# Every id here is present in the trade data/filters "Item Category" option list (source of
+# truth research/data/trade_data_filters.json; _verify.py asserts it). None invented.
 _INVENTORY_CATEGORY = {
     "Helm": "armour.helmet", "BodyArmour": "armour.chest", "Gloves": "armour.gloves",
     "Boots": "armour.boots", "Belt": "accessory.belt", "Amulet": "accessory.amulet",
@@ -44,6 +50,49 @@ _INVENTORY_CATEGORY = {
     "Offhand2": "armour.shield", "Weapon": "weapon", "Weapon2": "weapon",
     "Jewel": "jewel", "PassiveJewels": "jewel", "Flask": "flask",
 }
+
+# D-0016 refinements that narrow the generic slot->category WITHOUT inventing an id (every id
+# below is in the source filters list; _verify.py asserts it):
+#
+#  * Weapons: the inventory slot only says "Weapon", so the specific class is [INFERRED] from
+#    the base type's last word. GGG's items endpoint groups every weapon under one "Weapons"
+#    label, so the base name is the only weapon-class signal in bundled data. ONLY suffixes
+#    that are unambiguously one trade category are mapped (verified against the full base
+#    list: every "* Wand"/"* Bow"/"* Sceptre"/"* Claw" base is that class and nothing else
+#    is). Ambiguous classes stay generic "weapon" -- sword/axe/mace/staff/maul/dagger et al.
+#    can't be told one- vs two-handed (or base vs rune/war variant) from the base name; and
+#    "* Rod" is mixed (fishing rods AND non-rods), so it is not mapped. Unmapped list ->
+#    docs/notes-v2-api.md. Generic "weapon" is always a CORRECT (broader) scope for a weapon.
+_WEAPON_SUFFIX_CATEGORY = {
+    "Wand": "weapon.wand", "Bow": "weapon.bow",
+    "Sceptre": "weapon.sceptre", "Claw": "weapon.claw",
+}
+
+# id -> the "Item Category" option display text, VERBATIM from research/data/
+# trade_data_filters.json (source of truth; _verify.py asserts every label matches). Covers
+# exactly the ids _category_option can emit; used only for the `scopes` picker labels.
+_CATEGORY_LABEL = {
+    "weapon": "Any Weapon", "weapon.wand": "Wand", "weapon.bow": "Bow",
+    "weapon.sceptre": "Sceptre", "weapon.claw": "Claw",
+    "armour.helmet": "Helmet", "armour.chest": "Body Armour", "armour.gloves": "Gloves",
+    "armour.boots": "Boots", "armour.shield": "Shield", "armour.quiver": "Quiver",
+    "accessory.belt": "Belt", "accessory.amulet": "Amulet", "accessory.ring": "Ring",
+    "jewel": "Any Jewel", "flask": "Flask",
+}
+
+
+def _weapon_subcategory(base_type: str) -> Optional[str]:
+    """A specific weapon.* category for a weapon base, or None to keep the generic 'weapon'.
+    [INFERRED] from the base name's last word (see _WEAPON_SUFFIX_CATEGORY)."""
+    if not base_type:
+        return None
+    return _WEAPON_SUFFIX_CATEGORY.get(base_type.split()[-1])
+
+
+def _is_quiver(base_type: str) -> bool:
+    """Whether an Offhand base is a quiver (vs a shield): every quiver base ends in 'Quiver'
+    and nothing else does, so slot->armour.shield must be redirected to armour.quiver."""
+    return bool(base_type) and base_type.split()[-1] == "Quiver"
 
 _DEF_LABEL = {"es": "Total Energy Shield", "ev": "Total Evasion Rating",
               "ar": "Total Armour", "ward": "Total Ward"}
@@ -271,17 +320,47 @@ class PublicPricer:
         except Exception:
             return ""
 
-    # ---- rare scopes / affixes (VERBATIM logic) --------------------------
-    def _rare_scopes(self, item: Item) -> List[Tuple[dict, str]]:
-        scopes: List[Tuple[dict, str]] = []
-        btype = self.resolve_type(item.base_type)
-        if btype:
-            scopes.append(({"type": btype}, "base"))
+    # ---- rare scopes / affixes -------------------------------------------
+    def _category_option(self, item: Item) -> Optional[str]:
+        """The trade `type_filters.category` option id for this item's inventory slot, refined
+        to a specific weapon class / to armour.quiver where derivable (see the module notes).
+        None when the slot maps to no category (then the exact base type is the only scope)."""
         cat = _INVENTORY_CATEGORY.get(item.raw.get("inventoryId", ""))
+        if not cat:
+            return None
+        if cat == "weapon":
+            return _weapon_subcategory(item.base_type) or cat
+        if cat == "armour.shield" and _is_quiver(item.base_type):
+            return "armour.quiver"
+        return cat
+
+    def _rare_scopes(self, item: Item) -> List[Tuple[dict, str]]:
+        """Both search scopes for a rare/magic item, DEFAULT FIRST. D-0016: the default is the
+        generic item CATEGORY (type_filters.category.option) whenever the slot maps to one; the
+        exact base `type` is the fallback default (when no category maps) AND the user-
+        selectable alternative. Order is [category, base] when both exist, else whichever
+        resolves. Consumers use scopes[0] as the default query/url scope."""
+        scopes: List[Tuple[dict, str]] = []
+        cat = self._category_option(item)
         if cat:
             scopes.append(({"filters": {"type_filters": {"filters":
                            {"category": {"option": cat}}}}}, "category"))
+        btype = self.resolve_type(item.base_type)
+        if btype:
+            scopes.append(({"type": btype}, "base"))
         return scopes
+
+    def scope_choices(self, item: Item) -> dict:
+        """The rares[].scopes payload (docs/public-contract.md 2.6.1): BOTH search scopes so a
+        picker can offer the choice. `category` = the D-0016 default (generic, e.g. weapon.wand),
+        null when the slot maps to no category; `base` = the exact-base alternative, null only
+        when the base isn't a recognised trade type. Labels are the source filters' display
+        text (category) / the base type itself (base)."""
+        cat = self._category_option(item)
+        btype = self.resolve_type(item.base_type)
+        category = {"id": cat, "label": _CATEGORY_LABEL.get(cat, cat)} if cat else None
+        base = {"type": btype, "label": btype} if btype else None
+        return {"category": category, "base": base}
 
     def affix_options(self, item: Item) -> dict:
         """The item's mods/defences as picker-ready search options (docs/public-contract.md
@@ -412,11 +491,13 @@ class PublicPricer:
         return self._rare_query(item, scopes[0][0], stat_groups, equip_filters)
 
     def _magic_query(self, item: Item) -> Optional[dict]:
-        btype = self.resolve_type(item.base_type)
-        if not btype:
+        """Magic items: the D-0016 DEFAULT category scope (base type as fallback), no affix
+        filters (magic items are cheap - the scope alone is the search). Same scope selection
+        as the rare default so the trade link / autoscan agree."""
+        scopes = self._rare_scopes(item)
+        if not scopes:
             return None
-        return {"status": self._status(), "type": btype,
-                "stats": [{"type": "and", "filters": []}]}
+        return self._rare_query(item, scopes[0][0], [], {})
 
     def _gem_query(self, name, *, support: bool = False, level=None,
                    quality=None, corrupted: bool = False) -> dict:

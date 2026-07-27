@@ -140,19 +140,26 @@ def build_response(meta: BuildMeta, results: List[PriceResult], pricer: PublicPr
         is_uni = it.category == CAT_UNIQUE
         kind = "unique" if is_uni else ("magic" if it.category == CAT_MAGIC else "rare")
         spec = pricer.affix_options(it)
-        if is_uni:
-            scope = "unique: " + it.name
-            scope_q = {"name": it.name, "type": it.base_type}
-        else:
-            btype = pricer.resolve_type(it.base_type)
-            scope = ("base: " + btype) if btype else "category"
-            sc = pricer._rare_scopes(it)
-            scope_q = dict(sc[0][0]) if sc else {}
-        rares[str(i)] = {
+        entry = {
             "status": "priced" if (r.extra or {}).get("source") == "poe.ninja" else "unpriced",
-            "name": it.display_name, "kind": kind,
-            "scope": scope, "scope_q": scope_q,
-            "affixes": spec["affixes"], "pseudo": spec["pseudo"]}
+            "name": it.display_name, "kind": kind}
+        if is_uni:
+            # uniques keep name+type scope (D-0016 leaves them unchanged; no category choice).
+            entry["scope"] = "unique: " + it.name
+            entry["scope_q"] = {"name": it.name, "type": it.base_type}
+        else:
+            # D-0016: default (scope_q) = generic CATEGORY when the slot maps to one, else the
+            # exact base type; `scopes` exposes BOTH so the picker can offer the choice.
+            sc = pricer._rare_scopes(it)
+            choices = pricer.scope_choices(it)
+            cat, base = choices.get("category"), choices.get("base")
+            entry["scope"] = (("category: " + cat["label"]) if cat
+                              else ("base: " + base["type"]) if base else "unpriceable")
+            entry["scope_q"] = dict(sc[0][0]) if sc else {}
+            entry["scopes"] = choices
+        entry["affixes"] = spec["affixes"]
+        entry["pseudo"] = spec["pseudo"]
+        rares[str(i)] = entry
 
     chaos_totals = {"min": _finite(_sum_tier(results, "minimum")),
                     "median": _finite(_sum_tier(results, "median")),

@@ -205,6 +205,23 @@ is a technical transparency disclosure, not marketing; strip on owner request. P
 identity: repo-local user = DivTally <divtally@gmail.com>, full history rewritten to it
 pre-publish (personal email never ships in public metadata).
 
+## D-0016 - Picker upgrade batch (owner feedback, Locked, 2026-07-27)
+Owner's four asks after first picker test, tracked + tested between changes:
+1. **Scale up the picker** - bigger fonts, use screen real estate (esp. intro text + base line).
+2. **Generic scope by default**: search by ITEM CATEGORY (trade filter id `category`, e.g.
+   weapon.wand "any wand" - the site's own term is "Item Category"; community says item class)
+   instead of exact base (Opal Wand); picker offers an explicit "exact base" option. Applies to
+   the API's default trade_query too (autoscan inherits).
+3. **PoE2 parity: per-mod priority tiers + count groups + "edit groups"** (the shipped
+   2026-06-14 BPC mod-priority feature from the parent) in the DivTally picker. D-0015
+   interplay: tiers may be PREFILLED (visible suggestions from the existing _affix_tier scoring)
+   but every search fires only on the user's explicit click after seeing the sheet - nothing
+   hidden, owner may veto prefills.
+4. **min/median/high must move rares too**: extension returns the fetched listings' prices
+   (additive prices[] field, v1.2.0), tiers computed with the local app's distribution math
+   (trim + percentiles); community cache stores real tiers. Store note: v1.1.0 already
+   submitted to Chrome; v1.2.0 ships as a normal store update after.
+
 ## D-0015 - NO implicit affix exclusion; the picker is the mechanism (Locked, 2026-07-27)
 Owner veto, his words: "if the user doesn't manually exclude an affix we should not be doing that
 for them." D-0014's auto-relax REVERTED same day (deployed): the default query requires ALL of an

@@ -779,25 +779,35 @@
               fetched: dbg ? dbg.fetched : null, nulls: dbg ? dbg.nulls : null });
             return;
           }
-          var chaos = toChaos(res.amount, res.currency);
-          if (chaos == null) {
+          // D-0016 item 4: build real {min,median,high} from ALL fetched listings (ext v1.2.0
+          // prices[]) with the local app's distribution math. Fallback (old v1.1.0 ext with no
+          // prices[], or an all-non-convertible set): the single cheapest, exactly as before.
+          var band = rareTiersFromPrices(res.prices, divRate());
+          var chaos = toChaos(res.amount, res.currency);   // cheapest (norate guard + fallback)
+          if (band == null && chaos == null) {
             applyPrice(key, { confidence: "low", method: "extension", source: "trade",
               note: "cheapest: " + fmtAmt(res.amount) + " " + res.currency + " (no chaos rate to convert)" + debugSuffix(dbg),
               total_found: res.total || 0, debug: dbg }, { include: false });
             scanSet(key, "nobuyout", { total: res.total || 0, amount: res.amount, currency: res.currency, norate: true });
             return;
           }
+          var tierObj = band ? { min: band.min, median: band.median, high: band.high }
+                             : { min: chaos, median: chaos, high: chaos };
+          var nSamp = band ? band.sample : 1;
+          var tierNote = band
+            ? ("priced via extension — " + nSamp + " of " + (res.total || 0) + " listings (min · median · high)")
+            : ("priced via extension — cheapest buyout of " + (res.total || 0) + " online listings");
           applyPrice(key, {
-            chaos: { min: chaos, median: chaos, high: chaos }, confidence: confFromTotal(res.total),
+            chaos: tierObj, confidence: confFromTotal(res.total),
             method: "extension", source: "trade",
-            note: "priced via extension — cheapest buyout of " + (res.total || 0) + " online listings",
-            sample_size: 1, total_found: res.total || 0, debug: dbg
+            note: tierNote,
+            sample_size: nSamp, total_found: res.total || 0, debug: dbg
           }, { include: true });
           scanSet(key, "done", { total: res.total || 0, amount: res.amount, currency: res.currency });
-          // POST this real, on-IP price to the shared cache (short TTL) for everyone else
+          // POST the real, on-IP tiers to the shared cache (short TTL) for everyone else
           toCache.push({ item: it, value: {
-            chaos: { min: chaos, median: chaos, high: chaos }, confidence: confFromTotal(res.total),
-            method: "extension", sample_size: 1, total_found: res.total || 0,
+            chaos: tierObj, confidence: confFromTotal(res.total),
+            method: "extension", sample_size: nSamp, total_found: res.total || 0,
             note: "", trade_url: (state.priced[key] && state.priced[key].trade_url) || it.trade_url || ""
           } });
         });
@@ -849,6 +859,66 @@
   function confFromTotal(n) { n = n || 0; return n >= 5 ? "high" : n >= 2 ? "medium" : "low"; }
 
   // =====================================================================
+  //  RARE PRICE DISTRIBUTION  (D-0016 item 4)
+  // ---------------------------------------------------------------------
+  //  Port of the LOCAL app's bpc/pricing.py Pricer._tiers + bpc/util.py
+  //  (trim_outliers / median / percentile) — byte-faithful so an
+  //  extension-priced rare gets the SAME {min, median, high} the desktop
+  //  app would compute from the same listings. Pure + node-testable.
+  //  HIGH_PCT=90; trim keeps prices in [0.30, 6.0] × median.
+  // =====================================================================
+  var HIGH_PCT = 90;
+  function _sortNum(a) { return a.slice().sort(function (x, y) { return x - y; }); }
+  // linear-interpolation percentile (pct 0..100); null for empty. Mirrors util.percentile.
+  function _percentile(values, pct) {
+    if (!values || !values.length) return null;
+    var xs = _sortNum(values);
+    if (xs.length === 1) return xs[0];
+    var k = (xs.length - 1) * (pct / 100);
+    var lo = Math.floor(k), hi = Math.min(lo + 1, xs.length - 1), frac = k - lo;
+    return xs[lo] + (xs[hi] - xs[lo]) * frac;
+  }
+  function _median(values) { return _percentile(values, 50); }
+  // drop scam/typo listings relative to the median: keep [lo,hi]×median. Mirrors util.trim_outliers.
+  function _trimOutliers(values, loMult, hiMult) {
+    loMult = (loMult == null ? 0.30 : loMult); hiMult = (hiMult == null ? 6.0 : hiMult);
+    var vals = _sortNum((values || []).filter(function (v) { return v != null && v > 0; }));
+    if (!vals.length) return [];
+    var med = _median(vals);
+    if (!med) return vals;
+    var kept = vals.filter(function (v) { return loMult * med <= v && v <= hiMult * med; });
+    return kept.length ? kept : vals;                    // never empty just because it's spread out
+  }
+  // Pricer._tiers: chaos values -> {min, median, high, sample} (null when nothing kept).
+  function tiersFromChaos(chaosVals) {
+    var kept = _trimOutliers(chaosVals);
+    if (!kept.length) return null;
+    return { min: kept[0], median: _median(kept), high: _percentile(kept, HIGH_PCT), sample: kept.length };
+  }
+  // convert one {amount,currency} to chaos with an EXPLICIT rate (keeps this pure/testable —
+  // no state read). chaos+divine convert; anything else has no build rate -> null (never faked).
+  function _amtToChaos(amount, currency, rate) {
+    if (amount == null) return null;
+    var c = CUR_ALIAS[String(currency || "").toLowerCase()] || String(currency || "").toLowerCase();
+    if (c === "chaos") return amount;
+    if (c === "divine") return rate ? amount * rate : null;
+    return null;
+  }
+  // Convert an extension prices[] array ([{amount,currency}…], fetch = price-ascending order) to
+  // chaos and run the distribution. Returns {min,median,high,sample} or null (old ext / nothing
+  // convertible). Non-convertible listings are dropped (not fabricated) — D-0015: nothing hidden,
+  // the whole convertible set feeds the sheet.
+  function rareTiersFromPrices(prices, rate) {
+    if (!prices || !prices.length) return null;
+    var chaos = [];
+    for (var i = 0; i < prices.length; i++) {
+      var c = _amtToChaos(prices[i] && prices[i].amount, prices[i] && prices[i].currency, rate);
+      if (c != null && c > 0) chaos.push(c);
+    }
+    return tiersFromChaos(chaos);
+  }
+
+  // =====================================================================
   //  PER-RARE AFFIX PICKER  —  client-side query builder (D-0015)
   // ---------------------------------------------------------------------
   //  Pure + node-testable (no DOM/window). The picker UI (index.html) drives
@@ -883,16 +953,29 @@
     if (a.kind === "equip") return a.key != null;
     return !!(a.searchable && a.stat_id);
   }
+  // D-0016 item 3 — map the API's affix `priority` (contract §3: required·nice·notimp·skip) onto
+  // the site's THREE tiers. `notimp` -> nice-to-have (NOT not-needed): D-0015 forbids the tool
+  // auto-EXCLUDING on a low score; nice keeps it searched (count group, default N=all ⇒ still
+  // required). `skip` is only ever assigned to unsearchable affixes (never emitted). No hint ->
+  // required (strictest; preserves the all-affix default + the offline test fixtures).
+  function _siteTierOf(a) {
+    var pr = a && a.priority;
+    if (pr === "required") return "required";
+    if (pr === "nice" || pr === "notimp") return "nice";
+    if (pr === "skip") return "notneeded";
+    return "required";
+  }
   // The default picks for a rare: all searchable affixes ticked with their prefilled min/max, every
   // pseudo row ticked, and the resistance-fold (pseudo) toggle ON when the item has any resistance
-  // pseudo total — exactly the local app's default (usePseudo = pseudo.length>0).
+  // pseudo total — exactly the local app's default (usePseudo = pseudo.length>0). Each pick also
+  // carries a prefilled `tier` (visible suggestion; the user reviews the sheet before searching).
   function rareDefaultPicks(rare) {
     rare = rare || {};
     var picks = { usePseudo: !!(rare.pseudo && rare.pseudo.length), affix: {}, pseudo: {} };
     (rare.affixes || []).forEach(function (a, i) { var pf = affixPrefill(a);
-      picks.affix[i] = { ticked: affixDefaultTicked(a), min: pf.min, max: pf.max }; });
+      picks.affix[i] = { ticked: affixDefaultTicked(a), min: pf.min, max: pf.max, tier: _siteTierOf(a) }; });
     (rare.pseudo || []).forEach(function (p, j) { var pf = affixPrefill(p);
-      picks.pseudo[j] = { ticked: true, min: pf.min, max: pf.max }; });
+      picks.pseudo[j] = { ticked: true, min: pf.min, max: pf.max, tier: _siteTierOf(p) }; });
     return picks;
   }
   function _statFilter(id, min, max) {
@@ -904,17 +987,22 @@
   }
   function _pickOf(map, i, a) {
     var e = map && map[i];
-    if (e) return { ticked: !!e.ticked, min: _pnum(e.min), max: _pnum(e.max) };
-    var pf = affixPrefill(a);                 // no explicit pick -> the all-ticked default
-    return { ticked: affixDefaultTicked(a), min: pf.min, max: pf.max };
+    if (e) return { ticked: !!e.ticked, min: _pnum(e.min), max: _pnum(e.max), group: (e.group != null ? e.group : null) };
+    var pf = affixPrefill(a);                 // no explicit pick -> the all-ticked default (group 0)
+    return { ticked: affixDefaultTicked(a), min: pf.min, max: pf.max, group: null };
   }
   // Build a rare trade query (the INNER query object) from the CURRENT picker state.
   //   rare      = state.rares[key]  ({ affixes:[], pseudo:[] })
   //   origQuery = the item's own trade_query.query  OR its scope_q — the ONLY source of scope
   //               (status/type/name/type_filters) and the links socket_filter. Never invented.
-  //   picks     = { usePseudo, affix:{i:{ticked,min,max}}, pseudo:{j:{ticked,min,max}} }.
+  //   picks     = { usePseudo, affix:{i:{ticked,min,max,group}}, pseudo:{j:{ticked,min,max,group}},
+  //                 groups:[{type:'and'|'count'|'not', min}] }.
   //               Omit picks (or an entry) to use that affix's all-ticked default, so
   //               buildRareQuery(rare, origQuery) == the all-ticked query.
+  //   GROUPS (D-0016 item 3): with NO picks.groups every ticked affix goes into ONE AND group —
+  //   byte-identical to the original single-group behaviour. With a picks.groups array each
+  //   pick's `.group` index routes it to that group; a `count` group carries the trade API's
+  //   group-level value:{min} (clamped to [1, #filters]; default = all ⇒ acts as AND).
   function buildRareQuery(rare, origQuery, picks) {
     rare = rare || {}; picks = picks || {};
     var affixes = rare.affixes || [], pseudos = rare.pseudo || [];
@@ -924,20 +1012,35 @@
     if (oq.type != null) q.type = oq.type;               // scope: copied verbatim, never invented
     if (oq.name != null) q.name = oq.name;
     q.status = oq.status ? oq.status : { option: state.status || "online" };
-    var filters = [];
-    affixes.forEach(function (a, i) {
-      if (a.kind !== "stat") return;
-      if (!a.searchable || !a.stat_id) return;            // unsearchable is NEVER emitted
-      if (usePseudo && a.resist) return;                  // folded into a pseudo total below
-      var pk = _pickOf(picks.affix, i, a); if (!pk.ticked) return;
-      filters.push(_statFilter(a.stat_id, pk.min, pk.max));
+    var groupDefs = (picks.groups && picks.groups.length) ? picks.groups : [{ type: "and" }];
+    var stats = [];
+    groupDefs.forEach(function (g, gi) {
+      var filters = [];
+      affixes.forEach(function (a, i) {
+        if (a.kind !== "stat") return;
+        if (!a.searchable || !a.stat_id) return;          // unsearchable is NEVER emitted
+        if (usePseudo && a.resist) return;                // folded into a pseudo total below
+        var pk = _pickOf(picks.affix, i, a); if (!pk.ticked) return;
+        if ((pk.group != null ? pk.group : 0) !== gi) return;
+        filters.push(_statFilter(a.stat_id, pk.min, pk.max));
+      });
+      if (usePseudo) pseudos.forEach(function (p, j) {
+        if (!p.stat_id) return;
+        var pk = _pickOf(picks.pseudo, j, p); if (!pk.ticked) return;
+        if ((pk.group != null ? pk.group : 0) !== gi) return;
+        filters.push(_statFilter(p.stat_id, pk.min, pk.max));
+      });
+      if (!filters.length) return;                        // drop empty groups
+      var grp = { type: g.type || "and", filters: filters };
+      if (grp.type === "count") {                         // count needs a group-level value.min
+        var m = (g.min == null || g.min === "") ? filters.length : Number(g.min);
+        if (!isFinite(m)) m = filters.length;
+        grp.value = { min: Math.max(1, Math.min(Math.round(m), filters.length)) };
+      }
+      stats.push(grp);
     });
-    if (usePseudo) pseudos.forEach(function (p, j) {
-      if (!p.stat_id) return;
-      var pk = _pickOf(picks.pseudo, j, p); if (!pk.ticked) return;
-      filters.push(_statFilter(p.stat_id, pk.min, pk.max));
-    });
-    q.stats = [{ type: "and", filters: filters }];        // one AND group, like the server
+    if (!stats.length) stats = [{ type: "and", filters: [] }];   // scope-only search (nothing ticked)
+    q.stats = stats;
     var filt = {};
     if (oq.filters && oq.filters.type_filters) filt.type_filters = oq.filters.type_filters;   // scope
     var armour = {};
@@ -950,6 +1053,78 @@
     if (oq.filters && oq.filters.socket_filters) filt.socket_filters = oq.filters.socket_filters;  // links verbatim
     if (Object.keys(filt).length) q.filters = filt;
     return q;
+  }
+  // D-0016 item 3 — the site's tier model -> stat GROUPS (pure; feeds buildRareQuery). Reads each
+  // pick's `tier` ('required'|'nice'|'notneeded'; default = the affix's mapped priority) and returns
+  // a NEW picks (usePseudo, affix{i:{ticked,min,max,tier,group}}, pseudo{…}, groups[], countMin):
+  //   required  -> the AND group (min/max carried through "as now")
+  //   nice      -> ONE count group; threshold = picks.countMin ?? (#nice) = all (strictest; D-0015)
+  //   notneeded -> excluded (unticked). Equip (defence totals) is required/not-needed only
+  //               (armour_filters can't be count-grouped) and stays out of `groups`.
+  function tierGroups(rare, picks) {
+    rare = rare || {}; picks = picks || {};
+    var affixes = rare.affixes || [], pseudos = rare.pseudo || [];
+    var usePseudo = picks.usePseudo !== undefined ? !!picks.usePseudo : !!(pseudos && pseudos.length);
+    function tOf(map, i, a) { var e = map && map[i]; return (e && e.tier) || _siteTierOf(a); }
+    var req = 0, nice = 0;
+    affixes.forEach(function (a, i) {
+      if (a.kind !== "stat" || !a.searchable || !a.stat_id) return;
+      if (usePseudo && a.resist) return;
+      var t = tOf(picks.affix, i, a); if (t === "required") req++; else if (t === "nice") nice++;
+    });
+    if (usePseudo) pseudos.forEach(function (p, j) {
+      if (!p.stat_id) return;
+      var t = tOf(picks.pseudo, j, p); if (t === "required") req++; else if (t === "nice") nice++;
+    });
+    var groups = [], andGi = -1, cGi = -1;
+    if (req) { andGi = groups.length; groups.push({ type: "and" }); }
+    if (nice) {
+      cGi = groups.length;
+      var cm = (picks.countMin != null ? picks.countMin : nice);
+      groups.push({ type: "count", min: Math.max(1, Math.min(nice, Math.round(cm))) });
+    }
+    if (!groups.length) groups.push({ type: "and" });
+    var out = { usePseudo: usePseudo, affix: {}, pseudo: {}, groups: groups,
+                countMin: (cGi >= 0 ? groups[cGi].min : null) };
+    function place(map, i, a, dst, isPseudo) {
+      var base = _pickOf(map, i, a), t = tOf(map, i, a);
+      var e = { ticked: base.ticked, min: base.min, max: base.max, tier: t };
+      if (a.kind === "equip") { e.ticked = (t !== "notneeded"); dst[i] = e; return; }
+      if (!isPseudo && usePseudo && a.resist) { dst[i] = e; return; }   // folded away; group irrelevant
+      if (t === "required") { e.group = (andGi < 0 ? 0 : andGi); e.ticked = true; }
+      else if (t === "nice") { e.group = (cGi < 0 ? 0 : cGi); e.ticked = true; }
+      else { e.ticked = false; }                                        // notneeded -> excluded
+      dst[i] = e;
+    }
+    affixes.forEach(function (a, i) { place(picks.affix, i, a, out.affix, false); });
+    if (usePseudo) pseudos.forEach(function (p, j) { place(picks.pseudo, j, p, out.pseudo, true); });
+    return out;
+  }
+  // D-0016 item 2 — re-scope a query to the chosen scope ('category'|'base') from rare.scopes.
+  // Swaps ONLY the scope fields (type <-> type_filters.category); status, the 5/6-link
+  // socket_filters and everything else are preserved. Never invents a scope — an unavailable
+  // request returns the query unchanged (the default). Pure (deep-clones origQuery).
+  function applyScope(rare, origQuery, which) {
+    var oq = origQuery ? JSON.parse(JSON.stringify(origQuery)) : {};
+    var scopes = (rare && rare.scopes) || {};
+    if (which === "base" && scopes.base && scopes.base.type != null) {
+      oq.type = scopes.base.type;
+      if (oq.filters && oq.filters.type_filters && oq.filters.type_filters.filters) {
+        delete oq.filters.type_filters.filters.category;
+        if (!Object.keys(oq.filters.type_filters.filters).length) delete oq.filters.type_filters;
+        if (oq.filters && !Object.keys(oq.filters).length) delete oq.filters;
+      }
+      return oq;
+    }
+    if (which === "category" && scopes.category && scopes.category.id != null) {
+      delete oq.type;
+      oq.filters = oq.filters || {};
+      oq.filters.type_filters = oq.filters.type_filters || { filters: {} };
+      oq.filters.type_filters.filters = oq.filters.type_filters.filters || {};
+      oq.filters.type_filters.filters.category = { option: scopes.category.id };
+      return oq;
+    }
+    return oq;
   }
   // the 5/6-link requirement a query carries (for the read-only picker chip), or null
   function queryLinks(oq) { try { return oq.filters.socket_filters.filters.links.min || null; } catch (e) { return null; } }
@@ -1059,6 +1234,9 @@
     autoscan: autoscan, priceViaExtension: priceViaExtension, scanStatus: scanSnapshot,
     // per-rare affix picker (D-0015): pure query builder + the extension/URL price paths
     buildRareQuery: buildRareQuery, rareDefaultPicks: rareDefaultPicks, affixPrefill: affixPrefill,
+    // D-0016: priority-tier -> groups (item 3), category<->base scope (item 2), rare distribution (item 4)
+    tierGroups: tierGroups, applyScope: applyScope,
+    rareTiersFromPrices: rareTiersFromPrices, tiersFromChaos: tiersFromChaos,
     rareTradeUrl: rareTradeUrl, queryLinks: queryLinks, rareOf: rareOf,
     priceRareCustom: priceRareCustom, priceRaresCustom: priceRaresCustom, setRareQuery: setRareQuery,
     cacheOptOut: cacheOptOut, setCacheOptOut: setCacheOptOut,

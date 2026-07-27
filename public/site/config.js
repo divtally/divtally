@@ -27,7 +27,7 @@ window.BPC_CONFIG = {
   WORKER_BASE: "https://divtally-cache.divtally.workers.dev",   // "" disables cache
 
   STORE_URLS: {
-    chrome:  "REPLACE_ME_CHROME_STORE_URL",  // Chrome Web Store listing
+    chrome:  "https://chromewebstore.google.com/detail/hcemnjhmgnobpolmjnjcnfclklamkgdk",  // live once Google approves
     edge:    "REPLACE_ME_EDGE_STORE_URL",    // Microsoft Edge Add-ons listing
     firefox: "REPLACE_ME_FIREFOX_AMO_URL"    // Firefox AMO listing
   },

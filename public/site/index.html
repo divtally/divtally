@@ -546,16 +546,22 @@
   #pickwrap{position:fixed; inset:0; z-index:80; display:none; align-items:center; justify-content:center; padding:20px;
     background:rgba(8,5,3,.72); backdrop-filter:blur(2px);}
   #pickwrap.show{display:flex;}
+  /* D-0016 item 1: a roomier picker — wider, taller, larger fonts (owner found them too small).
+     Bronze look unchanged; overflow:auto + max-height keep it scrollable on small screens. */
   .pick{
-    width:min(460px,96vw); max-height:88vh; overflow:auto; font-family:var(--serif);
+    width:min(640px,96vw); max-height:92vh; overflow:auto; font-family:var(--serif);
     border:1px solid var(--bz2); background:#0c0805; border-radius:4px;
     box-shadow:0 16px 50px rgba(0,0,0,.85), inset 0 0 0 1px rgba(0,0,0,.8);
   }
   .pick .ph{
-    text-align:center; padding:11px 12px 9px; font-family:var(--display); font-size:18px; letter-spacing:.04em;
+    text-align:center; padding:14px 16px 12px; font-family:var(--display); font-size:22px; letter-spacing:.04em;
     background:linear-gradient(180deg,#26230c,#141205); color:var(--rare); border-bottom:1px solid rgba(0,0,0,.6); position:relative;
   }
-  .pick .ph .scope{display:block; font-family:var(--serif); font-size:12px; color:var(--parch); margin-top:2px; letter-spacing:0;}
+  .pick .ph .scope{display:block; font-family:var(--serif); font-size:15px; color:var(--parch); margin-top:5px; letter-spacing:0;}
+  /* scope selector (category vs exact base) lives in the header */
+  .pick .ph .scope-sel{font-family:var(--serif); font-size:14px; padding:4px 8px; max-width:100%;}
+  .pick .ph .scope-why{display:block; font-size:12px; font-style:italic; color:var(--mut); margin-top:4px; letter-spacing:0;}
+  .pick .ph .scope-static{color:var(--parch);}
   .pick .ph .step{position:absolute; top:9px; right:12px; font-family:var(--mono); font-size:11px; color:var(--bz3);}
   .pick .pbody{padding:12px 14px 14px;}
   .pdiv{display:flex; align-items:center; gap:8px; margin:9px 0 6px; color:var(--bz2); font-family:var(--mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase;}
@@ -572,8 +578,8 @@
   .pseudo-switch.on .sw{background:rgba(136,136,255,.4);} .pseudo-switch.on .sw::after{left:17px;background:var(--bz-hi);}
   .afxlist{margin-top:4px;}
   .afx{
-    display:grid; grid-template-columns:22px 1fr 66px 66px; gap:7px; align-items:center;
-    padding:7px 4px; border-top:1px solid rgba(122,106,79,.22);
+    display:grid; grid-template-columns:22px 1fr 72px 72px; gap:8px; align-items:center;
+    padding:8px 4px; border-top:1px solid rgba(122,106,79,.22);
   }
   .afx .abullet{display:grid;place-items:center;}
   .afx .abullet input{display:none;}
@@ -583,12 +589,12 @@
   }
   .afx .abullet input:checked + .dia{color:#160f08; background:radial-gradient(circle at 40% 35%, var(--bz3), var(--bz1)); border-color:var(--bz-hi); box-shadow:0 0 6px rgba(200,170,110,.5);}
   .afx .dia span{transform:rotate(-45deg);}
-  .afx .atext{font-family:var(--serif); font-size:15px; color:var(--fg); line-height:1.2;}
+  .afx .atext{font-family:var(--serif); font-size:16px; color:var(--fg); line-height:1.25;}
   .afx .atext .roll{color:var(--magic);}
   .afx .atext .range{color:var(--mut); font-size:12px; font-family:var(--mono);}
   .afx .mm{
-    width:100%; font-family:var(--mono); font-size:13px; text-align:center; color:var(--fg);
-    background:var(--inner); border:1px solid var(--bz1); border-radius:3px; padding:5px 4px;
+    width:100%; font-family:var(--mono); font-size:14px; text-align:center; color:var(--fg);
+    background:var(--inner); border:1px solid var(--bz1); border-radius:3px; padding:6px 4px;
   }
   .afx .mm:focus{outline:none; border-color:var(--bz3); box-shadow:0 0 0 1px rgba(200,170,110,.3);}
   .afx .mmhead{font-family:var(--mono); font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); text-align:center;}
@@ -638,19 +644,35 @@
   .svlink{margin-left:auto; background:none; border:1px solid var(--bz1); border-radius:4px; color:var(--bz3);
     font-family:var(--serif); font-size:12px; padding:4px 9px; cursor:pointer;}
   .svlink:hover{border-color:var(--bz3); color:var(--bz-hi);}
-  .svlist{display:flex; flex-direction:column;}
-  .svrow{display:grid; grid-template-columns:1fr 130px 20px; gap:8px; align-items:center;
-    padding:7px 6px; border-top:1px solid rgba(122,106,79,.18); border-left:3px solid transparent;}
+  .svlist{display:flex; flex-direction:column; margin-top:2px;}
+  /* D-0016 item 3: priority-tier survey row — [mod text] [tier select] [min] [max] */
+  .svrow{display:grid; grid-template-columns:1fr 122px 60px 60px; gap:9px; align-items:center;
+    padding:8px 6px; border-top:1px solid rgba(122,106,79,.18); border-left:3px solid transparent;}
   .svrow:first-child{border-top:0;}
-  .svtxt{font-family:var(--serif); font-size:14px; color:var(--fg); line-height:1.2;}
+  .svrow.svhead{padding-top:4px; padding-bottom:3px; border-top:0;}
+  .svrow.svhead .svhh{font-family:var(--mono); font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); text-align:center;}
+  .svtxt{font-family:var(--serif); font-size:15px; color:var(--fg); line-height:1.25;}
   .svtxt .roll{color:var(--magic);} .svtxt .range{color:var(--mut); font-size:12px; font-family:var(--mono);}
-  .svrow .svtier{width:100%; font-size:12px; padding:4px 6px;}
+  .svtxt .reason{display:block; font-size:11px; font-style:italic; color:rgba(170,158,130,.7);}
+  .svrow .svtier{width:100%; font-size:13px; padding:5px 6px;}
+  .svrow .mm{width:100%; font-family:var(--mono); font-size:14px; text-align:center; color:var(--fg);
+    background:var(--inner); border:1px solid var(--bz1); border-radius:3px; padding:6px 4px;}
+  .svrow .mm:focus{outline:none; border-color:var(--bz3); box-shadow:0 0 0 1px rgba(200,170,110,.3);}
   .svrow[data-tier="required"]{border-left-color:var(--bz3);}
   .svrow[data-tier="nice"]{border-left-color:#5b8f5e;}
+  .svrow[data-tier="notneeded"]{border-left-color:transparent; opacity:.5;}
   .svrow[data-tier="notimp"]{border-left-color:var(--bz1);}
   .svrow[data-tier="skip"]{border-left-color:transparent; opacity:.5;}
-  .svrow .rowrm{background:none;border:0;color:var(--mut);cursor:pointer;font-size:13px;padding:2px;opacity:.6;}
-  .svrow .rowrm:hover{color:var(--bad);opacity:1;}
+  .svrow.no .svtxt{color:var(--mut);}
+  /* "match at least N" spinner for the nice-to-have count group */
+  .countbar{display:flex; align-items:center; gap:7px; flex-wrap:wrap; margin:10px 0 2px; padding:9px 11px;
+    background:rgba(91,143,94,.08); border:1px solid rgba(91,143,94,.30); border-radius:5px;
+    font-family:var(--serif); font-size:14px; color:var(--parch);}
+  .countbar .countmin{width:52px; font-family:var(--mono); font-size:14px; text-align:center; color:var(--fg);
+    background:var(--inner); border:1px solid var(--bz1); border-radius:3px; padding:5px 4px;}
+  .countbar .countmin:focus{outline:none; border-color:var(--bz3); box-shadow:0 0 0 1px rgba(200,170,110,.3);}
+  /* per-row "move to group" select in the edit-groups editor */
+  .afx .grpmove{display:block; margin-top:4px; font-family:var(--serif); font-size:11px; padding:2px 5px; color:var(--bz3);}
   /* drag-and-drop affixes between groups */
   .afx.draggable-row .atext{cursor:grab;}
   .afx.draggable-row.dragging{opacity:.45;}
@@ -699,6 +721,14 @@
                          inset 0 1px 0 rgba(255,255,255,.28); }
   }
   @media (prefers-reduced-motion: reduce){ .stone-btn.autoscan{ animation:none; } }
+  /* D-0016 item 1: keep the roomier picker usable on phones (tighter columns, 96vw) */
+  @media (max-width:560px){
+    .pick{width:96vw;}
+    .pick .ph{font-size:19px;}
+    .afx{grid-template-columns:20px 1fr 58px 58px; gap:6px;}
+    .svrow{grid-template-columns:1fr 104px 50px 50px; gap:6px;}
+    .svrow .svtier{font-size:12px; padding:4px;}
+  }
 
   /* ---------- responsive collapse ---------- */
   @media (max-width:720px){
@@ -847,7 +877,8 @@
   .afx.afxhead{border-top:0; padding-top:0; padding-bottom:2px;}
   .pick .plinks{display:inline-block; margin-left:7px; font-family:var(--mono); font-size:10px; letter-spacing:.05em;
     color:var(--parch); border:1px solid var(--bz1); border-radius:3px; padding:1px 6px; vertical-align:middle;}
-  .pick .phint{font-family:var(--serif); font-size:12px; font-style:italic; color:var(--mut); margin:0 0 6px;}
+  .pick .phint{font-family:var(--serif); font-size:14px; font-style:italic; color:var(--mut); line-height:1.4; margin:0 0 8px;}
+  .pick .phint b{color:var(--parch); font-style:normal;}
   .manual-head .pick-affixes{margin-left:2px;}
   .mrow .mr-affix{color:var(--bz3); border-color:var(--bz1);}
   .mrow .mr-affix:hover{color:var(--bz-hi); border-color:var(--bz3);}
@@ -1566,7 +1597,7 @@ function renderTotals(){
 }
 /* tier selector: switch which tier the total + cards show (display-only, remembered) */
 $('#btSeg').addEventListener('click',e=>{ const b=e.target.closest('button[data-tier]'); if(b) bpc.setControl('tier', b.dataset.tier); });
-bpc.on('control',c=>{ if(c.name==='tier'){ renderTotals(); repaintTierPrices(); }
+bpc.on('control',c=>{ if(c.name==='tier'){ renderTotals(); repaintTierPrices(); renderManual(); }  // D-0016 item 4: rare rows move with the tier too
   else if(c.name==='refresh'){ const r=$('#refresh'); if(r) r.checked=!!c.value; } });
 
 /* re-search: loads show saved prices; this button re-runs every trade search */
@@ -1646,96 +1677,225 @@ function advanceQueue(){
   else closePicker();
 }
 
-/* ---- open / render one rare's picker ---- */
+/* ---- open one rare's picker (D-0016: scope selector + priority-tier survey + edit groups) ---- */
 function openPicker(k, opts){
   opts=opts||{}; k=String(k);
   const it=itemByKey(k), rare=rareData(k); if(!it||!rare) return;
   PK.key=k; PK.queue=!!opts.queue;
-  PK.usePseudo = !!(rare.pseudo && rare.pseudo.length);   // default ON when resistances exist
+  pkmInit(k);
   renderPicker();
   pickwrap.classList.add('show');
 }
-function affixRowHTML(a,i,prefill){
-  if(a.searchable && a.stat_id){
-    const pf = (prefill && prefill.affix && prefill.affix[i]) || null;
-    const dflt = bpc.affixPrefill(a);
-    const ticked = pf ? pf.ticked : true;
-    const minV = pf ? pf.min : dflt.min, maxV = pf ? pf.max : dflt.max;
-    const isEquip = a.kind==='equip';
-    const attr = isEquip ? `data-equip="${E(a.key)}"` : `data-sid="${E(a.stat_id)}"`;
-    return `<div class="afx" data-i="${i}" ${attr}>`+
-      `<label class="abullet"><input type="checkbox" class="acb" ${ticked?'checked':''}><span class="dia"><span>✓</span></span></label>`+
-      `<div class="atext">${E(a.text)}</div>`+
-      `<input class="mm amin" value="${minV!=null?E(String(minV)):''}" inputmode="numeric" placeholder="any">`+
-      (isEquip ? `<div class="mmx"></div>` : `<input class="mm amax" value="${maxV!=null?E(String(maxV)):''}" inputmode="numeric" placeholder="any">`)+
-      `</div>`;
+/* PKM = the working model for the CURRENTLY-open rare. Survey tiers + edited min/max persist here
+   across re-renders AND across the survey<->groups views; the groups editor adds group defs +
+   per-affix group/ticked. Both views feed the SAME bpc.buildRareQuery via currentPicks(). */
+let PKM=null;
+function defaultScope(rare){ const s=(rare&&rare.scopes)||{}; return s.category ? 'category' : 'base'; }
+function pkmInit(k){
+  const it=itemByKey(k), rare=rareData(k);
+  const d=bpc.rareDefaultPicks(rare);            // prefilled ticked/min/max + tier (tier from API priority)
+  PKM={ key:String(k), it:it, rare:rare, oq:itemOrigQuery(it),
+    usePseudo:!!(rare.pseudo && rare.pseudo.length), scope:defaultScope(rare), view:'survey',
+    tier:{affix:{},pseudo:{}}, minmax:{affix:{},pseudo:{}}, countMin:null,
+    groups:null, assign:{affix:{},pseudo:{}}, ticked:{affix:{},pseudo:{}} };
+  (rare.affixes||[]).forEach((a,i)=>{ const e=d.affix[i]||{};
+    PKM.tier.affix[i]=e.tier||'required'; PKM.minmax.affix[i]={min:e.min!=null?e.min:null, max:e.max!=null?e.max:null}; });
+  (rare.pseudo||[]).forEach((p,j)=>{ const e=d.pseudo[j]||{};
+    PKM.tier.pseudo[j]=e.tier||'required'; PKM.minmax.pseudo[j]={min:e.min!=null?e.min:null, max:e.max!=null?e.max:null}; });
+}
+/* DOM -> PKM for the CURRENT view (call before any re-render or action so edits persist) */
+function pkSync(){
+  if(!PKM) return;
+  const sc=pick.querySelector('.scope-sel'); if(sc) PKM.scope=sc.value;
+  if(PKM.view==='survey'){
+    pick.querySelectorAll('.svrow[data-i]').forEach(row=>{
+      const i=+row.dataset.i, kind=row.dataset.kind;
+      const ts=row.querySelector('.svtier'); if(ts) PKM.tier[kind][i]=ts.value;
+      const mn=row.querySelector('.amin'), mx=row.querySelector('.amax');
+      PKM.minmax[kind][i]={ min:mn?pkNum(mn.value):null, max:mx?pkNum(mx.value):null };
+    });
+    const cm=pick.querySelector('.countmin'); if(cm) PKM.countMin = (cm.value==='') ? null : pkNum(cm.value);
+  } else {
+    pick.querySelectorAll('.grpbox[data-gi]').forEach(box=>{
+      const gi=+box.dataset.gi;
+      const ty=box.querySelector('.grptype'); if(ty) PKM.groups[gi].type=ty.value;
+      const gm=box.querySelector('.gmin'); if(gm) PKM.groups[gi].min = (gm.value==='') ? '' : pkNum(gm.value);
+    });
+    pick.querySelectorAll('.afx[data-i]').forEach(row=>{
+      const i=+row.dataset.i, kind=row.dataset.kind;
+      const mv=row.querySelector('.grpmove'); if(mv) PKM.assign[kind][i]=+mv.value;
+      const cb=row.querySelector('.acb'); if(cb) PKM.ticked[kind][i]=cb.checked;
+      const mn=row.querySelector('.amin'), mx=row.querySelector('.amax');
+      if(mn||mx) PKM.minmax[kind][i]={ min:mn?pkNum(mn.value):null, max:mx?pkNum(mx.value):null };
+    });
   }
-  // unsearchable: shown greyed, no checkbox/inputs, with the reason (D-0015: hide nothing)
-  return `<div class="afx no"><div class="abullet"></div>`+
-    `<div class="atext">${E(a.text)}<span class="reason">${E(a.reason||'no trade filter matches this mod')}</span></div><div></div><div></div></div>`;
 }
-function pseudoRowHTML(p,j,prefill){
-  const pf = (prefill && prefill.pseudo && prefill.pseudo[j]) || null;
-  const dflt = bpc.affixPrefill(p);
-  const ticked = pf ? pf.ticked : true;
-  const minV = pf ? pf.min : dflt.min, maxV = pf ? pf.max : dflt.max;
-  return `<div class="afx pseudo-row" data-pi="${j}" data-sid="${E(p.stat_id)}">`+
-    `<label class="abullet"><input type="checkbox" class="acb" ${ticked?'checked':''}><span class="dia"><span>✓</span></span></label>`+
-    `<div class="atext">${E(p.text)}</div>`+
-    `<input class="mm amin" value="${minV!=null?E(String(minV)):''}" inputmode="numeric" placeholder="any">`+
-    `<input class="mm amax" value="${maxV!=null?E(String(maxV)):''}" inputmode="numeric" placeholder="any"></div>`;
+function surveyPicks(){
+  const picks={ usePseudo:PKM.usePseudo, affix:{}, pseudo:{}, countMin:PKM.countMin };
+  Object.keys(PKM.tier.affix).forEach(i=>{ const mm=PKM.minmax.affix[i]||{}; picks.affix[i]={ tier:PKM.tier.affix[i], min:mm.min, max:mm.max }; });
+  Object.keys(PKM.tier.pseudo).forEach(j=>{ const mm=PKM.minmax.pseudo[j]||{}; picks.pseudo[j]={ tier:PKM.tier.pseudo[j], min:mm.min, max:mm.max }; });
+  return bpc.tierGroups(PKM.rare, picks);       // -> grouped picks (required=AND, nice=count) for buildRareQuery
 }
-function renderPicker(prefill){
-  const k=PK.key, it=itemByKey(k), rare=rareData(k); if(!it||!rare) return;
-  const oq=itemOrigQuery(it);
-  const links=bpc.queryLinks(oq);
+function groupPicks(){
+  const picks={ usePseudo:PKM.usePseudo, affix:{}, pseudo:{}, groups:PKM.groups.map(g=>({ type:g.type, min:(g.min===''||g.min==null)?null:g.min })) };
+  (PKM.rare.affixes||[]).forEach((a,i)=>{ const mm=PKM.minmax.affix[i]||{};
+    picks.affix[i]={ ticked:PKM.ticked.affix[i]!==false, min:mm.min!=null?mm.min:null, max:mm.max!=null?mm.max:null, group:PKM.assign.affix[i]!=null?PKM.assign.affix[i]:0 }; });
+  (PKM.rare.pseudo||[]).forEach((p,j)=>{ const mm=PKM.minmax.pseudo[j]||{};
+    picks.pseudo[j]={ ticked:PKM.ticked.pseudo[j]!==false, min:mm.min!=null?mm.min:null, max:mm.max!=null?mm.max:null, group:PKM.assign.pseudo[j]!=null?PKM.assign.pseudo[j]:0 }; });
+  return picks;
+}
+function currentPicks(){ return PKM.view==='groups' ? groupPicks() : surveyPicks(); }
+function pkBuildQuery(){ return bpc.buildRareQuery(PKM.rare, bpc.applyScope(PKM.rare, PKM.oq, PKM.scope), currentPicks()); }
+function enterGroups(){                          // derive editable groups from the current tiers
+  const gp=surveyPicks();
+  PKM.groups=gp.groups.map(g=>({ type:g.type, min:(g.min!=null? g.min : '') }));
+  PKM.assign={affix:{},pseudo:{}}; PKM.ticked={affix:{},pseudo:{}};
+  Object.keys(gp.affix).forEach(i=>{ const e=gp.affix[i]; PKM.assign.affix[i]=(e.group!=null?e.group:0); PKM.ticked.affix[i]=!!e.ticked; });
+  Object.keys(gp.pseudo).forEach(j=>{ const e=gp.pseudo[j]; PKM.assign.pseudo[j]=(e.group!=null?e.group:0); PKM.ticked.pseudo[j]=!!e.ticked; });
+  PKM.view='groups';
+}
+function pkRemoveGroup(gi){
+  if(!PKM.groups || PKM.groups.length<=1) return;
+  PKM.groups.splice(gi,1);
+  ['affix','pseudo'].forEach(kind=>{ Object.keys(PKM.assign[kind]).forEach(i=>{ let g=PKM.assign[kind][i];
+    if(g===gi) PKM.assign[kind][i]=0; else if(g>gi) PKM.assign[kind][i]=g-1; }); });
+}
+
+/* ---- header (scope selector) + footer (shared by both views) ---- */
+function scopeControlHTML(rare){
+  const s=(rare&&rare.scopes)||{};
+  if(!s.category && !s.base) return `<span class="scope-static">${E(rare.scope||'')}</span>`;
+  let opts='';
+  if(s.category) opts+=`<option value="category" ${PKM.scope==='category'?'selected':''}>Any ${E(s.category.label)}</option>`;
+  if(s.base)     opts+=`<option value="base" ${PKM.scope==='base'?'selected':''}>Exact base: ${E(s.base.type)}</option>`;
+  const why=(!s.category && s.base) ? `<span class="scope-why" title="This slot has no item-category trade filter, so the search uses the exact base type.">no item-category filter here — using the exact base</span>` : '';
+  return `<select class="stone-sel scope-sel" title="Search ANY item of this category (default), or the exact base type">${opts}</select>${why}`;
+}
+function pkHeader(step, links){
+  const linkChip = links ? ` <span class="plinks">${links}-link required</span>` : '';
+  return `<div class="ph"><span class="step">${E(step)}</span>${E(PKM.it.name)}`+
+    `<span class="scope">${scopeControlHTML(PKM.rare)}${linkChip}</span></div>`;
+}
+function pkFooter(inQueue,pos,remain,already){
+  let h=`<div class="pbtns">`;
+  if(inQueue && pos>0) h+=`<button class="stone-btn skip" data-pk="back" type="button">&larr; Back</button>`;
+  h+=`<button class="stone-btn search" data-pk="search" type="button">${already?'Re-search this item':'Search this item'}</button>`;
+  h+=`<button class="stone-btn skip" data-pk="skip" type="button">Skip${inQueue?" (don't price)":''}</button>`;
+  h+=`</div>`;
+  if(inQueue && remain>1) h+=`<div class="pbulk"><button class="stone-btn pa-skip small" data-pk="skipall" type="button">skip all (don't price)</button></div>`;
+  return h;
+}
+function renderPicker(){
+  if(!PKM) return;
+  const k=PKM.key, rare=PKM.rare, links=bpc.queryLinks(PKM.oq);
   const inQueue = PK.queue && PK.order.indexOf(k)>=0;
   const pos = inQueue ? PK.order.indexOf(k) : -1;
   const remain = inQueue ? PK.order.filter(x=>!PK.decided.has(x)).length : 0;
   const p=bpc.state.priced[k];
   const already = PK.decided.has(k) || !!(p && p.chaos && p.chaos.median!=null);
   const step = inQueue ? `Rare ${pos+1} of ${PK.order.length}` : 'edit affixes';
-  const linkChip = links ? ` <span class="plinks">${links}-link required</span>` : '';
-  let h=`<div class="ph"><span class="step">${E(step)}</span>${E(it.name)}<span class="scope">${E(rare.scope||'')}${linkChip}</span></div><div class="pbody">`;
-  h+=`<div class="phint">Tick the affixes a comparable item must have; set min/max (blank = any). Everything starts ticked — untick to loosen.</div>`;
-  // in-picker Autoscan (extension only): price every remaining queued rare with its default search
+  let h=pkHeader(step, links)+`<div class="pbody">`;
   if(inQueue && remain>1 && bpc.state.bridge.active)
-    h+=`<div class="pautoscan"><button class="stone-btn autoscan" data-pk="autoscan" type="button" title="Price all ${remain} remaining rares with their default all-affix search via the extension">&#9889; Autoscan (${remain})</button></div>`;
-  // resistance → pseudo-total fold (default ON when the item has resistances)
-  if(rare.pseudo && rare.pseudo.length)
-    h+=`<div class="pseudo-switch ${PK.usePseudo?'on':''}" data-pk="pseudo" role="button" tabindex="0" title="Search the item's TOTAL resistance instead of each individual resistance — how the trade site groups them"><span class="sw"></span> Combine resistances into a pseudo total</div>`;
-  h+=`<div class="afxlist"><div class="afx afxhead"><div></div><div></div><div class="mmhead">min</div><div class="mmhead">max</div></div>`;
-  (rare.affixes||[]).forEach((a,i)=>{ if(PK.usePseudo && a.resist && a.searchable) return; h+=affixRowHTML(a,i,prefill); });
-  if(PK.usePseudo) (rare.pseudo||[]).forEach((pp,j)=> h+=pseudoRowHTML(pp,j,prefill));
-  h+=`</div>`;
-  h+=`<div class="pbtns">`;
-  if(inQueue && pos>0) h+=`<button class="stone-btn skip" data-pk="back" type="button">&larr; Back</button>`;
-  h+=`<button class="stone-btn search" data-pk="search" type="button">${already?'Re-search this item':'Search this item'}</button>`;
-  h+=`<button class="stone-btn skip" data-pk="skip" type="button">Skip${inQueue?" (don't price)":''}</button>`;
-  h+=`</div>`;
-  if(inQueue && remain>1) h+=`<div class="pbulk"><button class="stone-btn pa-skip small" data-pk="skipall" type="button">skip all (don't price)</button></div>`;
-  h+=`</div>`;
+    h+=`<div class="pautoscan"><button class="stone-btn autoscan" data-pk="autoscan" type="button" title="Price all ${remain} remaining rares with their default search via the extension">&#9889; Autoscan (${remain})</button></div>`;
+  h += (PKM.view==='groups') ? renderGroupsBody() : renderSurveyBody();
+  h += pkFooter(inQueue,pos,remain,already)+`</div>`;
   pick.innerHTML=h;
 }
-function readPicks(){
-  const picks={ usePseudo:PK.usePseudo, affix:{}, pseudo:{} };
-  pick.querySelectorAll('.afx[data-i]').forEach(row=>{
-    const i=+row.dataset.i, cb=row.querySelector('.acb');
-    const amin=row.querySelector('.amin'), amax=row.querySelector('.amax');
-    picks.affix[i]={ ticked: cb?cb.checked:false, min: amin?pkNum(amin.value):null, max: amax?pkNum(amax.value):null };
+
+/* ---- SURVEY view (default): a priority tier per mod; the query builds itself ---- */
+function rollText(a){
+  const shown=a.value!=null?Math.abs(a.value):null;
+  return shown!=null ? E(a.text).replace(String(shown),`<span class="roll">${E(String(shown))}</span>`) : E(a.text);
+}
+function svRowHTML(a,i,kind){
+  const isEquip=a.kind==='equip';
+  const tier=PKM.tier[kind][i]||'required', mm=PKM.minmax[kind][i]||{};
+  const tiers = isEquip ? [['required','Required'],['notneeded','Not needed']]
+                        : [['required','Required'],['nice','Nice to have'],['notneeded','Not needed']];
+  const sel=`<select class="svtier">`+tiers.map(([v,l])=>`<option value="${v}" ${tier===v?'selected':''}>${l}</option>`).join('')+`</select>`;
+  const note = isEquip ? ` <span class="range">(defence total)</span>` : '';
+  const minInp=`<input class="mm amin" value="${mm.min!=null?E(String(mm.min)):''}" inputmode="numeric" placeholder="any">`;
+  const maxInp= isEquip ? `<div class="mmx"></div>` : `<input class="mm amax" value="${mm.max!=null?E(String(mm.max)):''}" inputmode="numeric" placeholder="any">`;
+  return `<div class="svrow" data-i="${i}" data-kind="${kind}" data-tier="${E(tier)}"><div class="svtxt">${rollText(a)}${note}</div>${sel}${minInp}${maxInp}</div>`;
+}
+function svUnsearchHTML(a){
+  return `<div class="svrow no" data-tier="skip"><div class="svtxt">${E(a.text)}<span class="reason">${E(a.reason||'no trade filter matches this mod')}</span></div><div></div><div></div><div></div></div>`;
+}
+function renderSurveyBody(){
+  const rare=PKM.rare;
+  let h=`<div class="phint">Tag how much each mod matters — the search builds itself. <b>Required</b> mods are all demanded; <b>nice-to-have</b> go in one “match at least N” group; <b>not needed</b> are dropped. <button class="svlink" data-pk="togroups" type="button">edit groups →</button></div>`;
+  if(rare.pseudo && rare.pseudo.length)
+    h+=`<div class="pseudo-switch ${PKM.usePseudo?'on':''}" data-pk="pseudo" role="button" tabindex="0" title="Search the item's TOTAL resistance instead of each individual resistance — how the trade site groups them"><span class="sw"></span> Combine resistances into a pseudo total</div>`;
+  h+=`<div class="svlist"><div class="svrow svhead"><div></div><div class="svhh">priority</div><div class="mmhead">min</div><div class="mmhead">max</div></div>`;
+  let nice=0;
+  (rare.affixes||[]).forEach((a,i)=>{
+    if(PKM.usePseudo && a.resist && a.searchable) return;           // folded into the pseudo total
+    if(a.searchable && (a.stat_id || a.kind==='equip')){
+      if(a.kind!=='equip' && (PKM.tier.affix[i]||'required')==='nice') nice++;
+      h+=svRowHTML(a,i,'affix');
+    } else h+=svUnsearchHTML(a);
   });
-  pick.querySelectorAll('.afx[data-pi]').forEach(row=>{
-    const j=+row.dataset.pi, cb=row.querySelector('.acb');
-    const amin=row.querySelector('.amin'), amax=row.querySelector('.amax');
-    picks.pseudo[j]={ ticked: cb?cb.checked:false, min: amin?pkNum(amin.value):null, max: amax?pkNum(amax.value):null };
-  });
-  return picks;
+  if(PKM.usePseudo) (rare.pseudo||[]).forEach((p,j)=>{ if((PKM.tier.pseudo[j]||'required')==='nice') nice++; h+=svRowHTML(p,j,'pseudo'); });
+  h+=`</div>`;
+  if(nice>0){
+    const n = PKM.countMin!=null ? Math.max(1,Math.min(PKM.countMin,nice)) : nice;
+    h+=`<div class="countbar" title="How many of the nice-to-have mods a match must have. Default = all of them (strictest); lower it to loosen.">Nice-to-have: match at least <input class="countmin" type="number" min="1" max="${nice}" value="${n}"> of ${nice}</div>`;
+  }
+  return h;
+}
+
+/* ---- GROUPS editor ("edit groups" reveal): raw group composition ---- */
+function collectGroupRows(gi){
+  const out=[], rare=PKM.rare;
+  (rare.affixes||[]).forEach((a,i)=>{ if(a.kind!=='stat'||!a.searchable||!a.stat_id) return; if(PKM.usePseudo&&a.resist) return;
+    if((PKM.assign.affix[i]!=null?PKM.assign.affix[i]:0)===gi) out.push({a:a,i:i,kind:'affix'}); });
+  if(PKM.usePseudo) (rare.pseudo||[]).forEach((p,j)=>{ if(!p.stat_id) return;
+    if((PKM.assign.pseudo[j]!=null?PKM.assign.pseudo[j]:0)===gi) out.push({a:p,i:j,kind:'pseudo'}); });
+  return out;
+}
+function grpAffixRowHTML(a,i,kind,gi,isEquip){
+  const mm=PKM.minmax[kind][i]||{}, ticked=PKM.ticked[kind][i]!==false;
+  const move = isEquip ? '' : `<select class="grpmove" title="move this mod to another group">`+PKM.groups.map((g,x)=>`<option value="${x}" ${x===gi?'selected':''}>Grp ${x+1}</option>`).join('')+`</select>`;
+  const minInp=`<input class="mm amin" value="${mm.min!=null?E(String(mm.min)):''}" inputmode="numeric" placeholder="any">`;
+  const maxInp= isEquip ? `<div class="mmx"></div>` : `<input class="mm amax" value="${mm.max!=null?E(String(mm.max)):''}" inputmode="numeric" placeholder="any">`;
+  return `<div class="afx r4" data-i="${i}" data-kind="${kind}">`+
+    `<label class="abullet"><input type="checkbox" class="acb" ${ticked?'checked':''}><span class="dia"><span>✓</span></span></label>`+
+    `<div class="atext">${rollText(a)}${move}</div>${minInp}${maxInp}<div></div></div>`;
+}
+function grpBoxHTML(g,gi){
+  const stats=collectGroupRows(gi), isCount=g.type==='count';
+  const thr = isCount ? `<span class="grpthr">≥ <input class="mm gmin" inputmode="numeric" value="${(g.min!=null&&g.min!=='')?E(String(g.min)):''}" placeholder="${stats.length}"> of ${stats.length}</span>` : '';
+  const typeSel=`<select class="stone-sel grptype">`+[['and','And (all)'],['count','Count (≥N)'],['not','Not (exclude)']].map(([v,l])=>`<option value="${v}" ${g.type===v?'selected':''}>${l}</option>`).join('')+`</select>`;
+  const rm = PKM.groups.length>1 ? `<button class="grprm" data-pk="rmgroup" data-gi="${gi}" type="button" title="remove group">✕</button>` : '';
+  let h=`<div class="grpbox" data-gi="${gi}"><div class="grphd"><span class="grptitle">Grp ${gi+1}</span>${typeSel}${thr}${rm}</div>`;
+  h+=`<div class="afx afxhead r4"><div></div><div></div><div class="mmhead">min</div><div class="mmhead">max</div><div></div></div>`;
+  if(!stats.length) h+=`<div class="grpempty">no mods here — move one in with its “Grp” menu</div>`;
+  stats.forEach(o=>{ h+=grpAffixRowHTML(o.a,o.i,o.kind,gi,false); });
+  return h+`</div>`;
+}
+function renderGroupsBody(){
+  const rare=PKM.rare;
+  let h=`<div class="phint">Raw group composition — change a group’s type (And / Count / Not) or its threshold, and move any mod between groups. <button class="svlink" data-pk="tosurvey" type="button">← back to tiers</button></div>`;
+  PKM.groups.forEach((g,gi)=>{ h+=grpBoxHTML(g,gi); });
+  h+=`<div class="paddgrp"><button class="stone-btn addgrp" data-pk="addgroup" type="button">+ add group</button></div>`;
+  const equips=(rare.affixes||[]).map((a,i)=>({a:a,i:i})).filter(o=>o.a.kind==='equip' && o.a.searchable);
+  if(equips.length){
+    h+=`<div class="grpbox eqbox"><div class="grphd"><span class="grptitle">Defence totals</span></div>`+
+       `<div class="afx afxhead r4"><div></div><div></div><div class="mmhead">min</div><div class="mmhead">max</div><div></div></div>`;
+    equips.forEach(o=>{ h+=grpAffixRowHTML(o.a,o.i,'affix',-1,true); });
+    h+=`</div>`;
+  }
+  const uns=(rare.affixes||[]).filter(a=>!a.searchable);
+  if(uns.length){ h+=`<div class="unsrch"><div class="pdiv">not searchable</div>`;
+    uns.forEach(a=>{ h+=`<div class="afx no r4"><div></div><div class="atext">${E(a.text)}<span class="reason">${E(a.reason||'')}</span></div><div></div><div></div><div></div></div>`; });
+    h+=`</div>`; }
+  return h;
 }
 
 /* ---- picker actions ---- */
 function doPickerSearch(){
-  const k=PK.key, it=itemByKey(k), rare=rareData(k); if(!it||!rare) return;
-  const query=bpc.buildRareQuery(rare, itemOrigQuery(it), readPicks());
+  if(!PKM) return; pkSync();
+  const k=PKM.key, it=PKM.it, query=pkBuildQuery();
   PK.decided.add(String(k));
   if(bpc.state.bridge.active){
     bpc.priceRareCustom(k, query);                 // extension: fold price into the row + POST to cache
@@ -1759,22 +1919,37 @@ function doPickerAutoscan(){
   }
 }
 function doPickerSkipAll(){ PK.order.forEach(x=>PK.decided.add(x)); closePicker(); }
-function closePicker(){ pickwrap.classList.remove('show'); pick.innerHTML=''; PK.queue=false; PK.key=null; }
+function closePicker(){ pickwrap.classList.remove('show'); pick.innerHTML=''; PK.queue=false; PK.key=null; PKM=null; }
 
 /* ---- event wiring ---- */
 pick.addEventListener('click',e=>{
   const btn=e.target.closest('[data-pk]'); if(!btn) return;
   const act=btn.dataset.pk;
-  if(act==='pseudo'){ const cur=readPicks(); PK.usePseudo=!PK.usePseudo; renderPicker(cur); return; }
+  if(act==='pseudo'){ pkSync(); PKM.usePseudo=!PKM.usePseudo; renderPicker(); return; }   // survey only
+  if(act==='togroups'){ pkSync(); enterGroups(); renderPicker(); return; }
+  if(act==='tosurvey'){ pkSync(); PKM.view='survey'; renderPicker(); return; }
+  if(act==='addgroup'){ pkSync(); PKM.groups.push({type:'count',min:''}); renderPicker(); return; }
+  if(act==='rmgroup'){ pkSync(); pkRemoveGroup(+btn.dataset.gi); renderPicker(); return; }
   if(act==='search'){ doPickerSearch(); return; }
   if(act==='skip'){ doPickerSkip(); return; }
   if(act==='back'){ doPickerBack(); return; }
   if(act==='autoscan'){ doPickerAutoscan(); return; }
   if(act==='skipall'){ doPickerSkipAll(); return; }
 });
+pick.addEventListener('change',e=>{
+  const t=e.target; if(!t.classList) return;
+  // a tier / group-type / move change re-renders (count spinner + group boxes reflect it); the
+  // scope select is read at query-build time so it needs no re-render.
+  if(t.classList.contains('svtier')||t.classList.contains('grptype')||t.classList.contains('grpmove')){ pkSync(); renderPicker(); }
+});
+pick.addEventListener('focusin',e=>{     // groups editor: focusing a min/max ticks its row
+  if(PKM && PKM.view==='groups' && e.target.classList && (e.target.classList.contains('amin')||e.target.classList.contains('amax'))){
+    const row=e.target.closest('.afx[data-i]'), cb=row && row.querySelector('.acb'); if(cb && !cb.checked) cb.checked=true;
+  }
+});
 pick.addEventListener('keydown',e=>{
   if((e.key==='Enter'||e.key===' ') && e.target.closest && e.target.closest('.pseudo-switch')){
-    e.preventDefault(); const cur=readPicks(); PK.usePseudo=!PK.usePseudo; renderPicker(cur);
+    e.preventDefault(); pkSync(); PKM.usePseudo=!PKM.usePseudo; renderPicker();
   }
 });
 /* "edit affixes" on any rare row opens that one rare's picker (single-edit mode, not the queue) */
@@ -1921,7 +2096,7 @@ function manualRowHTML(r){
     const srcCls = p.source==='cache'?'cache':p.source==='trade'?'trade':'manual';
     const srcLbl = p.source==='cache'?'community':p.source==='trade'?'extension':'you';
     right = `<span class="mr-src ${srcCls}" title="${E(p.note||'')}">${srcLbl}</span>`+
-            `<span class="mr-price">${bpc.priceHTML(p.chaos.median)}</span>`+
+            `<span class="mr-price">${bpc.priceHTML(cardEx(p))}</span>`+   // D-0016 item 4: follows the min/median/high selector
             `<button class="stone-btn mr-edit" data-mk="${E(k)}" type="button" style="padding:5px 10px;font-size:12px">re-price</button>`+ affixBtn;
   } else {
     const openBtn = r.trade_url ? `<a class="stone-btn" href="${E(r.trade_url)}" target="_blank" rel="noopener" style="padding:6px 11px;font-size:13px">open search ↗</a>` : '';

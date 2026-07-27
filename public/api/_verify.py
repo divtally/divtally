@@ -59,6 +59,7 @@ def validate_contract(doc, *, source):
         check(f"totals.chaos.{k} present", k in t.get("chaos", {}))
     items = doc.get("items")
     check("items is list", isinstance(items, list) and len(items) > 0, f"n={len(items or [])}")
+    byidx = {str(it.get("index")): it for it in (items or [])}   # for the scope cross-checks
     for it in items or []:
         idx = it.get("index")
         for k in ("index", "name", "group", "category", "slot", "rarity", "price",
@@ -94,6 +95,30 @@ def validate_contract(doc, *, source):
             check(f"rares[{k}].{f} present", f in v)
         check(f"rares[{k}].kind valid", v.get("kind") in ("rare", "unique", "magic"),
               str(v.get("kind")))
+        # D-0016: rare/magic entries expose BOTH search scopes, and the DEFAULT trade_query is
+        # the generic category when the slot maps to one, else the exact base type. Uniques keep
+        # their name+type scope and carry no `scopes` payload (unchanged by D-0016).
+        if v.get("kind") in ("rare", "magic"):
+            sc = v.get("scopes")
+            check(f"rares[{k}] scopes present (rare/magic)",
+                  isinstance(sc, dict) and "category" in sc and "base" in sc, str(sc))
+            cat, base = (sc or {}).get("category"), (sc or {}).get("base")
+            q = ((byidx.get(k) or {}).get("trade_query") or {}).get("query") or {}
+            opt = ((((q.get("filters") or {}).get("type_filters") or {}).get("filters") or {})
+                   .get("category") or {}).get("option")
+            if cat:
+                check(f"rares[{k}] scopes.category has id+label",
+                      isinstance(cat, dict) and bool(cat.get("id")) and bool(cat.get("label")),
+                      str(cat))
+                check(f"rares[{k}] default query scoped to category (D-0016)",
+                      opt == cat.get("id"), f"query {opt!r} != {cat.get('id')!r}")
+            elif base:
+                check(f"rares[{k}] no-category default falls back to base type",
+                      q.get("type") == base.get("type") and not opt,
+                      f"type {q.get('type')!r} opt {opt!r}")
+        else:
+            check(f"rares[{k}] unique carries no scopes payload (D-0016 unchanged)",
+                  "scopes" not in v)
         for a in v.get("affixes") or []:
             # picker-ready affix payload: every entry self-describes for the client picker
             for f in ("kind", "text", "stat_id", "value", "default_min", "default_max",
@@ -153,6 +178,56 @@ def phase_a():
     slim = statmap.StatMapper(refdata.stats_data())
     check("slim stats _map == full _map", slim._map == full._map, f"slim={len(slim._map)} full={len(full._map)}")
     check("slim stats _groups == full _groups", slim._groups == full._groups)
+
+    # ---- D-0016: default rare/magic scope = item CATEGORY (source-of-truth + scope logic) ----
+    from _lib import querybuild as qb
+    from _lib.models import Item as _Item, CAT_RARE as _CAT_RARE
+    # (A) every category option id the query-builder can emit is a REAL trade category, and
+    # every `scopes` label matches the source filters' display text VERBATIM (no invented ids).
+    _filt = load("trade_data_filters.json")
+    _cat_src = {}
+    for _grp in _filt.get("result", []):
+        if _grp.get("id") == "type_filters":
+            for _f in _grp.get("filters", []):
+                if _f.get("id") == "category":
+                    for _o in _f.get("option", {}).get("options", []):
+                        if _o.get("id"):
+                            _cat_src[_o["id"]] = _o.get("text", "")
+    check("source filters carry the category options", len(_cat_src) > 20, str(len(_cat_src)))
+    _emitted = (set(qb._INVENTORY_CATEGORY.values())
+                | set(qb._WEAPON_SUFFIX_CATEGORY.values()) | {"armour.quiver"})
+    for _cid in sorted(_emitted):
+        check(f"category id {_cid!r} present in source filters", _cid in _cat_src, "invented id")
+    for _cid, _lbl in qb._CATEGORY_LABEL.items():
+        check(f"category label {_cid!r} matches source", _cat_src.get(_cid) == _lbl,
+              f"{_lbl!r} != {_cat_src.get(_cid)!r}")
+    # (B) scope selection: category default (+ weapon subcat), quiver correctness fix,
+    # ambiguous-weapon -> generic, exact-base alternative, and base fallback (no category).
+    _p = qb.PublicPricer("TestLeague", None, statmap.StatMapper(refdata.stats_data()),
+                         {"Opal Wand", "Thicket Bow", "Astral Plate", "Ornate Quiver"})
+
+    def _mk(base, inv):
+        return _Item(name="", base_type=base, type_line=base, frame_type=2, rarity="Rare",
+                     category=_CAT_RARE, group="equipment", slot=inv, raw={"inventoryId": inv})
+    _wsc = _p._rare_scopes(_mk("Opal Wand", "Weapon"))
+    check("scope[wand] default is category weapon.wand (D-0016)",
+          bool(_wsc) and _wsc[0][1] == "category"
+          and _wsc[0][0]["filters"]["type_filters"]["filters"]["category"]["option"] == "weapon.wand",
+          str(_wsc))
+    check("scope[wand] exact base is the alternative", _wsc[-1] == ({"type": "Opal Wand"}, "base"))
+    _wch = _p.scope_choices(_mk("Opal Wand", "Weapon"))
+    check("scope[wand] scopes payload has category+base",
+          _wch["category"] == {"id": "weapon.wand", "label": "Wand"}
+          and _wch["base"] == {"type": "Opal Wand", "label": "Opal Wand"}, str(_wch))
+    check("scope[quiver] Offhand quiver -> armour.quiver (not shield)",
+          _p._category_option(_mk("Ornate Quiver", "Offhand2")) == "armour.quiver")
+    check("scope[ambiguous weapon] stays generic 'weapon'",
+          _p._category_option(_mk("Vaal Blade", "Weapon")) == "weapon")
+    _osc = _p._rare_scopes(_mk("Astral Plate", ""))         # slot maps to no category
+    check("scope[no-category] default falls back to exact base",
+          bool(_osc) and _osc[0] == ({"type": "Astral Plate"}, "base"), str(_osc))
+    check("scope[no-category] scopes.category is null",
+          _p.scope_choices(_mk("Astral Plate", ""))["category"] is None)
 
     econ = poeninja.PoeNinjaEconomy("TestLeague")
     econ._uniques = {

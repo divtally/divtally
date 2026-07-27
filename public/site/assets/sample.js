@@ -210,7 +210,7 @@ window.BPC_SAMPLE = {
         { name: "Herald of Agony", support: false, granted: true, level: 30, quality: 0, corrupted: false, chaos: null, variant: "", note: "granted by Lost Unity - not counted", trade_url: _TU } ] }
   },
   rares: {
-    "1": { status: "priced", name: "Rift Shroud", scope: "base: Vaal Regalia", kind: "rare", scope_q: { type: "Vaal Regalia" }, affixes: [
+    "1": { status: "priced", name: "Rift Shroud", scope: "category: Body Armour", kind: "rare", scope_q: { filters: { type_filters: { filters: { category: { option: "armour.chest" } } } } }, scopes: { category: { id: "armour.chest", label: "Body Armour" }, base: { type: "Vaal Regalia", label: "Vaal Regalia" } }, affixes: [
         { kind: "stat", text: "+112 to maximum Life",    stat_id: "explicit.stat_3299347043", value: 112, default_min: 112, default_max: null, searchable: true, resist: false, negated: false, group: "explicit", prefer: true, priority: "required", reason: "" },
         { kind: "stat", text: "+41% to Fire Resistance", stat_id: "explicit.stat_3372524247", value: 41,  default_min: 41,  default_max: null, searchable: true, resist: true,  negated: false, group: "explicit", prefer: true, priority: "required", reason: "" },
         { kind: "stat", text: "+38% to Cold Resistance", stat_id: "explicit.stat_4220027924", value: 38,  default_min: 38,  default_max: null, searchable: true, resist: true,  negated: false, group: "explicit", prefer: true, priority: "required", reason: "" },
@@ -219,32 +219,32 @@ window.BPC_SAMPLE = {
         { kind: "stat", text: "+79% total Elemental Resistance", stat_id: "pseudo.pseudo_total_elemental_resistance", value: 79, default_min: 79, default_max: null, searchable: true, resist: true, negated: false, group: "pseudo", prefer: true, priority: "required", reason: "",
           folds: [ { index: 1, text: "+41% to Fire Resistance", stat_id: "explicit.stat_3372524247", value: 41 }, { index: 2, text: "+38% to Cold Resistance", stat_id: "explicit.stat_4220027924", value: 38 } ] }
       ] },
-    "2": { status: "priced", name: "Gauntlets of Malice", scope: "base: Sorcerer Gloves", kind: "rare", scope_q: { type: "Sorcerer Gloves" }, affixes: [
+    "2": { status: "priced", name: "Gauntlets of Malice", scope: "category: Gloves", kind: "rare", scope_q: { filters: { type_filters: { filters: { category: { option: "armour.gloves" } } } } }, scopes: { category: { id: "armour.gloves", label: "Gloves" }, base: { type: "Sorcerer Gloves", label: "Sorcerer Gloves" } }, affixes: [
         { kind: "stat", text: "24% increased Attack Speed",           stat_id: "explicit.stat_210067635",  value: 24, searchable: true, resist: false, reason: "" },
         { kind: "stat", text: "Adds 12 to 30 Fire Damage to Attacks", stat_id: "explicit.stat_1573130764", value: 12, searchable: true, resist: false, reason: "" },
         { kind: "stat", text: "+72 to maximum Life",                  stat_id: "explicit.stat_3299347043", value: 72, searchable: true, resist: false, reason: "" }
       ], pseudo: [] },
-    "5": { status: "priced", name: "Empyrean Idol", scope: "base: Amber Amulet", kind: "rare", scope_q: { type: "Amber Amulet" }, affixes: [
+    "5": { status: "priced", name: "Empyrean Idol", scope: "category: Amulet", kind: "rare", scope_q: { filters: { type_filters: { filters: { category: { option: "accessory.amulet" } } } } }, scopes: { category: { id: "accessory.amulet", label: "Amulet" }, base: { type: "Amber Amulet", label: "Amber Amulet" } }, affixes: [
         { kind: "stat", text: "+58 to maximum Life",     stat_id: "explicit.stat_3299347043", value: 58, searchable: true, resist: false, reason: "" },
         { kind: "stat", text: "+35% to Fire Resistance", stat_id: "explicit.stat_3372524247", value: 35, searchable: true, resist: true,  reason: "" },
         { kind: "stat", text: "24% increased Fire Damage", stat_id: "explicit.stat_3962278098", value: 24, searchable: true, resist: false, reason: "" }
       ], pseudo: [] },
-    "7": { status: "priced", name: "Brood Grasp", scope: "base: Vermillion Ring", kind: "rare", scope_q: { type: "Vermillion Ring" }, affixes: [
+    "7": { status: "priced", name: "Brood Grasp", scope: "category: Ring", kind: "rare", scope_q: { filters: { type_filters: { filters: { category: { option: "accessory.ring" } } } } }, scopes: { category: { id: "accessory.ring", label: "Ring" }, base: { type: "Vermillion Ring", label: "Vermillion Ring" } }, affixes: [
         { kind: "stat", text: "+33% to Cold Resistance", stat_id: "explicit.stat_4220027924", value: 33, searchable: true, resist: true,  reason: "" },
         { kind: "stat", text: "+58 to maximum Life",     stat_id: "explicit.stat_3299347043", value: 58, searchable: true, resist: false, reason: "" }
       ], pseudo: [] },
-    "9": { status: "priced", name: "Corpse Ward", scope: "base: Titanium Spirit Shield", kind: "rare", scope_q: { type: "Titanium Spirit Shield" }, affixes: [
+    "9": { status: "priced", name: "Corpse Ward", scope: "category: Shield", kind: "rare", scope_q: { filters: { type_filters: { filters: { category: { option: "armour.shield" } } } } }, scopes: { category: { id: "armour.shield", label: "Shield" }, base: { type: "Titanium Spirit Shield", label: "Titanium Spirit Shield" } }, affixes: [
         { kind: "stat",  text: "+84 to maximum Life",     stat_id: "explicit.stat_3299347043", value: 84, searchable: true, resist: false, reason: "" },
         { kind: "stat",  text: "+45% to Fire Resistance", stat_id: "explicit.stat_3372524247", value: 45, searchable: true, resist: true,  reason: "" },
         { kind: "equip", key: "es", text: "Total Energy Shield", value: 320, searchable: true, resist: false, reason: "" }
       ], pseudo: [] },
-    "12": { status: "priced", name: "Hale Fettle", scope: "category: Jewel", kind: "rare", scope_q: {}, affixes: [
+    "12": { status: "priced", name: "Hale Fettle", scope: "category: Any Jewel", kind: "rare", scope_q: { filters: { type_filters: { filters: { category: { option: "jewel" } } } } }, scopes: { category: { id: "jewel", label: "Any Jewel" }, base: null }, affixes: [
         { kind: "stat", text: "12% increased maximum Life", stat_id: "explicit.stat_3299347043", value: 12, searchable: true, resist: false, reason: "" },
         { kind: "stat", text: "9% increased Cast Speed",    stat_id: "explicit.stat_2891184298", value: 9,  searchable: true, resist: false, reason: "" }
       ], pseudo: [] },
     // UNPRICED rare (priced["15"] found no listing) — the pick-affixes queue presents this one; it
     // shows two searchable enchants + two greyed unsearchable "Added Passive Skill is …" notables.
-    "15": { status: "unpriced", name: "Blazing Fettle (Large Cluster Jewel)", scope: "base: Large Cluster Jewel", kind: "rare", scope_q: { type: "Large Cluster Jewel" }, affixes: [
+    "15": { status: "unpriced", name: "Blazing Fettle (Large Cluster Jewel)", scope: "category: Any Jewel", kind: "rare", scope_q: { filters: { type_filters: { filters: { category: { option: "jewel" } } } } }, scopes: { category: { id: "jewel", label: "Any Jewel" }, base: { type: "Large Cluster Jewel", label: "Large Cluster Jewel" } }, affixes: [
         { kind: "stat", text: "Added Small Passive Skills grant: 12% increased Fire Damage", stat_id: "enchant.stat_2894704558", value: 12, default_min: 12, default_max: null, searchable: true, resist: false, negated: false, group: "enchant", prefer: true, priority: "nice", reason: "" },
         { kind: "stat", text: "1 Added Passive Skill is Blowback",     stat_id: null, value: null, default_min: null, default_max: null, searchable: false, resist: false, negated: false, group: "explicit", prefer: false, priority: "notimp", reason: "no trade filter matches this mod" },
         { kind: "stat", text: "1 Added Passive Skill is Fan the Flames", stat_id: null, value: null, default_min: null, default_max: null, searchable: false, resist: false, negated: false, group: "explicit", prefer: false, priority: "notimp", reason: "no trade filter matches this mod" },
