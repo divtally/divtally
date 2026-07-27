@@ -1,4 +1,4 @@
-/* DivTally - Trade Bridge : content script.
+/* DivTally browser extension : content script.
  *
  * Injected into the public/staging site (and the local dev site). It bridges the PAGE
  * (which can only use window.postMessage) and the extension SERVICE WORKER (which can only

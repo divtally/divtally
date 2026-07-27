@@ -18,7 +18,7 @@ way it is; do not "optimize" a server-side trade call back in.
 | Static site (stash skin, public mode) | `public/site/` | Cloudflare Pages | free |
 | Serverless pricing function (poe.ninja only) | `public/api/` | Vercel Hobby | free* |
 | Community price-cache Worker + KV | `public/worker/` | Cloudflare Workers | free |
-| Trade Bridge extension (2 store zips prebuilt) | `extension/` → `public/dist/*.zip` | Chrome / Edge / Firefox stores | **$5 Chrome one-time**, Edge & Firefox free |
+| DivTally browser extension (2 store zips prebuilt) | `extension/` → `public/dist/*.zip` | Chrome / Edge / Firefox stores | **$5 Chrome one-time**, Edge & Firefox free |
 | Owner-PC cache seeder | `tools/seed_cache.py` | Windows Task Scheduler | free |
 
 \* Vercel **Hobby is non-commercial only**. If this tool is ever monetized/work-related, move the
@@ -84,8 +84,8 @@ artifacts:
 python public\dist\build_zips.py
 ```
 It reads the version from `manifest.json`, copies every source file verbatim, and writes:
-- `public\dist\trade-bridge-chrome-edge-1.0.0.zip`  (Chrome **and** Edge)
-- `public\dist\trade-bridge-firefox-1.0.0.zip`      (Firefox AMO)
+- `public\dist\divtally-extension-chrome-edge-1.1.0.zip`  (Chrome **and** Edge)
+- `public\dist\divtally-extension-firefox-1.1.0.zip`      (Firefox AMO)
 
 If the manifest's content-script domain is ever reverted to a bare placeholder, the script
 **REFUSES**: it names the outputs `..._INVALID_PLACEHOLDER.zip` and exits non-zero, so a hurried
@@ -94,7 +94,7 @@ excluded from the zips by design.
 
 ## 1.3 Submit to the Chrome Web Store
 1. https://chrome.google.com/webstore/devconsole → **Add new item**.
-2. Upload `public\dist\trade-bridge-chrome-edge-1.0.0.zip`.
+2. Upload `public\dist\divtally-extension-chrome-edge-1.1.0.zip`.
 3. Fill the listing from `docs/store-listings.md` (all copy is pre-written):
    - **Title**, **Short summary**, **Full description** — paste verbatim.
    - Replace `<REPO-URL-PLACEHOLDER>` (your repo). The site URL is already `https://divtally.com` in the copy.
@@ -108,13 +108,13 @@ excluded from the zips by design.
 
 ## 1.4 Submit to Microsoft Edge Add-ons
 1. https://partner.microsoft.com/dashboard/microsoftedge → **Create new extension**.
-2. Upload the **same** `trade-bridge-chrome-edge-1.0.0.zip`.
+2. Upload the **same** `divtally-extension-chrome-edge-1.1.0.zip`.
 3. Reuse the identical listing copy, category (**Productivity**), permission justifications, and
    privacy answers from `docs/store-listings.md`. Submit.
 
 ## 1.5 Submit to Firefox AMO
 1. https://addons.mozilla.org/developers/addon/submit/ → choose **On this site** (listed).
-2. Upload `public\dist\trade-bridge-firefox-1.0.0.zip` (this one carries the `gecko.id` +
+2. Upload `public\dist\divtally-extension-firefox-1.1.0.zip` (this one carries the `gecko.id` +
    `background.scripts` fallback the Firefox zip build adds).
 3. Category **Other** (tags: `path-of-exile`, `poe`, `trade`); paste the same description +
    privacy statement. Submit.

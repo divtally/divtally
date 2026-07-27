@@ -66,7 +66,7 @@
 <body>
 <div class="stage">
   <div class="topnav">
-    <span class="brandmark">DivTally</span>
+    <a class="brandmark" href="/" style="text-decoration:none;color:var(--bz3)">DivTally</a>
     <span class="navspace"></span>
     <a href="/">&larr; Back to DivTally</a>
   </div>
@@ -75,11 +75,20 @@
   <p class="lede">Paste a build, see what it costs. Here is exactly what happens, which servers are involved, and what is stored &mdash; in plain words.</p>
 
   <div class="callout hard">
-    <span class="k">The one rule</span>
-    <b>DivTally never talks to the Path&nbsp;of&nbsp;Exile trade site.</b> The page you are on, the pricing function, and the shared
-    cache <span class="no">never</span> call <code>pathofexile.com</code> &mdash; not the trade search, not any of its data endpoints.
-    Trade prices for rares are produced only on <b>real player machines</b> (you, or a volunteer's PC), never by a server pretending to be one.
-    That single rule is the reason the whole thing is built the way it is.
+    <span class="k">How to use it</span>
+    <ul style="margin:8px 0 0 18px; padding:0; display:grid; gap:6px;">
+      <li>Paste build link or import code &rarr; <b>Estimate</b>. Gems, uniques, currency priced instantly.</li>
+      <li>Rares start unpriced &mdash; total is a floor. Header counts what's left.</li>
+      <li>Fastest path: install the <b>DivTally browser extension</b> &rarr; rares price automatically from your own connection, live status per item. Auto-scan toggle on = every build you load scans itself.</li>
+      <li>No extension: <b>open search</b> on a rare &rarr; official trade site, pre-filtered &rarr; copy any listing's whisper &rarr; paste in the row. Or type <code>35c</code> / <code>2 div</code>. Total updates instantly.</li>
+      <li>Popular builds: rares may arrive pre-priced from the community cache &mdash; marked <i>unverified</i>, dot instead of checkmark.</li>
+      <li>Untick any item &rarr; excluded from totals ("what's it cost without the chase ring").</li>
+      <li><b>MIN / MEDIAN / HIGH</b> top-right = budget tiers. Chaos totals, divines alongside.</li>
+      <li><b>pob import</b> = copy the build's import code. <b>Search all again</b> = re-price everything fresh.</li>
+      <li>Can't price it honestly &rarr; trade link and no number, never a made-up one.</li>
+      <li>Prices are a snapshot; they move.</li>
+    </ul>
+    <p style="margin:10px 0 0;">Rares price on <b>your machine</b>, never on a server &mdash; full story below.</p>
   </div>
 
   <h2>Where every number comes from</h2>
@@ -91,7 +100,7 @@
   <ul class="src-list">
     <li><span class="rung">Free</span><div><b>The community cache.</b> If another visitor (or a volunteer's daily seeding run) already priced this exact item recently, its price is filled in for you automatically. Short-lived (24&nbsp;hours) and always exact-match. You can turn this off below.</div></li>
     <li><span class="rung">Rung&nbsp;1</span><div><b>You paste a price.</b> Click <b>open search</b> on a rare, find a comparable listing on the trade site, copy its buyout (the whisper), and paste it back here. Type <code>35c</code> or <code>2&nbsp;div</code> if you already know. It folds into your total and is remembered on your device for that build.</div></li>
-    <li><span class="rung">Rung&nbsp;2</span><div><b>The browser extension</b> (optional). It runs those same trade searches from <b>your</b> browser and IP &mdash; logged out &mdash; and fills the cheapest buyout in automatically. Nothing on our side ever touches the trade API.</div></li>
+    <li><span class="rung">Rung&nbsp;2</span><div><b>The DivTally browser extension</b> (optional). It runs those same trade searches from <b>your</b> browser and IP &mdash; logged out &mdash; and fills the cheapest buyout in automatically. Nothing on our side ever touches the trade API.</div></li>
     <li><span class="rung opt">Rung&nbsp;0</span><div><b>Run it locally.</b> The whole thing is open source; you can run the desktop/CLI version on your own machine if you'd rather not use the website at all.</div></li>
   </ul>
   <div class="callout">

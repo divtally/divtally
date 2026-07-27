@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Build the UNMINIFIED store-submission zips for the Trade Bridge extension.
+"""Build the UNMINIFIED store-submission zips for the DivTally browser extension.
 
 One command -> two artifacts in this folder:
-  trade-bridge-chrome-edge-<version>.zip   (Chrome Web Store + Edge Add-ons)
-  trade-bridge-firefox-<version>.zip       (Firefox AMO)
+  divtally-extension-chrome-edge-<version>.zip   (Chrome Web Store + Edge Add-ons)
+  divtally-extension-firefox-<version>.zip       (Firefox AMO)
 
 Source of truth is extension/manifest.json (the clean store manifest: narrowed
 host_permissions, placeholder site match, v<version>). This script copies the
@@ -93,8 +93,8 @@ def main():
         print("       Building CLEARLY-MARKED zips you must NOT submit:\n")
 
     targets = [
-        ("trade-bridge-chrome-edge-%s%s.zip" % (version, suffix), chrome_manifest(base)),
-        ("trade-bridge-firefox-%s%s.zip" % (version, suffix), firefox_manifest(base)),
+        ("divtally-extension-chrome-edge-%s%s.zip" % (version, suffix), chrome_manifest(base)),
+        ("divtally-extension-firefox-%s%s.zip" % (version, suffix), firefox_manifest(base)),
     ]
     for name, mani in targets:
         out = os.path.join(HERE, name)

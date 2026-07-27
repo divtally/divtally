@@ -55,6 +55,11 @@ disjoint files to avoid conflicts; subagents never spawn their own subagents.
   pathofexile.com trade *search/fetch/exchange* endpoints (violations cause temporary IP bans).
   Static reference data (`/api/trade/data/*`) and poe.ninja endpoints are cheap but still cached
   and fetched politely.
+- **STALL WATCHDOG (owner rule 2026-07-27):** never let a subagent go stale for more than 10
+  minutes. Every background agent/workflow run gets an active Monitor (transcript-activity check,
+  alert at <=600s of silence). On alert: read the transcript tail; if stuck, kill and
+  relaunch/resume (workflows: `resumeFromRunId` replays the finished prefix from cache). Lost
+  build time from silently-stuck agents is the failure mode this prevents.
 
 ## RULE 5 - Surface owner decisions async; never block mid-work
 When a design/scope/priority decision is the owner's call, log it in `docs/open-questions.md`

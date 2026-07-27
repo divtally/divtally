@@ -1,4 +1,4 @@
-# DivTally — Trade Bridge (browser extension)
+# DivTally Browser Extension
 
 This extension prices **rares/uniques** for the public DivTally website by calling
 the official PoE1 trade API **from your own browser and IP**. That's the only safe way to do
@@ -101,7 +101,7 @@ public origin ever changes, edit them there and rebuild the store zips.
 
 ## Build the store zips
 `python public/dist/build_zips.py` produces two **unminified** artifacts in `public/dist/`:
-`trade-bridge-chrome-edge-1.1.0.zip` and `trade-bridge-firefox-1.1.0.zip`. It reads
+`divtally-extension-chrome-edge-1.1.0.zip` and `divtally-extension-firefox-1.1.0.zip`. It reads
 `manifest.json` (the version drives the filenames), copies every source file verbatim, and
 specialises only the manifest per target (Chrome: `service_worker` only; Firefox: adds the
 `background.scripts` fallback + keeps `gecko.id`). It excludes `manifest.dev.json` and

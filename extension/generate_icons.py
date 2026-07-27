@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the Trade Bridge extension icons (16/32/48/128 px PNG).
+"""Generate the DivTally browser extension icons (16/32/48/128 px PNG).
 
 Design: a "stash-bronze" currency coin on a dark stash-tab tile, bearing a
 bold "1" (PoE *1* -- also distinguishes this from the PoE2 sibling and

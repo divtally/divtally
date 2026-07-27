@@ -1,4 +1,4 @@
-/* DivTally - Trade Bridge : background service worker.
+/* DivTally browser extension : background service worker.
  *
  * Performs the official trade search+fetch on the USER'S machine/IP (extensions with
  * host_permissions are exempt from page CORS), so the public website never proxies trade

@@ -849,9 +849,9 @@
 
   <!-- ===== top nav + live-pricing bridge badge ===== -->
   <div class="topnav">
-    <span class="brandmark">DivTally</span>
+    <a class="brandmark" href="/" style="text-decoration:none;color:var(--bz3)">DivTally</a>
     <span class="navspace"></span>
-    <span class="bridge-badge" id="bridgeBadge" title="Install the Trade Bridge extension to price rares hands-free from your own IP."><span class="dot"></span><span id="bridgeText">no extension</span></span>
+    <span class="bridge-badge" id="bridgeBadge" title="Install the DivTally browser extension to price rares hands-free from your own IP."><span class="dot"></span><span id="bridgeText">no extension</span></span>
     <a class="navlink" href="/how-it-works.html">How it works</a>
   </div>
 
@@ -932,8 +932,8 @@
         <span class="mh-title">Rares to price</span>
         <span class="mh-sub" id="manualSub"></span>
         <span class="mh-space"></span>
-        <label class="chk auto-auto" id="autoAutoWrap" hidden title="When the Trade Bridge is active, price a freshly-loaded build's rares automatically (once per build) — no button press."><input type="checkbox" id="autoAuto"> auto-scan on load</label>
-        <button class="stone-btn autoscan" id="autoscanBtn" type="button" hidden title="Price every rare below hands-free via the Trade Bridge extension (runs on your own IP)">&#9889; Autoscan</button>
+        <label class="chk auto-auto" id="autoAutoWrap" hidden title="When the DivTally browser extension is active, price a freshly-loaded build's rares automatically (once per build) — no button press."><input type="checkbox" id="autoAuto"> auto-scan on load</label>
+        <button class="stone-btn autoscan" id="autoscanBtn" type="button" hidden title="Price every rare below hands-free via the DivTally browser extension (runs on your own IP)">&#9889; Autoscan</button>
       </div>
       <div class="manual-body">
         <div class="manual-actions" id="manualIntro"></div>
@@ -949,7 +949,7 @@
         <span class="uh-title">Price rares hands-free</span>
         <span class="uh-tag">optional</span>
       </div>
-      <p class="uh-lead">The Trade Bridge browser extension prices your rares automatically &mdash; it runs the same trade searches from <b>your</b> browser and IP, so nothing here ever has to talk to the trade site. The site is fully usable without it; this just saves you the copy-paste.</p>
+      <p class="uh-lead">The DivTally browser extension prices your rares automatically &mdash; it runs the same trade searches from <b>your</b> browser and IP, so nothing here ever has to talk to the trade site. The site is fully usable without it; this just saves you the copy-paste.</p>
       <div class="cols">
         <div class="does">
           <h5>What it does</h5>
@@ -1594,7 +1594,7 @@ function cardTradeUrl(k){ const p=bpc.state.priced[String(k)]; return (p && p.tr
 /* ---------- the extension bridge badge + calm upgrade card ---------- */
 bpc.on('bridge',b=>{
   const badge=$('#bridgeBadge'), txt=$('#bridgeText');
-  if(b.active){ badge.classList.add('on'); txt.textContent='bridge active'+(b.version?(' · v'+b.version):''); badge.title='Trade Bridge extension detected — rares can be priced hands-free from your own IP.'; }
+  if(b.active){ badge.classList.add('on'); txt.textContent='extension active'+(b.version?(' · v'+b.version):''); badge.title='DivTally browser extension detected — rares can be priced hands-free from your own IP.'; }
   else { badge.classList.remove('on'); txt.textContent='no extension'; }
   renderManual();          // autoscan / per-row auto buttons + upgrade card + auto-scan-on-load depend on this
 });
