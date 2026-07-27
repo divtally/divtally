@@ -1,18 +1,36 @@
 {
   "manifest_version": 3,
   "name": "DivTally Browser Extension (DEV)",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "DEV/LOCAL build of the DivTally browser extension. Adds localhost + staging content-script matches for testing the page<->extension protocol against the local app (http://127.0.0.1:8765/v/_exttest) and staging deploys. DO NOT SUBMIT THIS MANIFEST TO A STORE - use manifest.json (via public/dist/build_zips.py) for submission.",
-  "permissions": ["storage"],
-  "host_permissions": ["https://www.pathofexile.com/api/trade/*"],
-  "browser_specific_settings": { "gecko": { "id": "extension@divtally.com" } },
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://www.pathofexile.com/api/trade/*"
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "extension@divtally.com",
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ]
+      }
+    }
+  },
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "background": { "service_worker": "background.js", "scripts": ["background.js"] },
+  "background": {
+    "service_worker": "background.js",
+    "scripts": [
+      "background.js"
+    ]
+  },
   "action": {
     "default_popup": "popup.html",
     "default_title": "DivTally (DEV)",
@@ -33,7 +51,9 @@
         "https://divtally.com/*",
         "https://www.divtally.com/*"
       ],
-      "js": ["content.js"],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_start"
     }
   ]

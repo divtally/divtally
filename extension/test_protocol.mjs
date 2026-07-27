@@ -122,8 +122,10 @@ async function scenarioA() {
   check("nobuyout detail {total,fetched,nulls}", nb && nb.msg.detail.total === 5 && nb.msg.detail.fetched === 3 && nb.msg.detail.nulls === 3, nb && nb.msg.detail);
   check("result k1 priced (12 chaos, listingId S1)", results[0].key === "k1" && results[0].amount === 12 && results[0].currency === "chaos" && results[0].total === 5 && results[0].listingId === "S1", results[0]);
   check("result k1 debug {200,200,1,0}", debugEq(results[0].debug, { searchStatus: 200, fetchStatus: 200, fetched: 1, nulls: 0 }), results[0].debug);
+  check("result k1 prices == [{12,chaos}] (whole price picture)", JSON.stringify(results[0].prices) === JSON.stringify([{ amount: 12, currency: "chaos" }]), results[0].prices);
   check("result k2 nobuyout (amount null, listingId S2)", results[1].key === "k2" && results[1].amount === null && results[1].currency === null && results[1].total === 5 && results[1].listingId === "S2", results[1]);
   check("result k2 debug {200,200,3,3}", debugEq(results[1].debug, { searchStatus: 200, fetchStatus: 200, fetched: 3, nulls: 3 }), results[1].debug);
+  check("result k2 prices == [] (no buyouts -> empty, never dropped)", Array.isArray(results[1].prices) && results[1].prices.length === 0, results[1].prices);
 }
 
 async function scenarioB() {
@@ -209,6 +211,29 @@ async function scenarioD() {
   }
 }
 
+async function scenarioE() {
+  console.log("Scenario E: prices[] captures the whole fetched price picture (order + null skip)");
+  const { chrome } = makeChrome();
+  const plan = {
+    search: () => ({ status: 200, json: { id: "SE", total: 42, result: ["a", "b", "c", "d"] } }),
+    fetch: () => ({ status: 200, json: { result: [
+      { listing: { price: { amount: 3, currency: "chaos" } } },
+      { listing: { price: null } },                                   // null buyout -> skipped, counted
+      { listing: { price: { amount: 7, currency: "chaos" } } },
+      { listing: { price: { amount: 2, currency: "divine" } } },
+    ] } }),
+  };
+  const api = instantiate(chrome, planFetch(plan));
+  const results = await api.priceMany([{ key: "k", query: { q: 1 } }], "Settlers", { tabId: 5, reqId: "rE" });
+  const r = results[0];
+  check("E prices length 3 (null skipped, others kept)", Array.isArray(r.prices) && r.prices.length === 3, r.prices);
+  check("E prices in fetch order [{3,chaos},{7,chaos},{2,divine}]",
+    JSON.stringify(r.prices) === JSON.stringify([{ amount: 3, currency: "chaos" }, { amount: 7, currency: "chaos" }, { amount: 2, currency: "divine" }]), r.prices);
+  check("E cheapest fields = prices[0] (amount 3 chaos) unchanged", r.amount === 3 && r.currency === "chaos", { amount: r.amount, currency: r.currency });
+  check("E total preserved (42)", r.total === 42, r.total);
+  check("E debug {200,200,4,1}", debugEq(r.debug, { searchStatus: 200, fetchStatus: 200, fetched: 4, nulls: 1 }), r.debug);
+}
+
 function scenarioProto() {
   console.log("Scenario P: protoAtLeast() version comparison");
   const { chrome } = makeChrome();
@@ -228,6 +253,7 @@ async function main() {
   await scenarioB();
   await scenarioC();
   await scenarioD();
+  await scenarioE();
   scenarioProto();
   console.log("");
   if (failures) { console.log("RESULT: FAIL (" + failures + " check(s) failed)"); process.exit(1); }

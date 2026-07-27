@@ -186,21 +186,27 @@ async function priceQuery(query, league, emit, dbg) {
   const sres = await tradeRequest("search", "POST", sUrl, { query, sort: { price: "asc" } }, 0, emit, dbg);
   const ids = (sres.result || []).slice(0, 10);          // API caps fetch at 10 ids
   const total = (sres.total != null) ? sres.total : (sres.result ? sres.result.length : 0);
-  if (!ids.length) return { total: 0, amount: null, currency: null, listingId: sres.id || null };
+  if (!ids.length) return { total: 0, amount: null, currency: null, listingId: sres.id || null, prices: [] };
 
   const fUrl = BASE + "/fetch/" + ids.join(",") + "?query=" + encodeURIComponent(sres.id);
   if (emit) emit("fetching", {});
   const fres = await tradeRequest("fetch", "GET", fUrl, null, 0, emit, dbg);
   const listings = fres.result || [];
   if (dbg) dbg.fetched = listings.length;                // how many listings we actually pulled
+  // Capture EVERY fetched listing's buyout price in fetch order (the search sorts price-asc, so
+  // prices[0] is the cheapest). null-price listings are skipped but counted in dbg.nulls. This is
+  // the whole price picture the page needs to compute min/median/high tiers -- additive to the
+  // existing cheapest-listing fields (amount/currency), which stay exactly prices[0] as before.
+  const prices = [];
   for (const L of listings) {
     const pr = L && L.listing && L.listing.price;
-    if (pr && pr.amount != null) {
-      return { total, amount: pr.amount, currency: pr.currency, listingId: sres.id || null };
-    }
-    if (dbg) dbg.nulls++;                                 // this listing carried no buyout price
+    if (pr && pr.amount != null) prices.push({ amount: pr.amount, currency: pr.currency });
+    else if (dbg) dbg.nulls++;                            // this listing carried no buyout price
   }
-  return { total, amount: null, currency: null, listingId: sres.id || null };   // results exist but no buyout price
+  if (prices.length) {
+    return { total, amount: prices[0].amount, currency: prices[0].currency, listingId: sres.id || null, prices };
+  }
+  return { total, amount: null, currency: null, listingId: sres.id || null, prices };   // results exist but no buyout price
 }
 
 // ---- serialize all trade work (one call at a time -> rate limiter is exact) ---

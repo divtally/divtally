@@ -9,7 +9,7 @@ user's own per-IP rate budget. Ported 1:1 from the app's Python trade client
 limiter state **persisted** so an MV3 service-worker restart can't burst past GGG's cap.
 
 ## Files
-- `manifest.json` — **store** MV3 manifest (v1.1.0). Minimal by design: `storage` only,
+- `manifest.json` — **store** MV3 manifest (v1.2.0). Minimal by design: `storage` only,
   `host_permissions` = **exactly** `https://www.pathofexile.com/api/trade/*`, and the DivTally
   production content-script matches already baked in (`https://divtally.com/*`,
   `https://www.divtally.com/*`, `https://divtally.pages.dev/*`). No localhost, no wildcard hosts,
@@ -70,9 +70,18 @@ window.postMessage({ source:"bpc-page", type:"price", reqId, league,
 ```
 `query` is the trade **query** object (status/type/name/stats/filters) — exactly the inner
 object the site already builds for its clickable `?q=` links. The extension returns, per item,
-`{ key, amount, currency, total }` (cheapest online listing) or `{ key, error }` — each result
-also carries `debug: { searchStatus, fetchStatus, fetched, nulls }` (v1.1) so a failing row is
-self-describing.
+`{ key, amount, currency, total, prices }` (cheapest online listing) or `{ key, error }` — each
+result also carries `debug: { searchStatus, fetchStatus, fetched, nulls }` (v1.1) so a failing row
+is self-describing.
+
+`prices` (**v1.2.0, additive**) is the **whole fetched price picture**: every fetched listing's
+buyout price as `[{ amount, currency }, …]` in fetch order (the search sorts price-ascending, so
+`prices[0]` equals the existing `amount`/`currency` cheapest fields). Null-price listings are
+skipped (and counted in `debug.nulls`); a no-buyout item returns `prices: []`. The page uses this
+to compute min/median/high tiers with its own distribution math — nothing is hidden or dropped
+(D-0015). All pre-existing fields are unchanged, so an old site keeps working against a v1.2.0
+extension and a new site keeps working against an old (v1.1.0) extension (it just gets no
+`prices`).
 
 ### Live scan status (protocol v1.1, additive)
 When the page's `price` request carries `protocolVersion >= 1.1` (and comes from a tab, not the
@@ -101,7 +110,7 @@ public origin ever changes, edit them there and rebuild the store zips.
 
 ## Build the store zips
 `python public/dist/build_zips.py` produces two **unminified** artifacts in `public/dist/`:
-`divtally-extension-chrome-edge-1.1.0.zip` and `divtally-extension-firefox-1.1.0.zip`. It reads
+`divtally-extension-chrome-edge-1.2.0.zip` and `divtally-extension-firefox-1.2.0.zip`. It reads
 `manifest.json` (the version drives the filenames), copies every source file verbatim, and
 specialises only the manifest per target (Chrome: `service_worker` only; Firefox: adds the
 `background.scripts` fallback + keeps `gecko.id`). It excludes `manifest.dev.json` and
