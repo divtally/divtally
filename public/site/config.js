@@ -29,7 +29,7 @@ window.BPC_CONFIG = {
   STORE_URLS: {
     chrome:  "https://chromewebstore.google.com/detail/hcemnjhmgnobpolmjnjcnfclklamkgdk",  // live once Google approves
     edge:    "REPLACE_ME_EDGE_STORE_URL",    // Microsoft Edge Add-ons listing
-    firefox: "REPLACE_ME_FIREFOX_AMO_URL"    // Firefox AMO listing
+    firefox: "https://addons.mozilla.org/firefox/addon/divtally-browser-extension/"    // live once AMO publishes
   },
 
   REPO_URL: "https://github.com/divtally/divtally",           // e.g. https://github.com/you/buildpricechecker-poe1
