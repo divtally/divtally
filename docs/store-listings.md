@@ -121,6 +121,9 @@ This extension itself uploads nothing; it only returns results to the page.
   poe, trade, gaming).
 
 ## Screenshots checklist (1280×800 or 640×400; capture WITHOUT any account UI visible)
+**RULE (owner, 2026-07-27): screenshots and promo material NEVER show a real player's character
+or account name — always the fictional demo build (mock mode). Demo character name must be
+OBVIOUSLY fake (e.g. "Example Exile"), not merely plausible.**
 1. The DivTally site (stash skin) showing a full priced build with a rare/unique row
    live-priced by the bridge, and the "extension active" state visible.
 2. The extension popup tester after a successful price ("● active · v1.1.0", a chaos/divine
