@@ -143,26 +143,68 @@ class PoeNinjaClient:
             f"league slug {slug!r} is not in poe.ninja's current snapshots. "
             f"Known: {known}")
 
-    def fetch_character(self, slug: str, account: str, character: str) -> dict:
-        version, snapname, league = self.resolve_snapshot(slug)
-        url = f"https://poe.ninja/poe1/api/builds/{version}/character"
-        params = {"account": account, "name": character,
-                  "overview": snapname, "timeMachine": ""}
-        ckey = f"poeninja:char:{version}:{account}:{character}"
+    def _snapshot_candidates(self, slug: str):
+        """The snapshots to try for a character link, in order. Special overview slugs
+        ("streamers" etc. - website-only views whose character API 404s) fall back through
+        the REAL leagues' exp snapshots: a streamer's character lives in its home league."""
+        idx = self.index_state()
+        svs = idx.get("snapshotVersions", [])
+        leagues = idx.get("buildLeagues", [])
 
-        def producer():
-            d = self._get(url, params)
-            if not isinstance(d, dict) or "items" not in d:
-                raise PoeNinjaError(
-                    f"poe.ninja returned no item data for {account}/{character}. "
-                    "Double-check the link, or the character may be private/unindexed.")
-            d["_league"] = league
-            d["_cache_key"] = ckey
-            return d
-        data = cache.cached(ckey, 1800, producer)
-        data["_league"] = league
-        data["_cache_key"] = ckey
-        return data
+        def league_name(url):
+            return next((b.get("displayName") or b.get("name")
+                         for b in leagues if b.get("url") == url), url)
+
+        out = []
+        matches = [sv for sv in svs if sv.get("url") == slug]
+        primary = next((m for m in matches if m.get("type") == "exp"),
+                       matches[0] if matches else None)
+        if primary is not None and primary.get("version") and primary.get("snapshotName"):
+            out.append((primary["version"], primary["snapshotName"], league_name(slug)))
+        # fallbacks: every build league's exp snapshot, current-league order, no duplicates
+        seen = {(v, s) for v, s, _ in out}
+        for b in leagues:
+            sv = next((m for m in svs if m.get("url") == b.get("url")
+                       and m.get("type") == "exp"), None)
+            if sv and sv.get("version") and sv.get("snapshotName"):
+                key = (sv["version"], sv["snapshotName"])
+                if key not in seen:
+                    seen.add(key)
+                    out.append((sv["version"], sv["snapshotName"],
+                                b.get("displayName") or b.get("name") or b.get("url")))
+        if not out:
+            known = ", ".join(sorted({sv.get("url", "") for sv in svs}))
+            raise PoeNinjaError(
+                f"league slug {slug!r} is not in poe.ninja's current snapshots. Known: {known}")
+        return out
+
+    def fetch_character(self, slug: str, account: str, character: str) -> dict:
+        last_err = None
+        for version, snapname, league in self._snapshot_candidates(slug)[:8]:
+            url = f"https://poe.ninja/poe1/api/builds/{version}/character"
+            params = {"account": account, "name": character,
+                      "overview": snapname, "timeMachine": ""}
+            ckey = f"poeninja:char:{version}:{account}:{character}"
+
+            def producer():
+                d = self._get(url, params)
+                if not isinstance(d, dict) or "items" not in d:
+                    raise PoeNinjaError(
+                        f"poe.ninja returned no item data for {account}/{character}. "
+                        "Double-check the link, or the character may be private/unindexed.")
+                d["_league"] = league
+                d["_cache_key"] = ckey
+                return d
+            try:
+                data = cache.cached(ckey, 1800, producer)
+                data["_league"] = league
+                data["_cache_key"] = ckey
+                return data
+            except Exception as e:                      # 404 under this overview -> next league
+                last_err = e
+                continue
+        raise last_err if last_err else PoeNinjaError(
+            f"could not locate {account}/{character} in any current poe.ninja snapshot.")
 
 
 class PoeNinjaEconomy:
