@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/build.py": {
+      "maxDuration": 30,
+      "includeFiles": "api/_data/**"
+    },
+    "api/health.py": {
+      "maxDuration": 5,
+      "includeFiles": "api/_data/**"
+    }
+  }
+}

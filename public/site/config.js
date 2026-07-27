@@ -23,8 +23,8 @@
  * whisper, or the browser extension running on the visitor's own IP.
  * =========================================================================== */
 window.BPC_CONFIG = {
-  API_BASE:    "REPLACE_ME_API_BASE",      // e.g. https://divtally.vercel.app
-  WORKER_BASE: "REPLACE_ME_WORKER_BASE",   // e.g. https://divtally-price-cache.yoursub.workers.dev  ("" disables cache)
+  API_BASE:    "https://divtally.vercel.app",
+  WORKER_BASE: "https://divtally-cache.divtally.workers.dev",   // "" disables cache
 
   STORE_URLS: {
     chrome:  "REPLACE_ME_CHROME_STORE_URL",  // Chrome Web Store listing

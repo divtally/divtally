@@ -6,3 +6,5 @@ build/
 # script the store-linked repo must ship (B-001 "open source, readable in the repo"). The
 # extension zips it produces are build artifacts and are covered by *.zip below.
 *.zip
+.vercel/
+.env.local
