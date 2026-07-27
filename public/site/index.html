@@ -10,7 +10,7 @@
 <title>DivTally · Path of Exile build price checker</title>
 <!-- Fonts are self-hosted (assets/fonts/) so the browser contacts NO third party for them
      (B-001 trust promise / how-it-works "every server this site contacts"). -->
-<link rel="stylesheet" href="/assets/fonts.css">
+<link rel="stylesheet" href="/assets/fonts.css?v=20260727e">
 <style>
   :root{
     --base:#100c08; --panel:#1a140d; --panel2:#221a10; --inner:#0d0a06;
@@ -1077,8 +1077,8 @@
 <div id="pickwrap"><div class="pick" id="pick"></div></div>
 
 <script src="/config.js"></script>
-<script src="/assets/sample.js"></script>
-<script src="/assets/core.js"></script>
+<script src="/assets/sample.js?v=20260727e"></script>
+<script src="/assets/core.js?v=20260727e"></script>
 <script>
 "use strict";
 const $=s=>document.querySelector(s), E=bpc.esc;
@@ -1122,7 +1122,7 @@ $('#liststatus').addEventListener('change',e=>bpc.setControl('status',e.target.v
 $('#league').addEventListener('change',e=>bpc.setControl('league',e.target.value));
 $('#refresh').addEventListener('change',e=>bpc.setControl('refresh',e.target.checked));
 const swapCb=$('#swapInc');
-if(swapCb){ swapCb.checked=bpc.includeSwap();
+if(swapCb && bpc.setIncludeSwap){ swapCb.checked=bpc.includeSwap();
   swapCb.addEventListener('change',()=>bpc.setIncludeSwap(swapCb.checked));
   bpc.on('items',()=>{ swapCb.checked=bpc.includeSwap(); }); }
 
