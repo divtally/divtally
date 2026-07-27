@@ -76,7 +76,7 @@
     phase: "idle", source: null,
     meta: null, items: [], priced: {}, rares: {}, warnings: [],
     progress: "", error: null,
-    status: "online", league: "", refresh: false,
+    status: "available", league: "", refresh: false,
     tier: "min",
     enabled: {}, purchased: {}, leagues: [], recent: [],
     bridge: { active: false, version: null },
@@ -85,14 +85,14 @@
 
   // ---- prefs ----
   function loadPrefs() {
-    var s = lsget("bpc_status"); if (s && STATUS_LABEL[s]) state.status = s;
+    var s = lsget("bpc_status_v2"); if (s && STATUS_LABEL[s]) state.status = s;
     var l = lsget("bpc_league"); if (l !== null) state.league = l;
     else if (CFG.DEFAULT_LEAGUE) state.league = CFG.DEFAULT_LEAGUE;
     var ti = lsget("bpc_tier"); if (ti && TIER_LABEL[ti]) state.tier = ti;
   }
   function setControl(name, value, opts) {
     opts = opts || {};
-    if (name === "status") { state.status = value; lsset("bpc_status", value); }
+    if (name === "status") { state.status = value; lsset("bpc_status_v2", value); }
     else if (name === "league") { state.league = value; lsset("bpc_league", value); }
     else if (name === "refresh") { state.refresh = !!value; }
     else if (name === "tier") { state.tier = TIER_LABEL[value] ? value : "min"; lsset("bpc_tier", state.tier); }

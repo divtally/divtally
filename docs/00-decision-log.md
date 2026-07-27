@@ -205,6 +205,17 @@ is a technical transparency disclosure, not marketing; strip on owner request. P
 identity: repo-local user = DivTally <divtally@gmail.com>, full history rewritten to it
 pre-publish (personal email never ships in public metadata).
 
+## D-0017 - Default listing status = "Instant Buyout and In Person" (Locked, 2026-07-27)
+Owner: searches were relying on "In Person (Online)" but should default to "Instant Buyout and
+In Person" (status `available`), selectable up front before scanning. Live-verified 2026-07-27:
+same search returns 10,000 listings under `available` vs 1,292 under `online` - the old default
+was silently starving results (contributed to sparse/no-buyout rows). Changed: core.js state
+default, API handler + PublicPricer fallback -> `available`; stored pref migrated to a new key
+(`bpc_status_v2`) so existing visitors get the new default (deliberate one-time re-default);
+toolbar status dropdown options now prefixed "Listings:" so the choice is visible pre-scan.
+PoE1-2026 supports all five statuses (live-verified during the port; PoE2-era labels are real
+here).
+
 ## D-0016 - Picker upgrade batch (owner feedback, Locked, 2026-07-27)
 Owner's four asks after first picker test, tracked + tested between changes:
 1. **Scale up the picker** - bigger fonts, use screen real estate (esp. intro text + base line).

@@ -63,7 +63,7 @@ def _run(input_text: str, league: str, status: str):
                               "or a PoB paste link."}
     try:
         meta, results, pricer, trade_league = engine.run_estimate(
-            input_text, league=league or None, status=status or "online")
+            input_text, league=league or None, status=status or "available")
     except engine.EstimateError as e:
         return 400, {"ok": False, "error_type": "bad_input", "error": str(e)}
     except PoeNinjaError as e:

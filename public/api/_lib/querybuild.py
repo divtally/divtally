@@ -276,7 +276,7 @@ class PublicPricer:
         self.economy = economy                        # poeninja.PoeNinjaEconomy
         self.mapper = mapper                           # statmap.StatMapper (bundled stats)
         self._valid_types = valid_types or set()
-        self.status = status if status in self.STATUS_OPTIONS else "online"
+        self.status = status if status in self.STATUS_OPTIONS else "available"
 
     # ---- small helpers (ported; league is now a plain string) ------------
     def _status(self) -> dict:

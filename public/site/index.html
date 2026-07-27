@@ -1100,7 +1100,7 @@ const SHORT = {"Body Armour":"Body","Weapon":"Wpn","Off-hand":"Off-Hand",
 const catClass = c => ({unique:"r-unique",rare:"r-rare",magic:"r-magic",gem:"r-gem",normal:"r-normal"}[c]||"r-normal");
 
 /* ---------- controls ---------- */
-$('#liststatus').innerHTML = bpc.STATUS_ORDER.map(o=>`<option value="${o}">${E(bpc.STATUS_LABEL[o])}</option>`).join('');
+$('#liststatus').innerHTML = bpc.STATUS_ORDER.map(o=>`<option value="${o}">Listings: ${E(bpc.STATUS_LABEL[o])}</option>`).join('');
 // The public function can't call the trade `data/leagues` endpoint, so seed a small override
 // list (Auto = use the build's own league). The loaded build's league is added when it lands.
 const SEED_LEAGUES=['Standard','Hardcore'];
