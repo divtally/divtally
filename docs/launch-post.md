@@ -4,8 +4,8 @@ Community announcement for DivTally. The honest architecture explanation *is*
 the trust pitch — lead with it. Fill the `<PLACEHOLDER>`s (they mirror `config.js`), trim to fit
 each venue (forum / Reddit / Discord), and post. Same story as the `/how-it-works` page.
 
-The site is `https://divtally.com`. Remaining placeholders to fill:
-- `https://github.com/divtally/divtally` — your public, unminified source repo
+The site is `https://divtally.com`; the repo link (`https://github.com/divtally/divtally`) is
+filled. Remaining placeholders to fill:
 - `<CHROME-URL>` / `<EDGE-URL>` / `<FIREFOX-URL>` — store listings once approved
 
 ---
