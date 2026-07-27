@@ -62,6 +62,8 @@ def _item_row(i: int, r: PriceResult, div_rate: Optional[float]) -> dict:
     row = {"index": i, "name": it.display_name, "group": it.group,
            "category": it.category, "slot": it.slot, "rarity": it.rarity,
            "count": it.count, "icon": it.icon}
+    if it.raw.get("inventoryId") in ("Weapon2", "Offhand2"):
+        row["swap"] = True
     if int(getattr(it, "max_link", 0) or 0) > 0:
         row["max_link"] = it.max_link
         row["total_sockets"] = it.total_sockets
@@ -111,6 +113,25 @@ def _priced_ninja(r: PriceResult) -> bool:
         return False
     return any(isinstance(v, (int, float)) and math.isfinite(v)
                for v in (r.tier.minimum, r.tier.median, r.tier.high))
+
+
+_RATE_IDS = ("chaos", "divine", "exalted", "mirror", "alch", "alt", "aug", "chance",
+             "chrom", "fusing", "jew", "regal", "scour", "vaal", "gcp", "blessed",
+             "regret", "annul", "chisel")
+
+
+def _chaos_rates(conv) -> dict:
+    """Chaos value per unit for the common listing currencies (client-side conversion of
+    extension-fetched prices; D-0018). Missing/unpriceable ids are simply omitted."""
+    out = {}
+    for cid in _RATE_IDS:
+        try:
+            v = conv.rate(cid)
+        except Exception:
+            v = None
+        if v and v > 0:
+            out[cid] = round(float(v), 4)
+    return out
 
 
 def build_response(meta: BuildMeta, results: List[PriceResult], pricer: PublicPricer,
@@ -184,6 +205,7 @@ def build_response(meta: BuildMeta, results: List[PriceResult], pricer: PublicPr
             "cache_key": getattr(meta, "cache_key", "") or "",
             "currency_unit": "chaos",
             "divine_to_chaos": _finite(div_rate),
+            "rates": _chaos_rates(conv),
             "chaos_img": chaos_img, "divine_img": divine_img,
             "generated_at": int(time.time()),
             "pricing_note": ("Item prices are from the poe.ninja economy only (gems, "

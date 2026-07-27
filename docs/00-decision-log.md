@@ -205,6 +205,19 @@ is a technical transparency disclosure, not marketing; strip on owner request. P
 identity: repo-local user = DivTally <divtally@gmail.com>, full history rewritten to it
 pre-publish (personal email never ships in public metadata).
 
+## D-0018 - Scan pacing, currency rates map, weapon-swap exclusion (Locked, 2026-07-27)
+Three owner asks from live testing:
+- **Breathing room between searches** (ext v1.2.1): the limiter obeyed GGG's windows but
+  BURST to each cap then stalled. Now requests are paced evenly across the tightest window
+  (search ~3.3s apart, fetch ~0.5s) + jitter; same net throughput, no burst spikes, waits are
+  short and predictable. `last`-request timestamp persisted with the limiter state.
+- **Currency rates map**: extension results priced in non-chaos/divine currencies (e.g. "1 alch")
+  showed "no chaos rate to convert" and fell out of totals. API meta now carries `rates`
+  (chaos value per common currency id from the poe.ninja economy); the site converts any of them.
+- **Weapon-swap items excluded by default** (Weapon2/Offhand2 -> `swap: true` in the payload):
+  out of totals, scans, and the rares list unless the new "weapon swap" toggle in the equipment
+  header re-includes them (remembered). Saves scan budget too - most builds don't use swaps.
+
 ## D-0017 - Default listing status = "Instant Buyout and In Person" (Locked, 2026-07-27)
 Owner: searches were relying on "In Person (Online)" but should default to "Instant Buyout and
 In Person" (status `available`), selectable up front before scanning. Live-verified 2026-07-27:

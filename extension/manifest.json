@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "DivTally Browser Extension",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Prices Path of Exile rares & uniques for divtally.com from your own browser and IP - logged out, rate-limited, no data collected.",
   "permissions": [
     "storage"

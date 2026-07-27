@@ -113,8 +113,13 @@ async function scenarioA() {
   const ev = chrome.tabs.events;
   const gotSeq = ev.map((e) => e.msg.stage + ":" + e.msg.key);
   const wantSeq = ["queued:k1", "queued:k2", "searching:k1", "fetching:k1", "done:k1", "searching:k2", "fetching:k2", "nobuyout:k2"];
-  check("event sequence exact", JSON.stringify(gotSeq) === JSON.stringify(wantSeq), gotSeq);
-  check("no 'waiting' (fresh limiter, under caps)", ev.every((e) => e.msg.stage !== "waiting"));
+  // D-0018 pacing: 'waiting' beats may interleave anywhere (even under caps - even spacing is
+  // the point). Assert the sequence WITHOUT waiting events matches, and that pacing waits are
+  // sane (1s < waitMs <= 6s for the search bucket's 10s/3 spread + jitter).
+  const gotNoWait = gotSeq.filter((s) => !s.startsWith("waiting"));
+  check("event sequence exact (waiting beats excluded)", JSON.stringify(gotNoWait) === JSON.stringify(wantSeq), gotSeq);
+  const waits = ev.filter((e) => e.msg.stage === "waiting");
+  check("pacing waits sane (1s..6s) when present", waits.every((e) => e.msg.detail.waitMs > 1000 && e.msg.detail.waitMs <= 6000), waits.map((e) => e.msg.detail.waitMs));
   check("every event -> tab 1 / reqId rA", ev.every((e) => e.tabId === 1 && e.msg.reqId === "rA"));
   const done = ev.find((e) => e.msg.stage === "done");
   check("done detail {total,amount,currency}", done && done.msg.detail.total === 5 && done.msg.detail.amount === 12 && done.msg.detail.currency === "chaos", done && done.msg.detail);

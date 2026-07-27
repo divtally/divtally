@@ -135,6 +135,21 @@
 
   // ---- totals + include/exclude (verbatim) ----
   function isPriced(it) { var p = state.priced[String(it.index)]; return !!(p && p.chaos && p.chaos.median != null); }
+  function includeSwap() { return lsget("bpc_include_swap") === "1"; }
+  function itemSwap(k) { var it = state.items.find(function (x) { return String(x.index) === String(k); }); return !!(it && it.swap); }
+  // default include-state for a row the first time its price lands (granted and, per D-0018,
+  // weapon-swap items start excluded; the equipment-header toggle re-includes swaps)
+  function defaultOn(k) { return !itemGranted(k) && !(itemSwap(k) && !includeSwap()); }
+  function setIncludeSwap(on) {
+    lsset("bpc_include_swap", on ? "1" : "0");
+    state.items.forEach(function (it) {
+      if (!it.swap) return;
+      var k = String(it.index);
+      if (state.priced[k] && state.priced[k].chaos && state.priced[k].chaos.median != null)
+        state.enabled[k] = on ? !itemGranted(k) : false;
+    });
+    emit("manual", manualRows()); emit("totals", totals()); emit("swap", { on: !!on });
+  }
   function itemGranted(k) { var it = state.items.find(function (x) { return String(x.index) === String(k); }); return !!(it && it.granted); }
   function totals() {
     var mn = 0, md = 0, hi = 0, sMn = 0, sMd = 0, sHi = 0, inc = 0, tot = 0, bought = 0;
@@ -385,7 +400,7 @@
       state._sig[k] = sigOf(p);
       // auto-include only items that carry a real server-side number; unpriced rares stay OUT
       // of the total until a human/cache/extension prices them.
-      if (p.chaos && p.chaos.median != null) state.enabled[k] = !itemGranted(k);
+      if (p.chaos && p.chaos.median != null) state.enabled[k] = defaultOn(k);
     });
 
     loadPurchased();
@@ -440,8 +455,8 @@
     if (merged.chaos.median != null) {
       // an explicitly-provided price (paste/extension) is included by default; a passive cache
       // fill only auto-includes if the user hasn't already decided this row.
-      if (opts.include) state.enabled[key] = !itemGranted(key);
-      else if (!(key in state.enabled)) state.enabled[key] = !itemGranted(key);
+      if (opts.include) state.enabled[key] = defaultOn(key);
+      else if (!(key in state.enabled)) state.enabled[key] = defaultOn(key);
     }
     emit("priced", { keys: [key], state: state });
     emit("totals", totals());
@@ -551,6 +566,7 @@
       var priceable = it.category === "rare" || it.category === "magic" ||
                       (it.category === "unique" && (p.method === "unique-unpriced" || p.source === "trade"));
       if (!priceable) return false;
+      if (it.swap && !includeSwap()) return false;   // D-0018: swap gear sits out until re-included
       var hasQuery = !!(p.trade_query || p.trade_url || it.trade_query || it.trade_url);
       return hasQuery;
     }).map(function (it) {
@@ -853,6 +869,8 @@
     if (amount == null) return null;
     var c = CUR_ALIAS[String(currency || "").toLowerCase()] || String(currency || "").toLowerCase();
     if (c === "chaos") return amount;
+    var rates = (state.meta && state.meta.rates) || {};
+    if (rates[c] > 0) return amount * rates[c];
     if (c === "divine") return divRate() ? amount * divRate() : null;
     return null;
   }
@@ -1201,7 +1219,7 @@
       var p = np[k]; if (!p.chaos) p.chaos = { min: null, median: null, high: null };
       if (p.source == null) p.source = (p.chaos.median != null ? (p.method === "skill" ? "poe.ninja" : "trade") : "none");
       state.priced[k] = p; state._sig[k] = sigOf(p);
-      if (p.chaos.median != null) state.enabled[k] = !itemGranted(k);
+      if (p.chaos.median != null) state.enabled[k] = defaultOn(k);
     });
     emit("meta", state.meta);
     emit("items", state.items);
@@ -1226,7 +1244,7 @@
     start: start, startUrl: startUrl, startCache: startCache, rerun: rerun, researchAll: researchAll,
     setControl: setControl, loadPrefs: loadPrefs,
     price: price, priceHTML: priceHTML, curImg: curImg, nfmt: nfmt, esc: esc, divRate: divRate, tierEx: tierEx,
-    totals: totals, setEnabled: setEnabled, setGroupEnabled: setGroupEnabled, isPriced: isPriced, itemsByGroup: itemsByGroup,
+    totals: totals, setEnabled: setEnabled, setIncludeSwap: setIncludeSwap, includeSwap: includeSwap, setGroupEnabled: setGroupEnabled, isPriced: isPriced, itemsByGroup: itemsByGroup,
     gemGroups: gemGroups, gemBreakdown: gemBreakdown, gemHost: gemHost,
     setPurchased: setPurchased, isPurchased: isPurchased,
     // public pricing

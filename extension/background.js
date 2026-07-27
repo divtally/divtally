@@ -37,7 +37,7 @@ async function rlGet(bucket) {
   const key = "rl_" + bucket;
   const got = await chrome.storage.local.get(key);
   const st = got[key] || {};
-  return { rules: st.rules || DEFAULT_RULES[bucket], hits: st.hits || [] };
+  return { rules: st.rules || DEFAULT_RULES[bucket], hits: st.hits || [], last: st.last || 0 };
 }
 async function rlSet(bucket, st) {
   await chrome.storage.local.set({ ["rl_" + bucket]: st });
@@ -78,6 +78,13 @@ async function rateLimitGate(bucket, emit) {
       sleep = Math.max(sleep, winMs - (now - oldest));
     }
   }
+  // BREATHING ROOM (owner, D-0018): spread requests evenly across the tightest window instead
+  // of bursting to its cap and stalling. Even pacing = same net throughput, no burst spikes.
+  const [c0, w0] = st.rules[0];                       // rules sorted shortest-window-first
+  const spacing = Math.ceil((w0 * 1000) / effectiveCap(c0));
+  const sinceLast = now - (st.last || 0);
+  if (sinceLast >= 0 && sinceLast < spacing) sleep = Math.max(sleep, spacing - sinceLast);
+
   if (sleep > 0) {
     const waitMs = sleep + 100 + Math.floor(Math.random() * 200);
     // v1.1 progress: only report a *real* pause (> 1s); sub-second jitter isn't worth a message.
@@ -87,14 +94,14 @@ async function rateLimitGate(bucket, emit) {
 
   hits = st.hits.filter((t) => Date.now() - t <= maxWinMs);
   hits.push(Date.now());
-  await rlSet(bucket, { rules: st.rules, hits });
+  await rlSet(bucket, { rules: st.rules, hits, last: Date.now() });
 }
 
 async function applyHeaderRules(bucket, header) {
   const rules = mergeRules(bucket, header);
   if (!rules) return;
   const st = await rlGet(bucket);
-  await rlSet(bucket, { rules, hits: st.hits });
+  await rlSet(bucket, { rules, hits: st.hits, last: st.last });
 }
 
 function parseRetryAfter(v) {

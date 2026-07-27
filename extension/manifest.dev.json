@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "DivTally Browser Extension (DEV)",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "DEV/LOCAL build of the DivTally browser extension. Adds localhost + staging content-script matches for testing the page<->extension protocol against the local app (http://127.0.0.1:8765/v/_exttest) and staging deploys. DO NOT SUBMIT THIS MANIFEST TO A STORE - use manifest.json (via public/dist/build_zips.py) for submission.",
   "permissions": [
     "storage"
