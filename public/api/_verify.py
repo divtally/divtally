@@ -88,9 +88,37 @@ def validate_contract(doc, *, source):
         u = it.get("trade_url") or ""
         if u:
             check(f"item[{idx}] trade_url is /trade/search", "/trade/search/" in u and "/api/" not in u, u[:80])
-    for k, v in (doc.get("rares") or {}).items():
+    rares = doc.get("rares") or {}
+    for k, v in rares.items():
         for f in ("status", "name", "kind", "scope", "scope_q", "affixes", "pseudo"):
             check(f"rares[{k}].{f} present", f in v)
+        check(f"rares[{k}].kind valid", v.get("kind") in ("rare", "unique", "magic"),
+              str(v.get("kind")))
+        for a in v.get("affixes") or []:
+            # picker-ready affix payload: every entry self-describes for the client picker
+            for f in ("kind", "text", "stat_id", "value", "default_min", "default_max",
+                      "searchable", "negated", "group"):
+                check(f"rares[{k}] affix.{f} present", f in a, f"{a.get('text')!r} missing {f}")
+            # a searchable affix prefills exactly one of min/max; unsearchable prefills neither
+            if a.get("searchable"):
+                nn = (a.get("default_min") is not None) + (a.get("default_max") is not None)
+                check(f"rares[{k}] affix prefills <=1 bound", nn <= 1, f"{a.get('text')!r}")
+        for p in v.get("pseudo") or []:
+            for f in ("kind", "text", "stat_id", "value", "default_min", "group", "folds"):
+                check(f"rares[{k}] pseudo.{f} present", f in p, f"missing {f}")
+            check(f"rares[{k}] pseudo.folds is list", isinstance(p.get("folds"), list))
+            # every folded member points at a real resist affix on the same item
+            for m in p.get("folds") or []:
+                check(f"rares[{k}] fold member has index/text", "index" in m and "text" in m)
+                aff = (v.get("affixes") or [])[m["index"]] if isinstance(m.get("index"), int) \
+                    and 0 <= m["index"] < len(v.get("affixes") or []) else None
+                check(f"rares[{k}] fold index -> resist affix",
+                      bool(aff) and aff.get("resist") is True, str(m))
+    # every trade-queryable non-gem item (rare/unique/magic) gets an affix-picker entry
+    want = {str(it["index"]) for it in (items or [])
+            if it.get("category") in ("rare", "unique", "magic")}
+    check("every rare/unique/magic item has a rares entry", want <= set(rares.keys()),
+          f"missing {sorted(want - set(rares.keys()))}")
     return {it.get("category") for it in items or []}
 
 
@@ -165,6 +193,31 @@ def phase_a():
         if label == "ascii":
             check("[ascii] a granted gem exists (Herald of the Hive)",
                   any(it["category"] == "gem" and it.get("granted") for it in doc["items"]))
+            rr = doc.get("rares") or {}
+            check("[ascii] magic item present in rares (kind=magic)",
+                  any(v.get("kind") == "magic" for v in rr.values()))
+            check("[ascii] a rare/unique carries pseudo resist totals",
+                  any(v.get("pseudo") for v in rr.values()))
+            check("[ascii] a pseudo total lists the affixes folded into it",
+                  any(p.get("folds") for v in rr.values() for p in (v.get("pseudo") or [])))
+            check("[ascii] every affix carries a group",
+                  all(a.get("group") for v in rr.values() for a in (v.get("affixes") or [])))
+            # D-0015 invariant preserved through the enriched payload: the DEFAULT rare query
+            # still requires EVERY searchable affix (one stats filter per searchable stat affix,
+            # one armour_filter per defence total). Ties the picker payload to the built query so
+            # a future affix_options change can't silently drop an affix from the default search.
+            byidx = {str(it["index"]): it for it in doc["items"]}
+            for k, ent in rr.items():
+                if ent.get("kind") != "rare":
+                    continue
+                q = ((byidx.get(k) or {}).get("trade_query") or {}).get("query") or {}
+                n_stat_filt = sum(len(g.get("filters", [])) for g in (q.get("stats") or []))
+                n_arm = len((((q.get("filters") or {}).get("armour_filters") or {}).get("filters") or {}))
+                want_stat = sum(1 for a in ent["affixes"] if a["kind"] == "stat" and a["searchable"])
+                want_arm = sum(1 for a in ent["affixes"] if a["kind"] == "equip" and a.get("value"))
+                check(f"[ascii] rare[{k}] default query requires all searchable affixes",
+                      n_stat_filt == want_stat and n_arm == want_arm,
+                      f"stats {n_stat_filt}/{want_stat} armour {n_arm}/{want_arm}")
             globals()["_SAMPLE_DOC"] = doc
         try:
             json.dumps(doc, allow_nan=False); check(f"[{label}] strict-JSON", True)

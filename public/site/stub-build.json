@@ -52,7 +52,7 @@
         "note": "rares are priced on your machine via the trade link / extension"
       },
       "trade_url": "https://www.pathofexile.com/trade/search/Standard?q=%7B%22query%22%3A%7B%22type%22%3A%22Vaal%20Regalia%22%2C%22stats%22%3A%5B%7B%22type%22%3A%22and%22%2C%22filters%22%3A%5B%7B%22id%22%3A%22explicit.stat_3299347043%22%7D%5D%7D%5D%7D%7D",
-      "trade_query": { "query": { "status": {"option":"online"}, "type": "Vaal Regalia", "stats": [{"type":"and","filters":[{"id":"explicit.stat_3299347043","value":{"min":112}}]}], "filters": { "socket_filters": {"filters":{"links":{"min":6}}} } }, "sort": {"price":"asc"} }
+      "trade_query": { "query": { "status": {"option":"online"}, "type": "Vaal Regalia", "stats": [{"type":"and","filters":[{"id":"explicit.stat_3299347043","value":{"min":112}},{"id":"explicit.stat_3372524247","value":{"min":41}}]}], "filters": { "socket_filters": {"filters":{"links":{"min":6}}} } }, "sort": {"price":"asc"} }
     },
     {
       "index": 2, "name": "Phoenix Star, Large Cluster Jewel", "group": "jewel", "category": "rare",
@@ -65,7 +65,7 @@
         "note": "rares are priced on your machine via the trade link / extension"
       },
       "trade_url": "https://www.pathofexile.com/trade/search/Standard?q=%7B%22query%22%3A%7B%22type%22%3A%22Large%20Cluster%20Jewel%22%7D%7D",
-      "trade_query": { "query": { "status": {"option":"online"}, "type": "Large Cluster Jewel", "stats": [{"type":"and","filters":[]}] }, "sort": {"price":"asc"} }
+      "trade_query": { "query": { "status": {"option":"online"}, "type": "Large Cluster Jewel", "stats": [{"type":"and","filters":[{"id":"enchant.stat_3948993189","value":{"min":8}}]}] }, "sort": {"price":"asc"} }
     },
     {
       "index": 3, "name": "Quicksilver Flask of Adrenaline", "group": "flask", "category": "magic",

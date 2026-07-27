@@ -67,7 +67,15 @@ window.BPC_SAMPLE = {
     { index: 0,  name: "Crown of the Inward Eye", group: "equipment", category: "unique", slot: "Helmet",      count: 1, rarity: "Unique", icon: _IC.helm,
       mods: { implicit: [], explicit: ["Increases and Reductions to Life also apply to Energy Shield at 30% of their value", "(15-25)% increased maximum Life", "(15-25)% increased maximum Mana"] } },
     { index: 1,  name: "Rift Shroud",             group: "equipment", category: "rare",   slot: "Body Armour", count: 1, rarity: "Rare", icon: _IC.body,
-      mods: { implicit: [], explicit: ["+112 to maximum Life", "+41% to Fire Resistance", "+38% to Cold Resistance", "+520 to maximum Energy Shield"] } },
+      max_link: 6, total_sockets: 6, socket_colours: ["B","B","B","B","B","B"],
+      mods: { implicit: [], explicit: ["+112 to maximum Life", "+41% to Fire Resistance", "+38% to Cold Resistance", "+520 to maximum Energy Shield"] },
+      // the item's own strict query (roll-min, pseudo-folded, 6-link) — the picker's all-ticked default reproduces this
+      trade_query: { query: { type: "Vaal Regalia", status: { option: "online" },
+        stats: [{ type: "and", filters: [
+          { id: "explicit.stat_3299347043", value: { min: 112 } },
+          { id: "pseudo.pseudo_total_elemental_resistance", value: { min: 79 } } ] }],
+        filters: { armour_filters: { filters: { es: { min: 520 } } }, socket_filters: { filters: { links: { min: 6 } } } } },
+        sort: { price: "asc" } } },
     { index: 2,  name: "Gauntlets of Malice",     group: "equipment", category: "rare",   slot: "Gloves",      count: 1, rarity: "Rare", icon: _IC.gloves,
       mods: { implicit: [], explicit: ["24% increased Attack Speed", "Adds 12 to 30 Fire Damage to Attacks", "+72 to maximum Life"] } },
     { index: 3,  name: "Atziri's Step",           group: "equipment", category: "unique", slot: "Boots",       count: 1, rarity: "Unique", icon: _IC.boots,
@@ -108,7 +116,14 @@ window.BPC_SAMPLE = {
     { index: 13, name: "Watcher's Eye",           group: "jewel",     category: "unique", slot: "Jewel",       count: 1, rarity: "Unique", icon: _IC.jewel },
     { index: 14, name: "Thread of Hope",          group: "jewel",     category: "unique", slot: "Jewel",       count: 1, rarity: "Unique", icon: _IC.jewel2 },
     { index: 15, name: "Blazing Fettle (Large Cluster Jewel)", group: "jewel", category: "rare", slot: "Jewel", count: 1, rarity: "Rare", icon: _IC.jewel,
-      mods: { implicit: ["Adds 8 Passive Skills"], explicit: ["Added Small Passive Skills grant: 12% increased Fire Damage", "1 Added Passive Skill is Blowback", "1 Added Passive Skill is Fan the Flames"] } },
+      mods: { implicit: ["Adds 8 Passive Skills"], explicit: ["Added Small Passive Skills grant: 12% increased Fire Damage", "1 Added Passive Skill is Blowback", "1 Added Passive Skill is Fan the Flames"] },
+      // an UNPRICED rare (see priced["15"]: no listing matched) — this is what the pick-affixes queue
+      // presents one at a time. Two searchable enchants + two unsearchable notables (greyed in the picker).
+      trade_query: { query: { type: "Large Cluster Jewel", status: { option: "online" },
+        stats: [{ type: "and", filters: [
+          { id: "enchant.stat_2894704558", value: { min: 12 } },
+          { id: "enchant.stat_3086156145", value: { min: 8 } } ] }] },
+        sort: { price: "asc" } } },
 
     // ---- GEMS: grouped by HOST ITEM. `sockets` = support-gem count (skin label "N sup");
     // `supports[]` mirrors priced[k].gems[1:] by index (each carries its own support/granted). ----
@@ -196,12 +211,13 @@ window.BPC_SAMPLE = {
   },
   rares: {
     "1": { status: "priced", name: "Rift Shroud", scope: "base: Vaal Regalia", kind: "rare", scope_q: { type: "Vaal Regalia" }, affixes: [
-        { kind: "stat", text: "+112 to maximum Life",    stat_id: "explicit.stat_3299347043", value: 112, searchable: true,  resist: false, priority: "required", reason: "" },
-        { kind: "stat", text: "+41% to Fire Resistance", stat_id: "explicit.stat_3372524247", value: 41,  searchable: true,  resist: true,  priority: "required", reason: "" },
-        { kind: "stat", text: "+38% to Cold Resistance", stat_id: "explicit.stat_4220027924", value: 38,  searchable: true,  resist: true,  priority: "required", reason: "" },
-        { kind: "equip", key: "es", text: "Total Energy Shield", value: 520, searchable: true, resist: false, priority: "required", reason: "" }
+        { kind: "stat", text: "+112 to maximum Life",    stat_id: "explicit.stat_3299347043", value: 112, default_min: 112, default_max: null, searchable: true, resist: false, negated: false, group: "explicit", prefer: true, priority: "required", reason: "" },
+        { kind: "stat", text: "+41% to Fire Resistance", stat_id: "explicit.stat_3372524247", value: 41,  default_min: 41,  default_max: null, searchable: true, resist: true,  negated: false, group: "explicit", prefer: true, priority: "required", reason: "" },
+        { kind: "stat", text: "+38% to Cold Resistance", stat_id: "explicit.stat_4220027924", value: 38,  default_min: 38,  default_max: null, searchable: true, resist: true,  negated: false, group: "explicit", prefer: true, priority: "required", reason: "" },
+        { kind: "equip", key: "es", text: "Total Energy Shield", value: 520, default_min: 520, default_max: null, searchable: true, resist: false, negated: false, group: "equip", prefer: true, priority: "required", reason: "" }
       ], pseudo: [
-        { kind: "stat", text: "+79% total Elemental Resistance", stat_id: "pseudo.pseudo_total_elemental_resistance", value: 79, searchable: true, resist: true, priority: "required", reason: "" }
+        { kind: "stat", text: "+79% total Elemental Resistance", stat_id: "pseudo.pseudo_total_elemental_resistance", value: 79, default_min: 79, default_max: null, searchable: true, resist: true, negated: false, group: "pseudo", prefer: true, priority: "required", reason: "",
+          folds: [ { index: 1, text: "+41% to Fire Resistance", stat_id: "explicit.stat_3372524247", value: 41 }, { index: 2, text: "+38% to Cold Resistance", stat_id: "explicit.stat_4220027924", value: 38 } ] }
       ] },
     "2": { status: "priced", name: "Gauntlets of Malice", scope: "base: Sorcerer Gloves", kind: "rare", scope_q: { type: "Sorcerer Gloves" }, affixes: [
         { kind: "stat", text: "24% increased Attack Speed",           stat_id: "explicit.stat_210067635",  value: 24, searchable: true, resist: false, reason: "" },
@@ -225,6 +241,14 @@ window.BPC_SAMPLE = {
     "12": { status: "priced", name: "Hale Fettle", scope: "category: Jewel", kind: "rare", scope_q: {}, affixes: [
         { kind: "stat", text: "12% increased maximum Life", stat_id: "explicit.stat_3299347043", value: 12, searchable: true, resist: false, reason: "" },
         { kind: "stat", text: "9% increased Cast Speed",    stat_id: "explicit.stat_2891184298", value: 9,  searchable: true, resist: false, reason: "" }
+      ], pseudo: [] },
+    // UNPRICED rare (priced["15"] found no listing) — the pick-affixes queue presents this one; it
+    // shows two searchable enchants + two greyed unsearchable "Added Passive Skill is …" notables.
+    "15": { status: "unpriced", name: "Blazing Fettle (Large Cluster Jewel)", scope: "base: Large Cluster Jewel", kind: "rare", scope_q: { type: "Large Cluster Jewel" }, affixes: [
+        { kind: "stat", text: "Added Small Passive Skills grant: 12% increased Fire Damage", stat_id: "enchant.stat_2894704558", value: 12, default_min: 12, default_max: null, searchable: true, resist: false, negated: false, group: "enchant", prefer: true, priority: "nice", reason: "" },
+        { kind: "stat", text: "1 Added Passive Skill is Blowback",     stat_id: null, value: null, default_min: null, default_max: null, searchable: false, resist: false, negated: false, group: "explicit", prefer: false, priority: "notimp", reason: "no trade filter matches this mod" },
+        { kind: "stat", text: "1 Added Passive Skill is Fan the Flames", stat_id: null, value: null, default_min: null, default_max: null, searchable: false, resist: false, negated: false, group: "explicit", prefer: false, priority: "notimp", reason: "no trade filter matches this mod" },
+        { kind: "stat", text: "Adds 8 Passive Skills", stat_id: "enchant.stat_3086156145", value: 8, default_min: 8, default_max: null, searchable: true, resist: false, negated: false, group: "enchant", prefer: true, priority: "required", reason: "" }
       ], pseudo: [] }
   }
 };

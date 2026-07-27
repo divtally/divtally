@@ -11,7 +11,7 @@ import time
 from typing import List, Optional
 
 from .currency import CurrencyConverter
-from .models import CAT_RARE, CAT_UNIQUE, CAT_GEM, BuildMeta, PriceResult
+from .models import CAT_MAGIC, CAT_RARE, CAT_UNIQUE, CAT_GEM, BuildMeta, PriceResult
 from .querybuild import PublicPricer
 
 SCHEMA_VERSION = "1.0"
@@ -128,14 +128,17 @@ def build_response(meta: BuildMeta, results: List[PriceResult], pricer: PublicPr
 
     items = [_item_row(i, r, div_rate) for i, r in enumerate(results)]
 
-    # affix-picker payload per rare/unique index (mirrors bpc/web.py rares_meta), so the
-    # site/extension can offer manual refinement of the trade query.
+    # affix-picker payload per rare/unique/magic index (mirrors bpc/web.py rares_meta), so the
+    # site/extension can offer manual refinement of the trade query. Every trade-queryable
+    # non-gem item is included -- rares, uniques AND magic -- so the picker can show its full
+    # affix list (D-0015: the user drives every exclusion; the tool hides no affix).
     rares = {}
     for i, r in enumerate(results):
         it = r.item
-        if it.category not in (CAT_RARE, CAT_UNIQUE):
+        if it.category not in (CAT_RARE, CAT_UNIQUE, CAT_MAGIC):
             continue
         is_uni = it.category == CAT_UNIQUE
+        kind = "unique" if is_uni else ("magic" if it.category == CAT_MAGIC else "rare")
         spec = pricer.affix_options(it)
         if is_uni:
             scope = "unique: " + it.name
@@ -147,7 +150,7 @@ def build_response(meta: BuildMeta, results: List[PriceResult], pricer: PublicPr
             scope_q = dict(sc[0][0]) if sc else {}
         rares[str(i)] = {
             "status": "priced" if (r.extra or {}).get("source") == "poe.ninja" else "unpriced",
-            "name": it.display_name, "kind": "unique" if is_uni else "rare",
+            "name": it.display_name, "kind": kind,
             "scope": scope, "scope_q": scope_q,
             "affixes": spec["affixes"], "pseudo": spec["pseudo"]}
 

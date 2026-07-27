@@ -107,6 +107,48 @@ def res_contributions(mods: List[str]) -> dict:
             "elemental": fire_t + cold_t + light_t}
 
 
+def _affix_defaults(value, negated: bool) -> Tuple[Optional[float], Optional[float]]:
+    """The picker's prefilled (min, max) for one affix -- mirrors bpc/web.py affixRow():
+    a normal roll prefills MIN = the item's value; a negated ('reduced') roll carries a
+    NEGATIVE value on the opposite-polarity stat and prefills MAX instead (better = more
+    negative, so a min filter would be a near no-op). Returns (default_min, default_max),
+    at most one of which is set. The picker consumes these directly; the raw `value` (the
+    item's roll, signed) is still carried alongside."""
+    if value is None:
+        return None, None
+    neg = bool(negated) or (isinstance(value, (int, float)) and value < 0)
+    return (None, value) if neg else (value, None)
+
+
+def _res_fold_members(affixes: List[dict]) -> Tuple[List[dict], List[dict]]:
+    """Which of an item's built affixes fold into the elemental- vs chaos-resistance pseudo
+    totals -- the SAME bucketing res_contributions() sums (an 'all Elemental' mod feeds the
+    elemental total; an 'all Resistances' mod feeds BOTH elemental and chaos; a single-element
+    mod feeds elemental; a chaos mod feeds chaos). Each member = {index (position in `affixes`),
+    text, stat_id, value}; `index` lets a picker grey out exactly the individual resistance
+    rows it folded into the total. Returns (elemental_members, chaos_members)."""
+    import re
+    elem: List[dict] = []
+    chaos: List[dict] = []
+    for idx, a in enumerate(affixes):
+        if not a.get("resist"):
+            continue
+        t = (a.get("text") or "").lower()
+        member = {"index": idx, "text": a.get("text"), "stat_id": a.get("stat_id"),
+                  "value": a.get("value")}
+        if "all elemental resist" in t:
+            elem.append(member)
+        elif re.search(r"\ball resistances?\b", t) and "elemental" not in t:
+            elem.append(member)
+            chaos.append(member)
+        else:
+            if "fire" in t or "cold" in t or "lightning" in t:
+                elem.append(member)
+            if "chaos" in t:
+                chaos.append(member)
+    return elem, chaos
+
+
 def _build_stat_groups(groups: List[dict]) -> List[dict]:
     """Convert a picker group payload into trade query.stats group objects (VERBATIM)."""
     out: List[dict] = []
@@ -242,6 +284,12 @@ class PublicPricer:
         return scopes
 
     def affix_options(self, item: Item) -> dict:
+        """The item's mods/defences as picker-ready search options (docs/public-contract.md
+        `rares[].affixes` / `.pseudo`). Each entry carries `group` (the mod's trade stat group:
+        explicit/crafted/fractured/enchant/...) and `default_min`/`default_max` (the value the
+        picker prefills, mirroring bpc/web.py affixRow) in addition to the raw signed `value`.
+        Unsearchable mods are INCLUDED with searchable:false (D-0015: the user sees every affix;
+        the tool hides nothing)."""
         is_armour = bool(item.defences) or item.raw.get("inventoryId", "") in _ARMOUR_INV
         is_unique = item.category == CAT_UNIQUE
         affixes = []
@@ -259,10 +307,15 @@ class PublicPricer:
             label = util.strip_rich(line).strip()
             if src == "enchant":
                 label += " (enchant)"
+            # prefill (min/max) only for searchable affixes -- an unsearchable mod has no
+            # filter to prefill (the picker greys it out); `value` still carries its roll.
+            dmin, dmax = _affix_defaults(v, bool(ok and neg)) if ok else (None, None)
             affixes.append({
                 "kind": "stat", "text": label,
                 "stat_id": sid if ok else None, "value": v,
+                "default_min": dmin, "default_max": dmax,
                 "searchable": ok, "resist": _is_res_affix(line), "negated": bool(ok and neg),
+                "group": src or "explicit",
                 "prefer": prefer, "priority": _affix_tier(line, ok, is_unique),
                 "reason": "" if ok else "no trade filter matches this mod",
             })
@@ -270,19 +323,28 @@ class PublicPricer:
             if val and val > 0:
                 affixes.append({"kind": "equip", "key": key, "stat_id": None,
                                 "text": _DEF_LABEL.get(key, key), "value": int(val),
-                                "searchable": True, "resist": False, "prefer": not is_unique,
+                                "default_min": int(val), "default_max": None,
+                                "searchable": True, "resist": False, "negated": False,
+                                "group": "equip", "prefer": not is_unique,
                                 "priority": "skip" if is_unique else "required", "reason": ""})
         c = res_contributions(item.explicit_mods)
+        elem_members, chaos_members = _res_fold_members(affixes)
         pseudo = []
         if c["elemental"] > 0:
+            tot = round(c["elemental"])
             pseudo.append({"kind": "stat", "text": "+#% total Elemental Resistance",
-                           "stat_id": _PSEUDO_ELEM_RES, "value": round(c["elemental"]),
-                           "searchable": True, "resist": True, "prefer": not is_unique,
+                           "stat_id": _PSEUDO_ELEM_RES, "value": tot,
+                           "default_min": tot, "default_max": None,
+                           "searchable": True, "resist": True, "negated": False,
+                           "group": "pseudo", "folds": elem_members, "prefer": not is_unique,
                            "priority": "skip" if is_unique else "required", "reason": ""})
         if c["chaos"] > 0:
+            tot = round(c["chaos"])
             pseudo.append({"kind": "stat", "text": "+#% total to Chaos Resistance",
-                           "stat_id": _PSEUDO_CHAOS_RES, "value": round(c["chaos"]),
-                           "searchable": True, "resist": True, "prefer": not is_unique,
+                           "stat_id": _PSEUDO_CHAOS_RES, "value": tot,
+                           "default_min": tot, "default_max": None,
+                           "searchable": True, "resist": True, "negated": False,
+                           "group": "pseudo", "folds": chaos_members, "prefer": not is_unique,
                            "priority": "skip" if is_unique else "required", "reason": ""})
         return {"affixes": affixes, "pseudo": pseudo}
 

@@ -731,7 +731,9 @@
     rows.forEach(function (r) {
       var it = r.item, p = r.price;
       var tq = (p && p.trade_query) || it.trade_query;
-      var q = tq && (tq.query || tq);            // pass the INNER query object, not the wrapper
+      // the affix picker passes a client-built REFINED query (r.query); otherwise use the item's
+      // own strict trade_query. Either way we pass the INNER query object, not the {query,sort} wrapper.
+      var q = r.query || (tq && (tq.query || tq));
       if (!q) return;
       var lg = (state.meta && state.meta.league) || "";
       (byLeague[lg] = byLeague[lg] || []).push({ key: r.key, query: q });
@@ -846,6 +848,149 @@
   }
   function confFromTotal(n) { n = n || 0; return n >= 5 ? "high" : n >= 2 ? "medium" : "low"; }
 
+  // =====================================================================
+  //  PER-RARE AFFIX PICKER  —  client-side query builder (D-0015)
+  // ---------------------------------------------------------------------
+  //  Pure + node-testable (no DOM/window). The picker UI (index.html) drives
+  //  these. D-0015: the default state has EVERY searchable affix ticked with
+  //  its roll prefilled — the tool never unticks anything; only the USER
+  //  subtracts/edits. "All ticked, unedited" reproduces the item's own strict
+  //  query (modulo ordering); scope (status/type/name/type_filters) + the 5/6-
+  //  link socket filter are copied VERBATIM from the item's trade_query and
+  //  never invented. Faithful to the local app's advanced picker (bpc/web.py
+  //  affixRow/submitRare): a normal roll prefills MIN, a negated/'reduced' roll
+  //  prefills MAX, and — like that picker — a ticked affix searches "at least
+  //  this good" (min = the roll), which is deliberately stricter than the API's
+  //  presence-only Autoscan default; the user loosens by clearing a min.
+  // =====================================================================
+  function _pnum(x) { if (x === "" || x == null) return null; var v = Number(x); return isFinite(v) ? v : null; }
+  // An affix's prefilled (min,max): the payload's explicit default_min/default_max when present
+  // (public API §2.6), else derived from the signed roll + negated flag (mirrors bpc/web.py affixRow
+  // and the API's _affix_defaults). `value` still carries the raw roll for display.
+  function affixPrefill(a) {
+    if (!a) return { min: null, max: null };
+    if (a.default_min !== undefined || a.default_max !== undefined)
+      return { min: _pnum(a.default_min), max: _pnum(a.default_max) };
+    var v = _pnum(a.value);
+    var neg = !!a.negated || (v != null && v < 0);
+    return neg ? { min: null, max: v } : { min: v, max: null };
+  }
+  // D-0015: every searchable stat affix (and every defence total) starts TICKED. `prefer` is only a
+  // hint the API carries; the picker never unticks — all searchable default to on. Unsearchable
+  // (no stat_id) can never be a filter, so it is never "ticked" (and never emitted).
+  function affixDefaultTicked(a) {
+    if (!a) return false;
+    if (a.kind === "equip") return a.key != null;
+    return !!(a.searchable && a.stat_id);
+  }
+  // The default picks for a rare: all searchable affixes ticked with their prefilled min/max, every
+  // pseudo row ticked, and the resistance-fold (pseudo) toggle ON when the item has any resistance
+  // pseudo total — exactly the local app's default (usePseudo = pseudo.length>0).
+  function rareDefaultPicks(rare) {
+    rare = rare || {};
+    var picks = { usePseudo: !!(rare.pseudo && rare.pseudo.length), affix: {}, pseudo: {} };
+    (rare.affixes || []).forEach(function (a, i) { var pf = affixPrefill(a);
+      picks.affix[i] = { ticked: affixDefaultTicked(a), min: pf.min, max: pf.max }; });
+    (rare.pseudo || []).forEach(function (p, j) { var pf = affixPrefill(p);
+      picks.pseudo[j] = { ticked: true, min: pf.min, max: pf.max }; });
+    return picks;
+  }
+  function _statFilter(id, min, max) {
+    var f = { id: id }, v = {};
+    if (min != null) v.min = min;
+    if (max != null) v.max = max;
+    if (Object.keys(v).length) f.value = v;
+    return f;
+  }
+  function _pickOf(map, i, a) {
+    var e = map && map[i];
+    if (e) return { ticked: !!e.ticked, min: _pnum(e.min), max: _pnum(e.max) };
+    var pf = affixPrefill(a);                 // no explicit pick -> the all-ticked default
+    return { ticked: affixDefaultTicked(a), min: pf.min, max: pf.max };
+  }
+  // Build a rare trade query (the INNER query object) from the CURRENT picker state.
+  //   rare      = state.rares[key]  ({ affixes:[], pseudo:[] })
+  //   origQuery = the item's own trade_query.query  OR its scope_q — the ONLY source of scope
+  //               (status/type/name/type_filters) and the links socket_filter. Never invented.
+  //   picks     = { usePseudo, affix:{i:{ticked,min,max}}, pseudo:{j:{ticked,min,max}} }.
+  //               Omit picks (or an entry) to use that affix's all-ticked default, so
+  //               buildRareQuery(rare, origQuery) == the all-ticked query.
+  function buildRareQuery(rare, origQuery, picks) {
+    rare = rare || {}; picks = picks || {};
+    var affixes = rare.affixes || [], pseudos = rare.pseudo || [];
+    var usePseudo = picks.usePseudo !== undefined ? !!picks.usePseudo : !!(pseudos && pseudos.length);
+    var oq = origQuery || {};
+    var q = {};
+    if (oq.type != null) q.type = oq.type;               // scope: copied verbatim, never invented
+    if (oq.name != null) q.name = oq.name;
+    q.status = oq.status ? oq.status : { option: state.status || "online" };
+    var filters = [];
+    affixes.forEach(function (a, i) {
+      if (a.kind !== "stat") return;
+      if (!a.searchable || !a.stat_id) return;            // unsearchable is NEVER emitted
+      if (usePseudo && a.resist) return;                  // folded into a pseudo total below
+      var pk = _pickOf(picks.affix, i, a); if (!pk.ticked) return;
+      filters.push(_statFilter(a.stat_id, pk.min, pk.max));
+    });
+    if (usePseudo) pseudos.forEach(function (p, j) {
+      if (!p.stat_id) return;
+      var pk = _pickOf(picks.pseudo, j, p); if (!pk.ticked) return;
+      filters.push(_statFilter(p.stat_id, pk.min, pk.max));
+    });
+    q.stats = [{ type: "and", filters: filters }];        // one AND group, like the server
+    var filt = {};
+    if (oq.filters && oq.filters.type_filters) filt.type_filters = oq.filters.type_filters;   // scope
+    var armour = {};
+    affixes.forEach(function (a, i) {
+      if (a.kind !== "equip" || a.key == null) return;
+      var pk = _pickOf(picks.affix, i, a); if (!pk.ticked) return;
+      if (pk.min != null) armour[a.key] = { min: pk.min };  // defence totals are min-only
+    });
+    if (Object.keys(armour).length) filt.armour_filters = { filters: armour };
+    if (oq.filters && oq.filters.socket_filters) filt.socket_filters = oq.filters.socket_filters;  // links verbatim
+    if (Object.keys(filt).length) q.filters = filt;
+    return q;
+  }
+  // the 5/6-link requirement a query carries (for the read-only picker chip), or null
+  function queryLinks(oq) { try { return oq.filters.socket_filters.filters.links.min || null; } catch (e) { return null; } }
+  // The browser ?q= trade URL for a query, reusing the item's own trade_url host+league so the URL
+  // and the extension search run the SAME query. Pure string building — never calls pathofexile.com.
+  function rareTradeUrl(query, refUrl) {
+    var payload = encodeURIComponent(JSON.stringify({ query: query, sort: { price: "asc" } }));
+    var base = "";
+    if (refUrl) { var i = String(refUrl).indexOf("?q="); base = i >= 0 ? String(refUrl).slice(0, i) : String(refUrl); }
+    if (!base) { var lg = (state.meta && state.meta.league) || "Standard";
+      base = "https://www.pathofexile.com/trade/search/" + encodeURIComponent(lg); }
+    return base + "?q=" + payload;
+  }
+  function rareOf(key) { return (state.rares || {})[String(key)]; }
+
+  // Price ONE rare via the extension using a client-built (refined) query. Reuses the tested D-0012
+  // chunked path + v1.1 scan status + community-cache POST-back; the refined price folds into the
+  // row + totals in place. Returns the priceRowsViaExtension promise (or {error} with no bridge).
+  function priceRareCustom(key, query) {
+    return priceRaresCustom([{ key: key, query: query }]);
+  }
+  // Price several refined rares (the in-picker Autoscan) in one chunked scan session.
+  function priceRaresCustom(list) {
+    var rows = [];
+    (list || []).forEach(function (o) {
+      var it = state.items.find(function (x) { return String(x.index) === String(o.key); });
+      if (it) rows.push({ key: String(o.key), item: it, price: state.priced[String(o.key)] || {}, query: o.query });
+    });
+    return rows.length ? priceRowsViaExtension(rows) : Promise.resolve({ error: "no rows" });
+  }
+  // The no-extension refinement: remember the refined query+url on the row so its "open search" link
+  // + tooltip reflect the picker's choice; the row STAYS in manual mode (no client-run search here).
+  function setRareQuery(key, query, url) {
+    key = String(key);
+    var it = state.items.find(function (x) { return String(x.index) === key; });
+    var cur = state.priced[key] || {};
+    var u = url || rareTradeUrl(query, cur.trade_url || (it && it.trade_url));
+    applyPrice(key, { trade_url: u, trade_query: { query: query, sort: { price: "asc" } }, refined: true }, { include: false });
+    return u;
+  }
+
   // ---- recent builds (localStorage; the public site has no /api/cache) ----
   function loadRecent() {
     try { state.recent = JSON.parse(lsget("bpc_recent_builds") || "[]") || []; } catch (e) { state.recent = []; }
@@ -912,6 +1057,10 @@
     // public pricing
     parseWhisper: parseWhisper, applyWhisper: applyWhisper, clearManual: clearManual, manualRows: manualRows,
     autoscan: autoscan, priceViaExtension: priceViaExtension, scanStatus: scanSnapshot,
+    // per-rare affix picker (D-0015): pure query builder + the extension/URL price paths
+    buildRareQuery: buildRareQuery, rareDefaultPicks: rareDefaultPicks, affixPrefill: affixPrefill,
+    rareTradeUrl: rareTradeUrl, queryLinks: queryLinks, rareOf: rareOf,
+    priceRareCustom: priceRareCustom, priceRaresCustom: priceRaresCustom, setRareQuery: setRareQuery,
     cacheOptOut: cacheOptOut, setCacheOptOut: setCacheOptOut,
     cacheKey: cacheKey, itemIdentity: itemIdentity, leagueKeyspace: leagueKeyspace,
     loadMock: loadMock,

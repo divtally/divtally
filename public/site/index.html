@@ -843,6 +843,14 @@
   .pick .mp-hint{font-size:12px; color:var(--parch); margin-top:5px; font-style:italic;}
   .pick .mp-err{color:var(--bad); font-size:13px; margin-top:6px; min-height:16px;}
   .pick .mp-ok{color:var(--ok); font-size:13px; margin-top:6px; min-height:16px;}
+  /* ---- affix picker (D-0015): wired to the existing .pick modal + .afx grid ---- */
+  .afx.afxhead{border-top:0; padding-top:0; padding-bottom:2px;}
+  .pick .plinks{display:inline-block; margin-left:7px; font-family:var(--mono); font-size:10px; letter-spacing:.05em;
+    color:var(--parch); border:1px solid var(--bz1); border-radius:3px; padding:1px 6px; vertical-align:middle;}
+  .pick .phint{font-family:var(--serif); font-size:12px; font-style:italic; color:var(--mut); margin:0 0 6px;}
+  .manual-head .pick-affixes{margin-left:2px;}
+  .mrow .mr-affix{color:var(--bz3); border-color:var(--bz1);}
+  .mrow .mr-affix:hover{color:var(--bz-hi); border-color:var(--bz3);}
 </style></head>
 <body>
 <div class="stage">
@@ -933,6 +941,7 @@
         <span class="mh-sub" id="manualSub"></span>
         <span class="mh-space"></span>
         <label class="chk auto-auto" id="autoAutoWrap" hidden title="When the DivTally browser extension is active, price a freshly-loaded build's rares automatically (once per build) — no button press."><input type="checkbox" id="autoAuto"> auto-scan on load</label>
+        <label class="chk pick-affixes" id="pickAffixWrap" title="Choose exactly which affixes each rare must have (with min/max) before pricing — one rare at a time, like the desktop app. While on, rares are NOT auto-scanned; you drive each search."><input type="checkbox" id="pickAffixCb"> pick affixes</label>
         <button class="stone-btn autoscan" id="autoscanBtn" type="button" hidden title="Price every rare below hands-free via the DivTally browser extension (runs on your own IP)">&#9889; Autoscan</button>
       </div>
       <div class="manual-body">
@@ -1587,6 +1596,205 @@ function cap(s){ return s?s.charAt(0).toUpperCase()+s.slice(1):s; }
  * ========================================================================== */
 const pickwrap=$('#pickwrap'), pick=$('#pick');
 
+/* ============================================================================
+ *  PER-RARE AFFIX PICKER (D-0015)  —  the owner's most-wanted feature.
+ *  Replicates the desktop app's advanced flow on the public site: a remembered
+ *  "pick affixes" checkbox; when ON, unpriced rares queue and are presented ONE
+ *  AT A TIME in the .pick modal (every affix ticked by default — the tool never
+ *  unticks; only the user does), with editable min/max, greyed unsearchable
+ *  lines, defence-total mins, a read-only links chip, and a resistance→pseudo
+ *  fold toggle (default ON when the item has resistances). "Search this item"
+ *  builds the query CLIENT-SIDE (bpc.buildRareQuery) and either prices via the
+ *  extension (same D-0012 chunked path + v1.1 chips + cache POST) or opens the
+ *  refined trade URL. Every rare row also gets an always-available "edit affixes"
+ *  button. Background pricing (gems/uniques/cache) keeps filling throughout.
+ * ========================================================================== */
+function pickModeOn(){ return localStorage.getItem('bpc_pick_affixes')==='1'; }   // default OFF
+function freshPK(){ return { order:[], decided:new Set(), key:null, usePseudo:true, queue:false, shownFor:null }; }
+let PK = freshPK();
+function pkNum(s){ s=(s==null?'':String(s)).trim(); if(s==='') return null; const n=Number(s); return isNaN(n)?null:n; }
+function rareData(k){ return bpc.rareOf(k); }
+function isPickableRare(it){ return !!(it && it.category==='rare' && rareData(it.index)); }
+/* scope + links come ONLY from the item's own query (trade_query, else scope_q) — never invented */
+function itemOrigQuery(it){
+  if(it && it.trade_query && it.trade_query.query) return it.trade_query.query;
+  const p = it && bpc.state.priced[String(it.index)];
+  if(p && p.trade_query && p.trade_query.query) return p.trade_query.query;   // a prior refinement
+  const rd = it && rareData(it.index); return (rd && rd.scope_q) || {};
+}
+
+/* ---- the unpriced-rare queue (pick mode) ---- */
+function buildQueue(){
+  PK.order = bpc.manualRows()
+    .filter(r=>!r.priced && isPickableRare(r.item) && !PK.decided.has(String(r.key)))
+    .map(r=>String(r.key));
+}
+function presentQueue(){
+  if(!pickModeOn()) return;                       // opt-in only
+  if(bpc.scanStatus().active) return;             // don't fight an in-progress scan
+  const bk=buildKey();
+  buildQueue();
+  if(!PK.order.length){ if(PK.queue) closePicker(); return; }
+  if(PK.shownFor===bk) return;                    // auto-present ONCE per build; then user-driven
+  PK.shownFor=bk;
+  openPicker(PK.order[0], {queue:true});
+}
+function advanceQueue(){
+  buildQueue();
+  const next = PK.order.find(k=>!PK.decided.has(k));
+  if(next) openPicker(next, {queue:true});
+  else closePicker();
+}
+
+/* ---- open / render one rare's picker ---- */
+function openPicker(k, opts){
+  opts=opts||{}; k=String(k);
+  const it=itemByKey(k), rare=rareData(k); if(!it||!rare) return;
+  PK.key=k; PK.queue=!!opts.queue;
+  PK.usePseudo = !!(rare.pseudo && rare.pseudo.length);   // default ON when resistances exist
+  renderPicker();
+  pickwrap.classList.add('show');
+}
+function affixRowHTML(a,i,prefill){
+  if(a.searchable && a.stat_id){
+    const pf = (prefill && prefill.affix && prefill.affix[i]) || null;
+    const dflt = bpc.affixPrefill(a);
+    const ticked = pf ? pf.ticked : true;
+    const minV = pf ? pf.min : dflt.min, maxV = pf ? pf.max : dflt.max;
+    const isEquip = a.kind==='equip';
+    const attr = isEquip ? `data-equip="${E(a.key)}"` : `data-sid="${E(a.stat_id)}"`;
+    return `<div class="afx" data-i="${i}" ${attr}>`+
+      `<label class="abullet"><input type="checkbox" class="acb" ${ticked?'checked':''}><span class="dia"><span>✓</span></span></label>`+
+      `<div class="atext">${E(a.text)}</div>`+
+      `<input class="mm amin" value="${minV!=null?E(String(minV)):''}" inputmode="numeric" placeholder="any">`+
+      (isEquip ? `<div class="mmx"></div>` : `<input class="mm amax" value="${maxV!=null?E(String(maxV)):''}" inputmode="numeric" placeholder="any">`)+
+      `</div>`;
+  }
+  // unsearchable: shown greyed, no checkbox/inputs, with the reason (D-0015: hide nothing)
+  return `<div class="afx no"><div class="abullet"></div>`+
+    `<div class="atext">${E(a.text)}<span class="reason">${E(a.reason||'no trade filter matches this mod')}</span></div><div></div><div></div></div>`;
+}
+function pseudoRowHTML(p,j,prefill){
+  const pf = (prefill && prefill.pseudo && prefill.pseudo[j]) || null;
+  const dflt = bpc.affixPrefill(p);
+  const ticked = pf ? pf.ticked : true;
+  const minV = pf ? pf.min : dflt.min, maxV = pf ? pf.max : dflt.max;
+  return `<div class="afx pseudo-row" data-pi="${j}" data-sid="${E(p.stat_id)}">`+
+    `<label class="abullet"><input type="checkbox" class="acb" ${ticked?'checked':''}><span class="dia"><span>✓</span></span></label>`+
+    `<div class="atext">${E(p.text)}</div>`+
+    `<input class="mm amin" value="${minV!=null?E(String(minV)):''}" inputmode="numeric" placeholder="any">`+
+    `<input class="mm amax" value="${maxV!=null?E(String(maxV)):''}" inputmode="numeric" placeholder="any"></div>`;
+}
+function renderPicker(prefill){
+  const k=PK.key, it=itemByKey(k), rare=rareData(k); if(!it||!rare) return;
+  const oq=itemOrigQuery(it);
+  const links=bpc.queryLinks(oq);
+  const inQueue = PK.queue && PK.order.indexOf(k)>=0;
+  const pos = inQueue ? PK.order.indexOf(k) : -1;
+  const remain = inQueue ? PK.order.filter(x=>!PK.decided.has(x)).length : 0;
+  const p=bpc.state.priced[k];
+  const already = PK.decided.has(k) || !!(p && p.chaos && p.chaos.median!=null);
+  const step = inQueue ? `Rare ${pos+1} of ${PK.order.length}` : 'edit affixes';
+  const linkChip = links ? ` <span class="plinks">${links}-link required</span>` : '';
+  let h=`<div class="ph"><span class="step">${E(step)}</span>${E(it.name)}<span class="scope">${E(rare.scope||'')}${linkChip}</span></div><div class="pbody">`;
+  h+=`<div class="phint">Tick the affixes a comparable item must have; set min/max (blank = any). Everything starts ticked — untick to loosen.</div>`;
+  // in-picker Autoscan (extension only): price every remaining queued rare with its default search
+  if(inQueue && remain>1 && bpc.state.bridge.active)
+    h+=`<div class="pautoscan"><button class="stone-btn autoscan" data-pk="autoscan" type="button" title="Price all ${remain} remaining rares with their default all-affix search via the extension">&#9889; Autoscan (${remain})</button></div>`;
+  // resistance → pseudo-total fold (default ON when the item has resistances)
+  if(rare.pseudo && rare.pseudo.length)
+    h+=`<div class="pseudo-switch ${PK.usePseudo?'on':''}" data-pk="pseudo" role="button" tabindex="0" title="Search the item's TOTAL resistance instead of each individual resistance — how the trade site groups them"><span class="sw"></span> Combine resistances into a pseudo total</div>`;
+  h+=`<div class="afxlist"><div class="afx afxhead"><div></div><div></div><div class="mmhead">min</div><div class="mmhead">max</div></div>`;
+  (rare.affixes||[]).forEach((a,i)=>{ if(PK.usePseudo && a.resist && a.searchable) return; h+=affixRowHTML(a,i,prefill); });
+  if(PK.usePseudo) (rare.pseudo||[]).forEach((pp,j)=> h+=pseudoRowHTML(pp,j,prefill));
+  h+=`</div>`;
+  h+=`<div class="pbtns">`;
+  if(inQueue && pos>0) h+=`<button class="stone-btn skip" data-pk="back" type="button">&larr; Back</button>`;
+  h+=`<button class="stone-btn search" data-pk="search" type="button">${already?'Re-search this item':'Search this item'}</button>`;
+  h+=`<button class="stone-btn skip" data-pk="skip" type="button">Skip${inQueue?" (don't price)":''}</button>`;
+  h+=`</div>`;
+  if(inQueue && remain>1) h+=`<div class="pbulk"><button class="stone-btn pa-skip small" data-pk="skipall" type="button">skip all (don't price)</button></div>`;
+  h+=`</div>`;
+  pick.innerHTML=h;
+}
+function readPicks(){
+  const picks={ usePseudo:PK.usePseudo, affix:{}, pseudo:{} };
+  pick.querySelectorAll('.afx[data-i]').forEach(row=>{
+    const i=+row.dataset.i, cb=row.querySelector('.acb');
+    const amin=row.querySelector('.amin'), amax=row.querySelector('.amax');
+    picks.affix[i]={ ticked: cb?cb.checked:false, min: amin?pkNum(amin.value):null, max: amax?pkNum(amax.value):null };
+  });
+  pick.querySelectorAll('.afx[data-pi]').forEach(row=>{
+    const j=+row.dataset.pi, cb=row.querySelector('.acb');
+    const amin=row.querySelector('.amin'), amax=row.querySelector('.amax');
+    picks.pseudo[j]={ ticked: cb?cb.checked:false, min: amin?pkNum(amin.value):null, max: amax?pkNum(amax.value):null };
+  });
+  return picks;
+}
+
+/* ---- picker actions ---- */
+function doPickerSearch(){
+  const k=PK.key, it=itemByKey(k), rare=rareData(k); if(!it||!rare) return;
+  const query=bpc.buildRareQuery(rare, itemOrigQuery(it), readPicks());
+  PK.decided.add(String(k));
+  if(bpc.state.bridge.active){
+    bpc.priceRareCustom(k, query);                 // extension: fold price into the row + POST to cache
+  } else {
+    const url=bpc.rareTradeUrl(query, (bpc.state.priced[k]&&bpc.state.priced[k].trade_url)||it.trade_url);
+    bpc.setRareQuery(k, query, url);               // remember the refined query on the row (stays manual)
+    window.open(url, '_blank', 'noopener');
+  }
+  if(PK.queue) advanceQueue(); else closePicker();
+}
+function doPickerSkip(){ PK.decided.add(String(PK.key)); if(PK.queue) advanceQueue(); else closePicker(); }
+function doPickerBack(){ const pos=PK.order.indexOf(PK.key); if(pos>0) openPicker(PK.order[pos-1], {queue:true}); }
+function doPickerAutoscan(){
+  const rem=PK.order.filter(x=>!PK.decided.has(x));
+  rem.forEach(x=>PK.decided.add(x));
+  closePicker();
+  if(bpc.state.bridge.active){
+    const list=rem.map(x=>{ const it=itemByKey(x), rare=rareData(x); if(!it||!rare) return null;
+      return { key:x, query: bpc.buildRareQuery(rare, itemOrigQuery(it), bpc.rareDefaultPicks(rare)) }; }).filter(Boolean);
+    if(list.length) bpc.priceRaresCustom(list);
+  }
+}
+function doPickerSkipAll(){ PK.order.forEach(x=>PK.decided.add(x)); closePicker(); }
+function closePicker(){ pickwrap.classList.remove('show'); pick.innerHTML=''; PK.queue=false; PK.key=null; }
+
+/* ---- event wiring ---- */
+pick.addEventListener('click',e=>{
+  const btn=e.target.closest('[data-pk]'); if(!btn) return;
+  const act=btn.dataset.pk;
+  if(act==='pseudo'){ const cur=readPicks(); PK.usePseudo=!PK.usePseudo; renderPicker(cur); return; }
+  if(act==='search'){ doPickerSearch(); return; }
+  if(act==='skip'){ doPickerSkip(); return; }
+  if(act==='back'){ doPickerBack(); return; }
+  if(act==='autoscan'){ doPickerAutoscan(); return; }
+  if(act==='skipall'){ doPickerSkipAll(); return; }
+});
+pick.addEventListener('keydown',e=>{
+  if((e.key==='Enter'||e.key===' ') && e.target.closest && e.target.closest('.pseudo-switch')){
+    e.preventDefault(); const cur=readPicks(); PK.usePseudo=!PK.usePseudo; renderPicker(cur);
+  }
+});
+/* "edit affixes" on any rare row opens that one rare's picker (single-edit mode, not the queue) */
+$('#manualRows').addEventListener('click',e=>{
+  const a=e.target.closest('.mr-affix'); if(a) openPicker(a.dataset.mk, {edit:true});
+});
+/* the remembered "pick affixes" checkbox */
+(function initPickAffixes(){
+  const cb=$('#pickAffixCb'); if(!cb) return;
+  cb.checked=pickModeOn();
+  cb.addEventListener('change',()=>{
+    localStorage.setItem('bpc_pick_affixes', cb.checked?'1':'0');
+    if(cb.checked){ PK.shownFor=null; presentQueue(); }            // start walking the current build's rares
+    else { closePicker(); maybeAutoStart(); }                       // back to normal (may auto-scan if enabled)
+  });
+})();
+bpc.on('items',()=>{ PK=freshPK(); const cb=$('#pickAffixCb'); if(cb) cb.checked=pickModeOn(); });   // reset per build
+bpc.on('done', presentQueue);
+bpc.on('manual', ()=>{ if(pickModeOn()) presentQueue(); });        // rares list settled -> maybe open the queue
+
 /* A board card's trade link: in public mode every priceable item already carries a full,
    never-expiring ?q= browser link from the API (docs/public-contract.md §2.3). */
 function cardTradeUrl(k){ const p=bpc.state.priced[String(k)]; return (p && p.trade_url) || ''; }
@@ -1616,6 +1824,7 @@ function maybeAutoStart(){
   // "not very auto if i have to press a button": with the bridge live, a freshly-loaded build with
   // unpriced rares auto-scans EXACTLY ONCE. Never on the demo, never mid-scan, never twice per build.
   if(bpc.state._mock) return;
+  if(pickModeOn()) return;                 // D-0015: "pick affixes" mode drives each rare by hand — no auto-scan
   if(!bpc.state.bridge.active) return;
   if(!autoAutoOn()) return;
   if(bpc.scanStatus().active) return;                  // respect an in-progress scan
@@ -1704,19 +1913,22 @@ function manualRowHTML(r){
   const rc = it.category==='rare'?'r-rare':it.category==='magic'?'r-magic':it.category==='unique'?'r-unique':'';
   const ico = it.icon ? `<img class="mr-ico" src="${E(it.icon)}" alt="" loading="lazy">` : `<span class="mr-ico ph">◆</span>`;
   const slot = it.slot ? `<span class="mr-slot">${E(it.slot)}</span>` : '';
+  // D-0015: EVERY rare row gets an "edit affixes" button (always — priced or not) that reopens the
+  // affix picker for just that item. Only rares carry an affix payload worth picking.
+  const affixBtn = (it.category==='rare' && bpc.rareOf(k)) ? `<button class="stone-btn mr-affix" data-mk="${E(k)}" type="button" style="padding:5px 10px;font-size:12px" title="Pick exactly which affixes to require (min/max), then re-search this rare">edit affixes</button>` : '';
   let right='';
   if(r.priced){
     const srcCls = p.source==='cache'?'cache':p.source==='trade'?'trade':'manual';
     const srcLbl = p.source==='cache'?'community':p.source==='trade'?'extension':'you';
     right = `<span class="mr-src ${srcCls}" title="${E(p.note||'')}">${srcLbl}</span>`+
             `<span class="mr-price">${bpc.priceHTML(p.chaos.median)}</span>`+
-            `<button class="stone-btn mr-edit" data-mk="${E(k)}" type="button" style="padding:5px 10px;font-size:12px">re-price</button>`;
+            `<button class="stone-btn mr-edit" data-mk="${E(k)}" type="button" style="padding:5px 10px;font-size:12px">re-price</button>`+ affixBtn;
   } else {
     const openBtn = r.trade_url ? `<a class="stone-btn" href="${E(r.trade_url)}" target="_blank" rel="noopener" style="padding:6px 11px;font-size:13px">open search ↗</a>` : '';
     const autoBtn = bpc.state.bridge.active ? `<button class="stone-btn search mr-auto" data-mk="${E(k)}" type="button" style="padding:6px 11px;font-size:13px" title="price this one via the extension">⚡ auto</button>` : '';
     right = openBtn +
       `<input class="mr-input" data-mk="${E(k)}" placeholder="35c · 2 div · paste whisper" spellcheck="false" autocomplete="off">`+
-      `<button class="stone-btn search mr-apply" data-mk="${E(k)}" type="button" style="padding:6px 11px;font-size:13px">apply</button>`+ autoBtn;
+      `<button class="stone-btn search mr-apply" data-mk="${E(k)}" type="button" style="padding:6px 11px;font-size:13px">apply</button>`+ autoBtn + affixBtn;
     const noteRaw = (p.note && p.source!=='none') ? `<div class="mr-err" style="color:var(--parch);font-style:normal">${E(p.note)}</div>` : '';
     right += noteRaw;
   }
@@ -1802,7 +2014,7 @@ function openManual(k){
   const ext=$('#mpExt'); if(ext) ext.onclick=()=>{ ext.textContent='⚡ scanning…'; ext.disabled=true; Promise.resolve(bpc.priceViaExtension(k)).then(closeManual).catch(closeManual); };
   const clr=$('#mpClear'); if(clr) clr.onclick=ev=>{ ev.preventDefault(); bpc.clearManual(k); closeManual(); };
 }
-function closeManual(){ pickwrap.classList.remove('show'); pick.innerHTML=''; }
+function closeManual(){ pickwrap.classList.remove('show'); pick.innerHTML=''; PK.queue=false; PK.key=null; }
 pickwrap.addEventListener('click',e=>{ if(e.target===pickwrap) closeManual(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape' && pickwrap.classList.contains('show')) closeManual(); });
 

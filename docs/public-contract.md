@@ -175,24 +175,83 @@ Query construction is faithful to the local engine:
   `misc_filters` (`gem_level.min`, `quality.min`, `corrupted`).
 
 ### 2.6 `rares` — affix-picker payload (for manual refinement UIs)
-Keyed by the item `index` (string) for every **rare and unique**. Mirrors the local web
-`rares` map so a picker can let the user re-weight the trade query:
+Keyed by the item `index` (string) for every trade-queryable **rare, unique, AND magic** item
+(gems are priced by poe.ninja, not affix-searched, so they are absent). Mirrors the local web
+`rares_meta` map, enriched so a client picker can render every option with no extra lookups.
+Per **D-0015 the default query already requires _all_ of an item's searchable affixes** — this
+map is what lets the *user* (never the tool) choose to exclude one: every affix is listed,
+including the unsearchable ones (shown greyed, `searchable:false`), so the user sees everything
+and the tool hides nothing.
+
 ```jsonc
-"35": {
-  "status": "priced" | "unpriced",     // "priced" => poe.ninja gave a number (uniques)
-  "name": "…", "kind": "rare" | "unique",
-  "scope": "base: Vaal Regalia" | "unique: Mageblood" | "category",
-  "scope_q": { "type": "Vaal Regalia" } | { "name":"…","type":"…" } | { "filters": {…} },
-  "affixes": [ { "kind":"stat"|"equip", "text":"…", "stat_id":"explicit.stat_…"|null,
-                 "value": 66, "searchable": true, "resist": false, "negated": false,
-                 "prefer": true, "priority":"required"|"nice"|"notimp"|"skip",
-                 "reason":"" } , … ],
-  "pseudo": [ { "kind":"stat", "text":"+#% total Elemental Resistance",
-               "stat_id":"pseudo.pseudo_total_elemental_resistance", "value": 120, … } ]
+"6": {
+  "status": "priced" | "unpriced",       // "priced" => poe.ninja gave a number (uniques only)
+  "name": "…", "kind": "rare" | "unique" | "magic",
+  "scope": "base: Thicket Bow" | "unique: Mageblood" | "category",
+  "scope_q": { "type": "Thicket Bow" } | { "name":"…","type":"…" } | { "filters": {…} },
+  "affixes": [ AffixOption, … ],          // the item's mods + total-defence values, display order
+  "pseudo":  [ PseudoOption, … ]          // combined resistance totals (may be [])
 }
 ```
+
+**`AffixOption`** — one selectable line (a mod, or a total-defence value):
+
+| field | type | meaning |
+|---|---|---|
+| `kind` | `"stat"` \| `"equip"` | `stat` = an explicit-style mod (searched via `stats`); `equip` = a total defence value (searched via `armour_filters`) |
+| `text` | string | display line (rich markup stripped; enchants suffixed `" (enchant)"`) |
+| `stat_id` | string \| null | trade stat id for a searchable `stat` affix; `null` when unsearchable or for `equip` |
+| `key` | string | **`equip` only** — `ar`/`ev`/`es`/`ward` (the `armour_filters` key); absent on `stat` |
+| `value` | number \| null | the item's roll (signed; negative when `negated`). Always present, even when unsearchable |
+| `default_min` | number \| null | value to prefill the search **min** (= the roll for a normal affix); `null` when unsearchable or when the roll prefills max instead |
+| `default_max` | number \| null | value to prefill the search **max** (only for a `negated`/"reduced" roll); else `null` |
+| `searchable` | bool | `false` = no trade filter matches this mod → the picker greys it out but still lists it (`reason` says why) |
+| `negated` | bool | the roll is a "reduced" value carried on the opposite-polarity "increased" stat → filter as a max, not a min |
+| `resist` | bool | this mod folds into a `pseudo` resistance total (the picker hides it when the pseudo toggle is on) |
+| `group` | string | the mod's trade stat group: `explicit` · `crafted` · `fractured` · `enchant` · `veiled` · `scourge` · `crucible`; `equip` for defence totals; `pseudo` for pseudo entries. Defaults to `explicit` for PoB imports (which carry no per-mod group) |
+| `prefer` | bool | ticked-by-default in the picker (rares: every searchable affix; uniques: only build-defining `+# to Level of all … Skills` rolls) |
+| `priority` | enum | default tier — `required` · `nice` · `notimp` · `skip` |
+| `reason` | string | why unsearchable (e.g. `"no trade filter matches this mod"`), else `""` |
+
+**`PseudoOption`** — a combined resistance total the picker can search instead of the item's
+individual resist mods. Same fields as a `stat` AffixOption (always `searchable:true`,
+`resist:true`, `group:"pseudo"`), **plus `folds`**: the affixes summed into this total, so the
+picker can grey out exactly the rows it replaced.
+
+| field | type | meaning |
+|---|---|---|
+| `stat_id` | string | `pseudo.pseudo_total_elemental_resistance` or `pseudo.pseudo_total_chaos_resistance` (real trade pseudo ids, present in the bundled stats) |
+| `value` / `default_min` | number | the item's prefilled total. An `all Elemental` roll counts ×3 into the elemental total; an `all Resistances` roll feeds **both** the elemental and chaos totals |
+| `folds` | array | `[{ "index": <position in this item's `affixes`>, "text", "stat_id", "value" }, …]` — every member's `index` points to a `resist:true` affix on the same item |
+
+Real fixture example (offline Allflame sample): a **magic** bow now gains a picker entry, and a
+unique carries a total-defence `equip` option plus a folded elemental-resistance pseudo total:
+```jsonc
+"6": {                                    // magic item — magic now gets a picker entry too
+  "status":"unpriced", "kind":"magic", "name":"Upgraded Thicket Bow",
+  "scope":"base: Thicket Bow", "scope_q":{"type":"Thicket Bow"},
+  "affixes":[ { "kind":"stat", "text":"+8% to Quality of Socketed Gems",
+                "stat_id":"explicit.stat_3828613551", "value":8.0, "default_min":8.0,
+                "default_max":null, "searchable":true, "resist":false, "negated":false,
+                "group":"crafted", "prefer":true, "priority":"notimp", "reason":"" } ],
+  "pseudo":[] },
+"1": {
+  "status":"priced", "kind":"unique", "name":"The Gull, Raven Mask", "scope":"unique: The Gull",
+  "affixes":[ /* … */
+    { "kind":"equip", "key":"ev", "stat_id":null, "text":"Total Evasion Rating", "value":316,
+      "default_min":316, "default_max":null, "searchable":true, "resist":false, "negated":false,
+      "group":"equip", "prefer":false, "priority":"skip", "reason":"" } ],
+  "pseudo":[
+    { "kind":"stat", "text":"+#% total Elemental Resistance",
+      "stat_id":"pseudo.pseudo_total_elemental_resistance", "value":32, "default_min":32,
+      "default_max":null, "searchable":true, "resist":true, "negated":false, "group":"pseudo",
+      "prefer":false, "priority":"skip", "reason":"",
+      "folds":[ { "index":2, "text":"+32% to Cold Resistance",
+                  "stat_id":"explicit.stat_4220027924", "value":32.0 } ] } ] }
+```
 (`equip` affixes carry `key` = `ar`/`ev`/`es`/`ward` instead of `stat_id`; searched via
-`armour_filters`.)
+`armour_filters`. An unsearchable affix — e.g. `"1 Added Passive Skill is a Jewel Socket"` — is
+still listed with `searchable:false`, `stat_id:null`, `default_min:null` and a `reason`.)
 
 ### 2.7 `warnings[]`
 Array of human-readable strings (empty in v1.0; reserved for soft issues).
