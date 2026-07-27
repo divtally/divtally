@@ -12,12 +12,12 @@ The site is `https://divtally.com`. Remaining placeholders to fill:
 
 ## Title
 ```
-[Tool] DivTally — paste a poe.ninja/PoB link, get a full gear price breakdown (open source, no login)
+[Tool] DivTally — paste a build link, get a full gear price breakdown (open source, no login)
 ```
 
 ## Body
 ```
-Paste a poe.ninja build link or a Path of Building code and get the whole build priced — every
+Paste a public build link or a build import code and get the whole build priced — every
 piece of gear, every flask, every skill + support gem — totaled in Chaos and Divine Orbs.
 
   ->  https://divtally.com
@@ -36,7 +36,7 @@ make it impossible to price for thousands of visitors from one server:
 So the tool splits the work by WHERE each price is allowed to come from:
 
   - The cache-friendly half — skill/support gems, currency, and uniques-by-name — comes from
-    poe.ninja's public economy data. One cached fetch serves everyone. This is the bulk of most
+    public economy data. One cached fetch serves everyone. This is the bulk of most
     builds and it's priced instantly, server-side, with zero trade calls.
 
   - Rare and unique items can only be priced live on the trade API — so those prices are produced
@@ -54,7 +54,7 @@ So the tool splits the work by WHERE each price is allowed to come from:
 
 The website itself NEVER receives price data from Grinding Gear Games' servers. Every trade price
 you see arrived via a human paste, the community cache (seeded by a real machine), or the extension
-running on a real user's IP. The server reads poe.ninja and builds trade links — nothing more.
+running on a real user's IP. The server reads public economy data and builds trade links — nothing more.
 
 THE OPTIONAL EXTENSION — "Trade Bridge"
 
@@ -72,15 +72,15 @@ It's deliberately minimal and transparent:
 The site is fully usable without it — the extension only automates the click.
 
 FEATURES
-  - poe.ninja build link OR Path of Building code / paste-link as input.
+  - Public build link OR build import code / paste-link as input.
   - Prices gear, flasks, jewels, and every skill + support gem (Awakened/Empower/Enlighten
     included — often the biggest cost).
   - Understands 5/6-links as a price factor on rares and uniques.
-  - Totals in Chaos, shown alongside Divine, using live poe.ninja rates.
+  - Totals in Chaos, shown alongside Divine, using live exchange rates.
   - Per-item trade links for anything not auto-priced.
 
 ACCURACY / HONESTY CAVEATS
-  - Server-side totals cover only poe.ninja-priced items (gems, currency, uniques-by-name), so the
+  - Server-side totals cover only economy-priced items (gems, currency, uniques-by-name), so the
     headline number is a FLOOR until rares are priced (via a click, a paste, the cache, or the
     extension).
   - Some variant uniques (Watcher's Eye, multi-mod jewels) can't be pinned to an exact roll from
@@ -105,6 +105,6 @@ trademark of Grinding Gear Games.
 - **Reddit (r/pathofexile):** keep "HOW IT WORKS", the extension does/never list, and the caveats —
   that combination pre-empts the "is this safe / does it touch my account" questions.
 - **Official forum:** the full text is fine; forums reward thoroughness.
-- **Discord:** lead with the one-liner + `https://divtally.com`, then a 3-bullet "reads poe.ninja server-side,
-  rares priced on your own IP, open source" and the repo link.
+- **Discord:** lead with the one-liner + `https://divtally.com`, then a 3-bullet "reads public economy
+  data server-side, rares priced on your own IP, open source" and the repo link.
 ```

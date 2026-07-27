@@ -26,8 +26,8 @@ DivTally - what does that Path of Exile build cost? Prices rares & uniques from 
 ```
 DivTally - what does that Path of Exile build cost?
 
-This is the companion extension for DivTally, the free, open-source website that turns a poe.ninja
-build link or a Path of Building code into a full gear price breakdown in Chaos and Divine Orbs.
+This is the companion extension for DivTally, the free, open-source website that turns a public
+build link or a build import code into a full gear price breakdown in Chaos and Divine Orbs.
 Most of that pricing comes from public economy data - but live prices for RARE and UNIQUE items
 can only come from Path of Exile's official trade API, and a browser page is not allowed to call
 that API directly (the browser blocks it, and pricing for thousands of visitors through one shared

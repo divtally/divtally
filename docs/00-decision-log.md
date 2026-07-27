@@ -194,3 +194,13 @@ manifest.dev.json only). Brand sweep: extension ("DivTally - Trade Bridge"), sto
 public site titles/footer, how-it-works, launch post, GOING-PUBLIC (running example -> divtally;
 domain registration moves from optional Phase 5 into Phase 1 since the name IS the domain).
 Local dev app keeps its repo identity; DivTally is the public-facing brand.
+
+## D-0011 - Copy rule: no third-party product names in descriptions (Locked, 2026-07-27)
+Owner: "in descriptions of our product don't mention products other than path of exile official
+ggg official products." Applied to store listings, launch post, site meta/hero/UI strings:
+poe.ninja / Path of Building / pobb.in replaced with generic terms ("public build link", "build
+import code", "public economy data"). Path of Exile itself stays (with the not-affiliated line).
+CARVE-OUT (flagged to owner): the how-it-works ENDPOINTS TABLE keeps literal API hostnames - it
+is a technical transparency disclosure, not marketing; strip on owner request. Public git
+identity: repo-local user = DivTally <divtally@gmail.com>, full history rewritten to it
+pre-publish (personal email never ships in public metadata).

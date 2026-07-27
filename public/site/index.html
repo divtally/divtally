@@ -6,7 +6,7 @@
 <meta name="bpc-accent" content="#c8aa6e">
 <meta name="bpc-vibe" content="diegetic">
 <meta name="bpc-order" content="3">
-<meta name="description" content="Paste a poe.ninja build link (or Path of Building code) and see what every item costs, laid out as Path of Exile gear slots. Gems and uniques priced from poe.ninja; rares you price yourself. Not affiliated with Grinding Gear Games.">
+<meta name="description" content="Paste a build link (or build import code) and see what every item costs, laid out as Path of Exile gear slots. Gems and uniques priced from public economy data; rares you price yourself. Not affiliated with Grinding Gear Games.">
 <title>DivTally · Path of Exile build price checker</title>
 <!-- Fonts are self-hosted (assets/fonts/) so the browser contacts NO third party for them
      (B-001 trust promise / how-it-works "every server this site contacts"). -->
@@ -843,7 +843,7 @@
           <div class="bt-inc" id="btInc"></div>
         </div>
         <div class="research-row" id="researchRow" hidden>
-          <button class="stone-btn pob-btn" id="pobBtn" type="button" hidden title="Copy this build's Path of Building import code">
+          <button class="stone-btn pob-btn" id="pobBtn" type="button" hidden title="Copy this build's import code">
             <svg class="pob-ico" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V5a2 2 0 0 1 2-2h10"></path></svg>
             <span class="pob-lbl">pob import</span>
           </button>
@@ -857,7 +857,7 @@
   <!-- ===== intro (no build yet) ===== -->
   <div class="intro" id="intro">
     <h2>What does this build cost?</h2>
-    <p>Paste a poe.ninja build link, a Path of Building code, or a pobb.in link below. Gems and uniques are priced from the poe.ninja economy; rares you price yourself with one click or a pasted buyout. <a href="/how-it-works.html" style="color:var(--bz3)">How it works &rarr;</a></p>
+    <p>Paste a build link or a build import code below. Gems and uniques are priced from public economy data; rares you price yourself with one click or a pasted buyout. <a href="/how-it-works.html" style="color:var(--bz3)">How it works &rarr;</a></p>
   </div>
 
   <!-- ===== live pricing indicator (above the board) ===== -->
@@ -950,10 +950,10 @@
   <div class="frame toolbar">
     <div class="inner">
       <form id="f" style="display:contents">
-        <input id="url" placeholder="poe.ninja link · PoB code · pobb.in link" spellcheck="false" autocomplete="off">
+        <input id="url" placeholder="build link · import code · paste link" spellcheck="false" autocomplete="off">
         <select id="league" class="stone-sel" title="Trade league to price against (Auto = the build's own league)"><option value="">League: Auto</option></select>
         <select id="liststatus" class="stone-sel" title="Listing status the trade links use"></select>
-        <label class="chk" title="Bypass the cached copy and re-fetch the build fresh from poe.ninja"><input type="checkbox" id="refresh"> fresh pull</label>
+        <label class="chk" title="Bypass the cached copy and re-fetch the build fresh"><input type="checkbox" id="refresh"> fresh pull</label>
         <button class="stone-btn go" id="go" type="submit">Appraise</button>
       </form>
     </div>
@@ -1094,7 +1094,7 @@ bpc.on('progress',m=>{ if(['queued','running','loading'].includes(bpc.state.phas
 bpc.on('done',()=>{
   const t=bpc.totals(); const manual=bpc.manualRows().filter(r=>!r.priced).length;
   const parts=[];
-  if(t.priced) parts.push(t.priced+' item'+(t.priced!==1?'s':'')+' priced from poe.ninja');
+  if(t.priced) parts.push(t.priced+' item'+(t.priced!==1?'s':'')+' priced from economy data');
   if(manual) parts.push(manual+' rare'+(manual!==1?'s':'')+' to price yourself');
   $('#status').textContent = parts.join(' · ');
 });
@@ -1108,7 +1108,7 @@ bpc.on('meta',m=>{
   // character name links back to its poe.ninja page when we have a real source URL
   const nm=E(m.character||'Unknown Exile'), su=m.source_url||'';
   $('#bName').innerHTML = /^https?:\/\//i.test(su)
-    ? `<a class="name-link" href="${E(su)}" target="_blank" rel="noopener" title="View this build on poe.ninja">${nm}</a>`
+    ? `<a class="name-link" href="${E(su)}" target="_blank" rel="noopener" title="View this build's source profile">${nm}</a>`
     : nm;
   $('#bSub').innerHTML=`<b>${E(m['class']||'')}</b> &middot; Level ${m.level||'?'} &middot; ${E(m.league||'')}`;
   if(m.divine_to_chaos){
@@ -1229,7 +1229,7 @@ function skillRowHTML(it){
         <span class="sk-price">${total!=null?bpc.priceHTML(total):'<span class="bpc-dash">—</span>'}</span>
       </div>
       <div class="sk-body">
-        <div class="sk-cut">priced from the poe.ninja gem economy: active skill + every support gem${p.trade_url?` &middot; <a href="${E(p.trade_url)}" target="_blank" rel="noopener">view on trade &#8599;</a>`:''} <span class="sk-hint">(each gem by name / level / quality / corruption)</span></div>
+        <div class="sk-cut">priced from the public gem economy: active skill + every support gem${p.trade_url?` &middot; <a href="${E(p.trade_url)}" target="_blank" rel="noopener">view on trade &#8599;</a>`:''} <span class="sk-hint">(each gem by name / level / quality / corruption)</span></div>
         <ul class="sk-sups">${supportsHTML(it,p)}</ul>
       </div>
     </div>`;
