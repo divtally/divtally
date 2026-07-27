@@ -1,0 +1,128 @@
+{
+  "ok": true,
+  "schema_version": "1.0",
+  "meta": {
+    "character": "StubExileHOWL",
+    "account": "stub-0001",
+    "class": "Elementalist",
+    "level": 96,
+    "league": "Standard",
+    "ninja_league": "Standard",
+    "source": "poe.ninja",
+    "source_url": "https://poe.ninja/poe1/builds/standard/character/StubAccount/StubExileHOWL",
+    "pob_code": "eNrtWVtT4zgWfu-q_g8u9rkxsmzZTld6tgRJN8wEyAS6Z-aJUmwlEThyypIDzK_fI8m5kQ7p7Z6anWG",
+    "currency_unit": "chaos",
+    "divine_to_chaos": 118.3,
+    "chaos_img": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQ3VycmVuY3kvQ3VycmVuY3lSZXJvbGxSYXJlIiwic2NhbGUiOjF9XQ/46a2347805/CurrencyRerollRare.png",
+    "divine_img": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQ3VycmVuY3kvQ3VycmVuY3lNb2RWYWx1ZXMiLCJzY2FsZSI6MX1d/ec48896769/CurrencyModValues.png",
+    "generated_at": 1785122891,
+    "pricing_note": "Item prices are from the poe.ninja economy only. This service never calls pathofexile.com."
+  },
+  "totals": {
+    "currency": "chaos",
+    "chaos":  { "min": 246.0, "median": 268.0, "high": 344.0 },
+    "divine": { "min": 2.079, "median": 2.265, "high": 2.908 },
+    "priced_items": 2,
+    "unpriced_items": 3,
+    "note": "Sums only poe.ninja-priced items (gems + uniques). Rares add to cost only once priced on your machine."
+  },
+  "items": [
+    {
+      "index": 0, "name": "Doryani's Catalyst, Vaal Sceptre", "group": "equipment", "category": "unique",
+      "slot": "Weapon", "rarity": "Unique", "count": 1,
+      "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvV2VhcG9ucy9PbmVIYW5kV2VhcG9ucy9TY2VwdGVycy9Eb3J5YW5pc0NhdGFseXN0IiwidyI6MiwiaCI6Mywic2NhbGUiOjF9XQ/aa54cbb507/DoryanisCatalyst.png",
+      "mods": { "implicit": [], "explicit": ["Adds 36 to 56 Lightning Damage", "1.8% of Elemental Damage Leeched as Life", "35% increased Elemental Damage"] },
+      "price": {
+        "chaos": { "min": 3.0, "median": 3.0, "high": 3.0 }, "divine": { "min": 0.025, "median": 0.025, "high": 0.025 },
+        "confidence": "high", "method": "unique-ninja", "source": "poe.ninja",
+        "note": "poe.ninja price by name", "sample_size": 28, "total_found": 520, "listing_count": 520, "n_variants": 1, "variant": ""
+      },
+      "trade_url": "https://www.pathofexile.com/trade/search/Standard?q=%7B%22query%22%3A%7B%22name%22%3A%22Doryani%27s%20Catalyst%22%7D%7D",
+      "trade_query": { "query": { "status": {"option":"online"}, "name": "Doryani's Catalyst", "type": "Vaal Sceptre", "stats": [{"type":"and","filters":[]}] }, "sort": {"price":"asc"} }
+    },
+    {
+      "index": 1, "name": "Rift Shroud, Vaal Regalia", "group": "equipment", "category": "rare",
+      "slot": "Body Armour", "rarity": "Rare", "count": 1,
+      "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQXJtb3Vycy9Cb2R5QXJtb3Vycy9Cb2R5SW50MUNVbmlxdWUiLCJ3IjoyLCJoIjozLCJzY2FsZSI6MX1d/4f3e22a163/BodyInt1CUnique.png",
+      "max_link": 6, "total_sockets": 6, "socket_colours": ["B","B","B","B","B","B"],
+      "mods": { "implicit": [], "explicit": ["+112 to maximum Life", "+41% to Fire Resistance", "+38% to Cold Resistance", "+520 to maximum Energy Shield"] },
+      "price": {
+        "chaos": { "min": null, "median": null, "high": null }, "divine": { "min": null, "median": null, "high": null },
+        "confidence": "none", "method": "rare-unpriced", "source": "trade",
+        "note": "rares are priced on your machine via the trade link / extension"
+      },
+      "trade_url": "https://www.pathofexile.com/trade/search/Standard?q=%7B%22query%22%3A%7B%22type%22%3A%22Vaal%20Regalia%22%2C%22stats%22%3A%5B%7B%22type%22%3A%22and%22%2C%22filters%22%3A%5B%7B%22id%22%3A%22explicit.stat_3299347043%22%7D%5D%7D%5D%7D%7D",
+      "trade_query": { "query": { "status": {"option":"online"}, "type": "Vaal Regalia", "stats": [{"type":"and","filters":[{"id":"explicit.stat_3299347043","value":{"min":112}}]}], "filters": { "socket_filters": {"filters":{"links":{"min":6}}} } }, "sort": {"price":"asc"} }
+    },
+    {
+      "index": 2, "name": "Phoenix Star, Large Cluster Jewel", "group": "jewel", "category": "rare",
+      "slot": "Jewel", "rarity": "Rare", "count": 1,
+      "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvSmV3ZWxzL0VsZGVySmV3ZWwiLCJ3IjoxLCJoIjoxLCJzY2FsZSI6MX1d/278c673716/ElderJewel.png",
+      "mods": { "implicit": ["Adds 8 Passive Skills"], "explicit": ["Added Small Passive Skills grant: 12% increased Fire Damage", "1 Added Passive Skill is Blowback"] },
+      "price": {
+        "chaos": { "min": null, "median": null, "high": null }, "divine": { "min": null, "median": null, "high": null },
+        "confidence": "none", "method": "rare-unpriced", "source": "trade",
+        "note": "rares are priced on your machine via the trade link / extension"
+      },
+      "trade_url": "https://www.pathofexile.com/trade/search/Standard?q=%7B%22query%22%3A%7B%22type%22%3A%22Large%20Cluster%20Jewel%22%7D%7D",
+      "trade_query": { "query": { "status": {"option":"online"}, "type": "Large Cluster Jewel", "stats": [{"type":"and","filters":[]}] }, "sort": {"price":"asc"} }
+    },
+    {
+      "index": 3, "name": "Quicksilver Flask of Adrenaline", "group": "flask", "category": "magic",
+      "slot": "Flask", "rarity": "Magic", "count": 1,
+      "icon": "https://web.poecdn.com/gen/image/WzksMTQseyJmIjoiMkRJdGVtcy9GbGFza3MvQXR6aXJpc1Byb21pc2UiLCJ3IjoxLCJoIjoyLCJzY2FsZSI6MSwibGV2ZWwiOjF9XQ/8a5f4f13b4/AtzirisPromise.png",
+      "mods": { "implicit": [], "explicit": ["40% increased Movement Speed during effect", "25% increased Movement Speed during effect"] },
+      "price": {
+        "chaos": { "min": null, "median": null, "high": null }, "divine": { "min": null, "median": null, "high": null },
+        "confidence": "none", "method": "magic-unpriced", "source": "trade",
+        "note": "magic items are priced on your machine via the trade link"
+      },
+      "trade_url": "https://www.pathofexile.com/trade/search/Standard?q=%7B%22query%22%3A%7B%22type%22%3A%22Quicksilver%20Flask%22%7D%7D",
+      "trade_query": { "query": { "status": {"option":"online"}, "type": "Quicksilver Flask", "stats": [{"type":"and","filters":[]}] }, "sort": {"price":"asc"} }
+    },
+    {
+      "index": 4, "name": "Firestorm", "group": "gem", "category": "gem",
+      "slot": "?", "rarity": "Gem", "count": 1,
+      "level": 21, "quality": 20, "corrupted": true, "granted": false,
+      "icon": "https://web.poecdn.com/gen/image/WzMwLDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9GaXJlc3Rvcm0iLCJ3IjoxLCJoIjoxLCJzY2FsZSI6MX1d/fc6447dde0/Firestorm.png",
+      "supports": [
+        { "name": "Spell Echo Support", "level": 21, "quality": 20, "corrupted": true, "support": true, "granted": false, "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9TdXBwb3J0L0VjaG8iLCJ3IjoxLCJoIjoxLCJzY2FsZSI6MX1d/1868afbf2e/Echo.png" },
+        { "name": "Controlled Destruction Support", "level": 21, "quality": 20, "corrupted": true, "support": true, "granted": false, "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvR2Vtcy9TdXBwb3J0L0NvbnRyb2xsZWREZXN0cnVjdGlvbkdlbSIsInciOjEsImgiOjEsInNjYWxlIjoxfV0/0fca4292bb/ControlledDestructionGem.png" }
+      ],
+      "host_slot": "Body Armour", "host_name": "Rift Shroud", "host_base": "Vaal Regalia", "host_unique": false, "host_inventory_id": "BodyArmour",
+      "price": {
+        "chaos": { "min": 265.0, "median": 265.0, "high": 265.0 }, "divine": { "min": 2.24, "median": 2.24, "high": 2.24 },
+        "confidence": "medium", "method": "skill", "source": "poe.ninja",
+        "note": "poe.ninja gem prices: active + 2 supports",
+        "kind": "skill", "level": 21, "quality": 20, "corrupted": true, "total_chaos": 265.0,
+        "gems": [
+          { "name": "Firestorm", "support": false, "granted": false, "level": 21, "quality": 20, "corrupted": true, "chaos": 9.0, "variant": "21/20c", "note": "", "trade_url": "https://www.pathofexile.com/trade/search/Standard?q=demo" },
+          { "name": "Spell Echo Support", "support": true, "granted": false, "level": 21, "quality": 20, "corrupted": true, "chaos": 168.0, "variant": "21/20c", "note": "", "trade_url": "https://www.pathofexile.com/trade/search/Standard?q=demo" },
+          { "name": "Controlled Destruction Support", "support": true, "granted": false, "level": 21, "quality": 20, "corrupted": true, "chaos": 88.0, "variant": "21/20c", "note": "", "trade_url": "https://www.pathofexile.com/trade/search/Standard?q=demo" }
+        ]
+      },
+      "trade_url": "https://www.pathofexile.com/trade/search/Standard?q=demo",
+      "trade_query": { "query": { "status": {"option":"online"}, "type": "Firestorm", "filters": { "type_filters": {"filters":{"category":{"option":"gem.activegem"}}}, "misc_filters": {"filters":{"gem_level":{"min":21},"quality":{"min":20}}} }, "stats": [{"type":"and","filters":[]}] }, "sort": {"price":"asc"} }
+    }
+  ],
+  "rares": {
+    "1": {
+      "status": "unpriced", "name": "Rift Shroud, Vaal Regalia", "kind": "rare",
+      "scope": "base: Vaal Regalia", "scope_q": { "type": "Vaal Regalia" },
+      "affixes": [
+        { "kind": "stat", "text": "+112 to maximum Life", "stat_id": "explicit.stat_3299347043", "value": 112, "searchable": true, "resist": false, "negated": false, "prefer": true, "priority": "required", "reason": "" },
+        { "kind": "stat", "text": "+41% to Fire Resistance", "stat_id": "explicit.stat_3372524247", "value": 41, "searchable": true, "resist": true, "negated": false, "prefer": true, "priority": "required", "reason": "" }
+      ],
+      "pseudo": []
+    },
+    "2": {
+      "status": "unpriced", "name": "Phoenix Star, Large Cluster Jewel", "kind": "rare",
+      "scope": "base: Large Cluster Jewel", "scope_q": { "type": "Large Cluster Jewel" },
+      "affixes": [
+        { "kind": "stat", "text": "Adds 8 Passive Skills", "stat_id": "enchant.stat_3948993189", "value": 8, "searchable": true, "resist": false, "negated": false, "prefer": true, "priority": "nice", "reason": "" }
+      ],
+      "pseudo": []
+    }
+  },
+  "warnings": []
+}

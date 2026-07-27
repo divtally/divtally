@@ -153,3 +153,32 @@ submissions, domain, scheduled seeding) - the PoE2 setup-docx pattern, updated f
 dangling cross-ref, Autoscan missing from advanced-search section, pob.py/util.py missing from
 layout). Note: the workflow's two prove-agents died on a structured-output cap - verdicts were
 re-derived by the main agent, not taken from the workflow's misleading "all refuted" return.
+
+## D-0009 - Public-build trust fixes (fix round 1) (Locked, 2026-07-27)
+Fixed the two MAJOR + all MINOR findings from the public-build verification (docs/verify/pub-*.md;
+details in docs/notes-public-fix1.md). Two are fundamental to B-001's trust thesis:
+- **Transparency page no longer self-falsifies (pub-adversarial MAJOR-2).** The two Google font
+  families are now **self-hosted** (`public/site/assets/fonts/*.woff2` + `fonts.css`; Google
+  `<link>`s removed from both HTML pages) so the browser contacts NO third party for fonts;
+  `web.poecdn.com` (GGG's image CDN for item icons, loaded client-side) is added as a row in the
+  how-it-works endpoints table; "no analytics, no tracking" softened to the truthful "no cookies
+  we set / the only third-party contact is GGG's image CDN". "Every server this site contacts" is
+  now an accurate claim.
+- **Community cache trust model (pub-adversarial MAJOR-1).** The cache is an OPEN store (the
+  extension POSTs results back, so writes can't be secret-gated). Hardened `worker.js`:
+  `confidence` is now **DERIVED server-side from `total_found`** (client value ignored - can't
+  forge "high"); each chaos tier is **capped at 1e8**; a soft **per-IP daily write budget**
+  (`MAX_WRITES_PER_IP_DAY`, default 600, env-overridable) stops one script from draining the KV
+  free-tier write quota (the ~17-POST DoS); oversized POST bodies rejected pre-parse. The **site**
+  now renders every cache-sourced number as **"community · unverified"** (neutral dot, never the
+  green verified-price dot) in the tooltip + manual panel. A distributed flood remains possible
+  (inherent to a keyless open cache on the free tier) - documented as accepted; cache is
+  best-effort. worker.test.mjs 45->55 green.
+- **Minors:** `_http.py` now re-runs the host guard on every redirect hop (+caps depth) so the
+  "structurally impossible" claim holds; `build_zips.py` REFUSES (non-zero exit, `_INVALID_
+  PLACEHOLDER` output names) when the manifest domain placeholder remains, and the stale
+  placeholder zips were removed from `public/dist/`; `.gitignore` no longer blanket-ignores
+  `dist/` (kept `build_zips.py`, still ignores `*.zip`); `response.py` `priced_items` now requires
+  a finite tier (a granted-only gem group no longer inflates the count: ascii fixture 6->5).
+  pub-functional MINOR-2 (copy `vercel.json` to `public/` at deploy) is an owner step already
+  documented - left as-is. `python tests.py` stays green; api `_verify` phase A green.

@@ -1,6 +1,8 @@
 __pycache__/
 cache/
 *.pyc
-dist/
 build/
+# NOTE: do NOT add a blanket `dist/` ignore. public/dist/ holds build_zips.py, a SOURCE
+# script the store-linked repo must ship (B-001 "open source, readable in the repo"). The
+# extension zips it produces are build artifacts and are covered by *.zip below.
 *.zip

@@ -1,0 +1,364 @@
+# Public API contract — `api/build` (PoE1 Build Price Checker)
+
+**Audience:** the site agent (and the browser extension) building against the public
+serverless function. This document is the source of truth for the request/response shapes.
+The function lives in `public/api/` (self-contained Vercel Python project); see
+`docs/notes-public-api.md` for how it is built and verified.
+
+**Status:** Locked v1.0 (2026-07-26). Verified end-to-end locally against
+`research/data` fixtures (offline) and one live poe.ninja PoE1 character (see notes).
+
+---
+
+## 0. The hard invariant (read first)
+
+This function **never calls pathofexile.com** — not the trade search/fetch/exchange API,
+not the `data/*` reference endpoints. (Enforced structurally: the vendored HTTP layer
+blocks the host; the reference data is bundled; trade queries are *built, never executed*.)
+
+Consequences for you, the consumer:
+
+- **Item prices come only from poe.ninja**: gems (active + supports), currency rates, and
+  uniques by name. These arrive as real chaos numbers with a confidence.
+- **Rares (and magic items, and uniques poe.ninja doesn't list) are NOT priced here.** For
+  each, the response carries a ready-to-run **`trade_query`** (the exact JSON body to POST
+  to `https://www.pathofexile.com/api/trade/search/<league>`) **and** a clickable
+  **`trade_url`** (the same query as a `?q=` browser link). Pricing them happens on the
+  **user's** machine — the browser link (Rung 1) or the extension bridge (Rung 2). This is
+  the whole point of B-001: *users are the scanners*.
+
+---
+
+## 1. Endpoints
+
+### `POST /api/build`  (preferred for the site)
+Body: JSON object. The build input may be under any of
+`input` / `url` / `build` / `pob` / `code` / `text` (first non-empty wins).
+
+```jsonc
+{
+  "input": "https://poe.ninja/poe1/builds/<league>/character/<account>/<char>",
+  "league": "Standard",     // OPTIONAL trade-league override (see §5)
+  "status": "online"        // OPTIONAL listing status: online|any|onlineleague|available|securable
+}
+```
+
+### `GET /api/build?url=<...>&league=<...>&status=<...>`
+Same semantics via query string (`url` or `input` accepted). Handy for testing / links.
+
+### `GET /api/health`
+Offline readiness probe (never hits the network). Returns:
+```jsonc
+{ "ok": true, "service": "bpc-public-api", "schema_version": "1.0",
+  "calls_pathofexile_com": false,
+  "refdata": { "stat_groups": 9, "stat_patterns": 8077, "base_types": 3952 },
+  "ts": 1785122891 }
+```
+
+### `OPTIONS` (any) — CORS preflight, returns 204 with the CORS headers.
+
+**Accepted inputs** (auto-detected): a poe.ninja PoE1 **character** URL; a **Path of
+Building** import code (the base64 blob); or a **PoB paste link** on `pobb.in`,
+`pastebin.com`, or `poe.ninja/pob/...`. A poe.ninja *build-overview* link (no `/character/`)
+is rejected with guidance.
+
+---
+
+## 2. Response — the ONE document (success, HTTP 200)
+
+Top-level keys: `ok`, `schema_version`, `meta`, `totals`, `items`, `rares`, `warnings`.
+
+### 2.1 `meta`
+| field | type | notes |
+|---|---|---|
+| `character` | string | character name (poe.ninja) or `"Path of Building import"` |
+| `account` | string | poe.ninja account (dash-encoded); `""` for PoB |
+| `class` | string | ascendancy/class |
+| `level` | int | |
+| `league` | string | **the trade league used in every `trade_url`/`trade_query`** |
+| `ninja_league` | string | the poe.ninja league display name (usually == `league`) |
+| `source` | `"poe.ninja"` \| `"pob"` | which input path produced the build |
+| `source_url` | string | the poe.ninja URL, or `"(Path of Building import)"` |
+| `pob_code` | string | the build's PoB export code if poe.ninja provided one (else `""`) |
+| `cache_key` | string | `poeninja:char:<version>:<account>:<char>` (stable per snapshot) or `""` |
+| `currency_unit` | `"chaos"` | base unit for every price |
+| `divine_to_chaos` | number\|null | chaos per 1 Divine Orb (the Divine display rate) |
+| `chaos_img` / `divine_img` | string | poecdn currency icon URLs (may be `""`) |
+| `generated_at` | int | unix seconds |
+| `pricing_note` | string | human-readable statement of the invariant (for a UI footer) |
+
+### 2.2 `totals`
+Sums **only poe.ninja-priced items** (gems + uniques). Rares/magic are excluded (they have
+no server-side number).
+```jsonc
+{ "currency": "chaos",
+  "chaos":  { "min": 31760.26, "median": 31985.66, "high": 32438.54 },
+  "divine": { "min": 268.472,  "median": 270.378,  "high": 274.206 },
+  "priced_items": 22,      // items with a poe.ninja number
+  "unpriced_items": 19,    // items carrying a trade_query but no server number
+  "note": "…" }
+```
+Any tier value may be `null` (nothing priced). `divine.*` = `chaos.* / divine_to_chaos`.
+
+### 2.3 `items[]` — one row per build item, in **build order**
+(belt order for flasks, `skills[]` order for gems, `items[]` order for gear).
+
+Common fields (every row):
+| field | type | notes |
+|---|---|---|
+| `index` | int | stable position in this response's `items` array; the key used in `rares` |
+| `name` | string | display name (`"Unique, Base"` or type line) |
+| `group` | `equipment`\|`flask`\|`jewel`\|`gem` | |
+| `category` | `unique`\|`rare`\|`magic`\|`gem`\|`normal` | routing/pricing class |
+| `slot` | string | display slot ("Body Armour", "Ring", "?", …) |
+| `rarity` | string | "Unique"/"Rare"/"Magic"/"Gem"/… |
+| `count` | int | copies |
+| `icon` | string | item art URL |
+| `price` | object | see §2.4 |
+| `trade_url` | string | clickable `?q=` browser search (**empty** only if no query could be built) |
+| `trade_query` | object\|null | the exact `{query, sort}` to POST to the trade **API** (§2.5) |
+
+Present when the item has sockets/links (a 5/6-link drives price):
+`max_link` (int), `total_sockets` (int), `socket_colours` (string[] of R/G/B/W/A).
+
+Non-gem rows add `mods`: `{ "implicit": string[], "explicit": string[] }` (rich-text
+stripped) when the item has any.
+
+**Gem rows** add: `level`, `quality` (int), `corrupted` (bool), `granted` (bool — the
+active skill is item-provided, so excluded from its price total), `supports` (array of
+`{name, level, quality, corrupted, icon, support, granted}`), and host grouping fields
+`host_slot`, `host_name`, `host_base`, `host_unique` (bool), `host_inventory_id`.
+
+### 2.4 `price` object (mirrors the local engine's `_result_dict`)
+| field | type | notes |
+|---|---|---|
+| `chaos` | `{min,median,high}` | numbers or `null`. For point estimates (gems, name-matched uniques) all three are equal. |
+| `divine` | `{min,median,high}` | derived: `chaos / divine_to_chaos` (or `null`) |
+| `confidence` | `high`\|`medium`\|`low`\|`none` | |
+| `method` | string | see §3 for the enum |
+| `source` | `poe.ninja`\|`trade`\|`none` | **`poe.ninja`** = a real server-side number; **`trade`** = priced client-side via `trade_query`; **`none`** = normal/unpriceable item |
+| `note` | string | human explanation |
+| `sample_size` / `total_found` | int | poe.ninja listing sample / total (`listing_count` echoes it for uniques) |
+
+Gem-priced rows additionally carry (merged from the engine's `extra`):
+`kind:"skill"`, `level`, `quality`, `corrupted`, `total_chaos` (= sum of priced gems;
+**`null` iff nothing priced**), and `gems[]` — the per-gem breakdown, each
+`{name, support, granted, level, quality, corrupted, chaos|null, variant, note, trade_url}`.
+**Invariant:** `total_chaos == sum(g.chaos for g in gems if g.chaos != null)`; a `granted`
+gem always has `chaos: null` and is excluded.
+
+Unique-priced rows additionally carry: `listing_count` (int), `n_variants` (int — how many
+poe.ninja lines share this name), `variant` (string — the chosen variant, or `""`).
+
+### 2.5 `trade_query` — the extension deliverable
+For rares, magic items, and uniques, this is the **exact** body to POST to
+`https://www.pathofexile.com/api/trade/search/<meta.league>`:
+```jsonc
+{ "query": { "status": {"option":"online"}, "type":"…", "name":"…",
+             "stats":[{"type":"and","filters":[{"id":"explicit.stat_…"}, …]}],
+             "filters": { "armour_filters": {…}, "socket_filters": {…}, … } },
+  "sort": { "price": "asc" } }
+```
+`trade_url` is the identical payload URL-encoded onto `…/trade/search/<league>?q=<payload>`
+(the browser search page). Both open/execute the SAME search. The extension should POST
+`trade_query`, read the returned `id` + result hashes, then `GET
+…/api/trade/fetch/<ids>?query=<id>` — exactly what the local engine does, but from the
+user's IP. **Rate-limit discipline is the extension's responsibility.**
+
+Query construction is faithful to the local engine:
+- **rares** → require every *searchable* affix (AND group) + each total defence value at
+  ≥85% (`armour_filters`) + a `socket_filters.links.min` for 5/6-links.
+- **uniques** → `name` + base `type` (+ links) (+ any build-defining `+# to Level of all …
+  Skills` roll pinned to the build's value).
+- **magic** → base `type` only.
+- **gems** → `type`=gem name + `type_filters.category` (gem.activegem/gem.supportgem) +
+  `misc_filters` (`gem_level.min`, `quality.min`, `corrupted`).
+
+### 2.6 `rares` — affix-picker payload (for manual refinement UIs)
+Keyed by the item `index` (string) for every **rare and unique**. Mirrors the local web
+`rares` map so a picker can let the user re-weight the trade query:
+```jsonc
+"35": {
+  "status": "priced" | "unpriced",     // "priced" => poe.ninja gave a number (uniques)
+  "name": "…", "kind": "rare" | "unique",
+  "scope": "base: Vaal Regalia" | "unique: Mageblood" | "category",
+  "scope_q": { "type": "Vaal Regalia" } | { "name":"…","type":"…" } | { "filters": {…} },
+  "affixes": [ { "kind":"stat"|"equip", "text":"…", "stat_id":"explicit.stat_…"|null,
+                 "value": 66, "searchable": true, "resist": false, "negated": false,
+                 "prefer": true, "priority":"required"|"nice"|"notimp"|"skip",
+                 "reason":"" } , … ],
+  "pseudo": [ { "kind":"stat", "text":"+#% total Elemental Resistance",
+               "stat_id":"pseudo.pseudo_total_elemental_resistance", "value": 120, … } ]
+}
+```
+(`equip` affixes carry `key` = `ar`/`ev`/`es`/`ward` instead of `stat_id`; searched via
+`armour_filters`.)
+
+### 2.7 `warnings[]`
+Array of human-readable strings (empty in v1.0; reserved for soft issues).
+
+---
+
+## 3. Enums
+
+**`price.method`**
+- `skill` — gem group priced from poe.ninja.
+- `unique-ninja` — unique priced by exact name (single poe.ninja line).
+- `unique-ninja-variant` — a specific poe.ninja variant matched to the item's mods.
+- `unique-ninja-range` — several variants; `chaos.{min,median,high}` is the spread across
+  them (exact roll unclear — verify via `trade_url`). Always `confidence:"low"`.
+- `unique-unpriced` — name not on poe.ninja (or unnamed). No number; use `trade_query`.
+- `rare-unpriced` — rares are never server-priced; use `trade_query`.
+- `magic-unpriced` — magic items; use `trade_query`.
+- `none` — normal item, not priced.
+
+**`price.source`**: `poe.ninja` (real number) · `trade` (client must run `trade_query`) ·
+`none` (no query, no number).
+
+**`price.confidence`**: `high` · `medium` · `low` · `none`. For gems/uniques it reflects
+the poe.ninja `listingCount` (≥5 high, ≥2 medium, else low); `unique-ninja-range` is always
+`low`.
+
+**`affixes[].priority`** (default picker tier): `required` · `nice` · `notimp` · `skip`.
+
+---
+
+## 4. Errors (HTTP 400/500/502)
+```jsonc
+{ "ok": false,
+  "error_type": "bad_input" | "ninja_error" | "upstream_error" | "server_error",
+  "error": "human-readable message" }
+```
+- `bad_input` (400) — unrecognised URL/code, a build-overview link, an unsupported paste
+  host, or missing input.
+- `ninja_error` (502) — poe.ninja was unreachable / returned no data / the character is
+  private/unindexed. Message is safe to show.
+- `upstream_error` (502) — a blocked/failed upstream (should not occur in normal flow).
+- `server_error` (500) — unexpected. Message is `TypeName: detail`.
+
+Always branch on the boolean **`ok`**, not the HTTP code.
+
+---
+
+## 5. League handling (important)
+The public function **cannot** call the trade `data/leagues` endpoint, so:
+- For a **poe.ninja character**, `meta.league` = the poe.ninja league display name, used
+  verbatim as the trade league. For challenge leagues the two are identical (verified
+  against the trade `data/leagues` fixture: poe.ninja `"Allflame"` == trade id `"Allflame"`).
+- For a **PoB import** (no league), the current challenge league from poe.ninja is used.
+- Pass **`league`** to override (e.g. `"Hardcore Allflame"`, `"Standard"`). If a build's
+  `trade_url`/`trade_query` ever 404s on the trade site, the league string is the thing to
+  correct — re-request with the right `league`.
+
+---
+
+## 6. Caching & CORS (response headers)
+- Success: `Cache-Control: public, s-maxage=600, stale-while-revalidate=86400` — the CDN
+  serves a cached copy for 10 min and a stale copy (revalidating in the background) for up
+  to a day. poe.ninja data isn't realtime, so this is safe and keeps the free tier cheap.
+- Errors: `Cache-Control: no-store`.
+- CORS (all responses): `Access-Control-Allow-Origin: *` (public data),
+  `Access-Control-Allow-Methods: GET, POST, OPTIONS`, `Access-Control-Allow-Headers:
+  Content-Type`. So any origin (the pages.dev site, a userscript, the extension) may call it.
+
+---
+
+## 7. Real example (abridged — a live Allflame character)
+Full untrimmed captures are written by the verifier to
+`scratchpad/sample_response_{offline,live}.json`. Long `trade_url`/PoB strings truncated
+below with `…`.
+
+```jsonc
+{
+  "ok": true, "schema_version": "1.0",
+  "meta": {
+    "character": "TestCharacter", "account": "example-0416",
+    "class": "Elementalist", "level": 100,
+    "league": "Allflame", "ninja_league": "Allflame", "source": "poe.ninja",
+    "currency_unit": "chaos", "divine_to_chaos": 118.3,
+    "chaos_img": "https://web.poecdn.com/gen/image/…", "generated_at": 1785122891,
+    "pricing_note": "Item prices are from the poe.ninja economy only … never calls pathofexile.com."
+  },
+  "totals": {
+    "currency": "chaos",
+    "chaos":  { "min": 31760.26, "median": 31985.66, "high": 32438.54 },
+    "divine": { "min": 268.47,   "median": 270.38,   "high": 274.21 },
+    "priced_items": 22, "unpriced_items": 19
+  },
+  "items": [
+    {                                                    // ── a UNIQUE priced by name ──
+      "index": 0, "name": "Maloney's Mechanism, Ornate Quiver",
+      "group": "equipment", "category": "unique", "slot": "Off-hand (swap)",
+      "rarity": "Unique", "count": 1, "icon": "https://web.poecdn.com/…",
+      "max_link": 3, "total_sockets": 3, "socket_colours": ["R","G","W"],
+      "mods": { "implicit": ["Has 1 Socket"],
+                "explicit": ["Has 2 Sockets","Trigger a Socketed Bow Skill …",
+                             "12% increased Attack Speed","+66 to maximum Life", …] },
+      "price": {
+        "chaos": {"min":14.0,"median":14.0,"high":14.0},
+        "divine": {"min":0.118,"median":0.118,"high":0.118},
+        "confidence":"high", "note":"poe.ninja price by name", "method":"unique-ninja",
+        "source":"poe.ninja", "sample_size":1, "total_found":319,
+        "listing_count":319, "n_variants":1, "variant":""
+      },
+      "trade_url": "https://www.pathofexile.com/trade/search/Allflame?q=…",
+      "trade_query": { "query": { "status":{"option":"online"},
+                                  "name":"Maloney's Mechanism", "type":"Ornate Quiver",
+                                  "stats":[{"type":"and","filters":[]}] },
+                       "sort": {"price":"asc"} }
+    },
+    {                                                    // ── a GEM group (transfigured) ──
+      "index": 35, "name": "Ethereal Knives of the Massacre",
+      "group":"gem", "category":"gem", "slot":"?", "rarity":"Gem", "count":1,
+      "level":20, "quality":20, "corrupted":false, "granted":false,
+      "supports":[ {"name":"Greater Spell Echo Support","level":3,"quality":20,
+                    "corrupted":false,"support":true,"granted":false}, … ],
+      "host_slot":"Body Armour", "host_name":"Blunderbore", "host_base":"Astral Plate",
+      "host_unique":true, "host_inventory_id":"BodyArmour",
+      "price": {
+        "chaos": {"min":2971.9,"median":2971.9,"high":2971.9},
+        "divine": {"min":25.12,"median":25.12,"high":25.12},
+        "confidence":"low", "note":"poe.ninja gem prices: active + 5 supports",
+        "method":"skill", "source":"poe.ninja", "kind":"skill",
+        "level":20, "quality":20, "corrupted":false, "total_chaos":2971.9,
+        "gems": [
+          {"name":"Ethereal Knives of the Massacre","support":false,"granted":false,
+           "level":20,"quality":20,"corrupted":false,"chaos":98.0,"variant":"20/20",
+           "note":"","trade_url":"https://www.pathofexile.com/trade/search/Allflame?q=…"},
+          {"name":"Greater Spell Echo Support","support":true,"granted":false,"level":3,
+           "quality":20,"corrupted":false,"chaos":2366,"variant":"3/20","note":"",
+           "trade_url":"…"}
+        ]
+      },
+      "trade_url":"https://www.pathofexile.com/trade/search/Allflame?q=…",
+      "trade_query": { "query": { "status":{"option":"online"},
+        "type":"Ethereal Knives of the Massacre",
+        "filters": { "type_filters":{"filters":{"category":{"option":"gem.activegem"}}},
+                     "misc_filters":{"filters":{"gem_level":{"min":20},"quality":{"min":20}}} },
+        "stats":[{"type":"and","filters":[]}] }, "sort":{"price":"asc"} }
+    },
+    {                                                    // ── a RARE (priced client-side) ──
+      "index": 12, "name": "Phoenix Star, Large Cluster Jewel",
+      "group":"jewel", "category":"rare", "slot":"Jewel", "rarity":"Rare", "count":1,
+      "mods": { "implicit": [], "explicit": ["Adds 3 Passive Skills", …] },
+      "price": { "chaos":{"min":null,"median":null,"high":null},
+                 "divine":{"min":null,"median":null,"high":null},
+                 "confidence":"none", "method":"rare-unpriced", "source":"trade",
+                 "note":"rares are priced on your machine via the trade link / extension …" },
+      "trade_url":"https://www.pathofexile.com/trade/search/Allflame?q=…",
+      "trade_query": { "query": { "type":"Large Cluster Jewel",
+        "status":{"option":"online"},
+        "stats":[{"type":"and","filters":[ {"id":"explicit.stat_1719521705"},
+          {"id":"explicit.stat_3258414199"}, {"id":"enchant.stat_3948993189|16"}, … ]}] },
+        "sort":{"price":"asc"} } }
+  ],
+  "rares": {
+    "12": { "status":"unpriced", "name":"Phoenix Star, Large Cluster Jewel", "kind":"rare",
+            "scope":"base: Large Cluster Jewel", "scope_q":{"type":"Large Cluster Jewel"},
+            "affixes":[ {"kind":"stat","text":"Adds 3 Passive Skills","stat_id":"…",
+              "value":3,"searchable":true,"resist":false,"negated":false,"prefer":true,
+              "priority":"nice","reason":""}, … ], "pseudo":[] }
+  },
+  "warnings": []
+}
+```

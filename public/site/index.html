@@ -1,0 +1,1695 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="bpc-title" content="Stash Tab">
+<meta name="bpc-tagline" content="Your build laid out as PoE gear slots and a quad-stash grid; hover any item for its priced tooltip.">
+<meta name="bpc-accent" content="#c8aa6e">
+<meta name="bpc-vibe" content="diegetic">
+<meta name="bpc-order" content="3">
+<meta name="description" content="Paste a poe.ninja build link (or Path of Building code) and see what every item costs, laid out as Path of Exile gear slots. Gems and uniques priced from poe.ninja; rares you price yourself. Not affiliated with Grinding Gear Games.">
+<title>PoE1 Build Price Checker</title>
+<!-- Fonts are self-hosted (assets/fonts/) so the browser contacts NO third party for them
+     (B-001 trust promise / how-it-works "every server this site contacts"). -->
+<link rel="stylesheet" href="/assets/fonts.css">
+<style>
+  :root{
+    --base:#100c08; --panel:#1a140d; --panel2:#221a10; --inner:#0d0a06;
+    --bz1:#5a4c38; --bz2:#7a6a4f; --bz3:#c8aa6e; --bz-hi:#e8d4a6;
+    --fg:#e8dcc4; --mut:#aa9e82; --parch:#aa9e82;
+    --val:#8888ff;          /* PoE light-blue value color */
+    --rare:#ffff77; --magic:#8888ff; --unique:#af6025; --currency:#aa9e82; --gem:#1ba29b; --normal:#c8c8c8;
+    --ok:#69c887; --warn:#d9a441; --bad:#d06b5e;
+    --serif:'Cormorant Garamond',Georgia,serif;
+    --display:'Marcellus','Cormorant Garamond',serif;
+    --mono:'Consolas','SFMono-Regular',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none !important;}   /* the hidden attr must win over display:grid/flex rules */
+  html,body{margin:0}
+  body{
+    background:
+      radial-gradient(120% 90% at 50% 0%, #1b140c 0%, var(--base) 55%, #0a0705 100%),
+      var(--base);
+    color:var(--fg); font-family:var(--serif); font-size:16px; line-height:1.4;
+    min-height:100vh; padding:18px 18px 90px;
+    -webkit-font-smoothing:antialiased;
+  }
+  body::before{ /* vignette */
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background:radial-gradient(130% 100% at 50% 30%, transparent 55%, rgba(0,0,0,.55) 100%);
+  }
+  .stage{position:relative; z-index:1; max-width:1240px; margin:0 auto;}
+
+  /* ---------- ornate bronze frame helper ---------- */
+  .frame{
+    position:relative; border-radius:6px;
+    background:linear-gradient(150deg, var(--bz2), var(--bz1) 40%, #2a2118 70%, var(--bz2));
+    padding:3px; box-shadow:0 4px 22px rgba(0,0,0,.6), inset 0 0 0 1px rgba(232,212,166,.18);
+  }
+  .frame>.inner{
+    position:relative; border-radius:4px; background:var(--panel);
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.7), inset 0 0 40px rgba(0,0,0,.45);
+  }
+  .frame::before,.frame::after{ /* corner studs */
+    content:""; position:absolute; width:9px; height:9px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, var(--bz-hi), var(--bz2) 60%, #2a2014);
+    box-shadow:0 0 4px rgba(0,0,0,.8);
+  }
+  .frame::before{top:5px; left:5px;} .frame::after{top:5px; right:5px;}
+
+  /* ---------- top banner / nameplate ---------- */
+  .banner{margin-bottom:16px;}
+  .banner .inner{display:flex; align-items:center; gap:18px; padding:12px 18px; flex-wrap:wrap;}
+  .crest{
+    width:46px;height:46px;flex:0 0 auto;border-radius:50%;
+    background:radial-gradient(circle at 38% 32%, var(--bz3), var(--bz1) 55%, #20180f);
+    box-shadow:inset 0 0 0 2px rgba(0,0,0,.55), 0 0 12px rgba(200,170,110,.25);
+    display:grid;place-items:center; font-family:var(--display); color:#1a140d; font-size:22px; font-weight:700;
+  }
+  .name-block{min-width:0;}
+  .char-name{font-family:var(--display); font-size:26px; letter-spacing:.06em; color:var(--bz-hi); line-height:1.05;
+    text-shadow:0 1px 0 #000, 0 0 18px rgba(200,170,110,.18);}
+  .char-name .name-link{color:inherit; text-decoration:none; cursor:pointer; transition:color .12s, text-shadow .12s;}
+  .char-name .name-link:hover{color:#f3e2b8; text-shadow:0 1px 0 #000, 0 0 16px rgba(200,170,110,.55); text-decoration:underline; text-underline-offset:3px; text-decoration-thickness:1px;}
+  .char-sub{font-size:15px; color:var(--mut); letter-spacing:.03em;}
+  .char-sub b{color:var(--fg); font-weight:600;}
+  /* PoB import button (copies the code to clipboard; lives in the banner) */
+  .stone-btn.pob-btn{display:inline-flex; align-items:center; gap:6px; padding:5px 12px; font-size:13px; font-family:var(--serif); text-transform:lowercase; letter-spacing:.02em;}
+  .stone-btn.pob-btn .pob-ico{flex:0 0 auto; opacity:.85;}
+  .stone-btn.pob-btn.copied{color:#0c1f0d; background:linear-gradient(180deg,#5fbf63,#2f7d33); border-color:#7fe084;}
+  .stone-btn.pob-btn.copied .pob-ico{opacity:1;}
+  .banner-spacer{flex:1 1 30px;}
+  .rate-line{
+    font-family:var(--mono); font-size:13px; color:var(--parch); white-space:nowrap;
+    display:flex; align-items:center; gap:6px; padding:6px 12px;
+    background:var(--inner); border:1px solid var(--bz1); border-radius:4px;
+  }
+  .rate-line .bpc-cur{height:16px;vertical-align:-3px}
+  /* grand total, docked top-right in the banner (replaces the old corner orb) */
+  .banner-right{display:flex; flex-direction:column; align-items:flex-end; gap:8px; min-width:0;}
+  .bantot{text-align:right; line-height:1.1;}
+  .bantot .bt-head{font-family:var(--display); font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--bz3); opacity:.9;}
+  .bantot .bt-val{font-family:var(--mono); font-size:27px; font-weight:600; color:var(--bz-hi); text-shadow:0 0 14px rgba(200,170,110,.35); white-space:nowrap;}
+  .bantot .bt-val .bpc-cur{height:20px; vertical-align:-3px;}
+  .bantot .bt-val .bpc-exsub{color:var(--parch); font-size:16px;}
+  .bantot .bt-tiers{font-family:var(--mono); font-size:12px; color:var(--mut); margin-top:3px; display:flex; gap:14px; justify-content:flex-end; flex-wrap:wrap;}
+  .bantot .bt-tiers .lab{color:var(--bz3); margin-right:3px;}
+  .bantot .bt-tiers .bpc-cur{height:12px; vertical-align:-2px;}
+  .bantot .bt-tiers .inc{color:var(--parch);}
+  .bantot .bt-tiers .t-on{color:var(--bz-hi);}            /* the selected tier, emphasised */
+  .bantot .bt-inc{font-family:var(--mono); font-size:12px; color:var(--parch); margin-top:4px;}
+  .bantot .bt-seg{display:inline-flex; margin:0 0 8px; border:1px solid var(--bz1); border-radius:5px; overflow:hidden; background:var(--inner);}
+  .bantot .bt-seg button{font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--mut);
+    background:transparent; border:0; border-left:1px solid var(--bz1); padding:3px 11px; cursor:pointer; transition:background .12s,color .12s;}
+  .bantot .bt-seg button:first-child{border-left:0;}
+  .bantot .bt-seg button:hover{color:var(--fg);}
+  .bantot .bt-seg button.active{background:linear-gradient(180deg,var(--bz3),var(--bz1)); color:#160f08; font-weight:700;}
+  .bantot .bt-val.flash{animation:btFlash .8s ease;}
+  .banner-right .research-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end;}
+  .saved-note{display:block; margin-top:4px; font-family:var(--mono); font-size:11px; color:var(--warn); letter-spacing:.03em;}
+  .saved-note:empty{display:none;}      /* no gap under the name when there's no timestamp */
+  .stone-btn.re-all{padding:5px 12px; font-size:13px; font-family:var(--serif);}
+  @keyframes btFlash{0%{text-shadow:0 0 22px rgba(200,170,110,.85);}100%{text-shadow:0 0 14px rgba(200,170,110,.35);}}
+
+  /* ---------- intro / paste when no build ---------- */
+  .intro{ text-align:center; padding:40px 16px 8px; }
+  .intro h2{font-family:var(--display); font-weight:400; letter-spacing:.08em; color:var(--bz3); font-size:24px; margin:0 0 6px;}
+  .intro p{color:var(--mut); font-size:16px; max-width:560px; margin:0 auto;}
+
+  /* ---------- main 3-column diegetic layout ---------- */
+  .board{
+    display:grid; gap:16px;
+    grid-template-columns: minmax(0,1.05fr) minmax(0,1.25fr);
+    grid-template-areas: "doll stash";
+    align-items:start;
+  }
+  .doll-wrap{grid-area:doll;}
+  .stash-wrap{grid-area:stash;}
+  /* border legend — compact, inline in the Equipment panel header (no extra band) */
+  .panel-head .ph-l{display:flex; align-items:center; gap:16px; min-width:0; flex-wrap:wrap;}
+  .legend{display:inline-flex; gap:14px; align-items:center;
+    font-family:var(--mono); font-size:10px; letter-spacing:.03em; text-transform:none; color:var(--mut);}
+  .legend .lg-item{display:inline-flex; align-items:center; gap:6px;}
+  /* swatch = a mini slot border: keep these the SAME 2px solid style + colour as .slot borders */
+  .legend .lg-sw{width:13px; height:13px; border-radius:3px; background:#15100a; border:2px solid transparent; flex:0 0 auto;}
+  .legend .lg-sw.notfound{border-color:#d6463a;}
+  .legend .lg-sw.fewresults{border-color:#e08a2b;}
+
+  .panel-head{
+    font-family:var(--display); letter-spacing:.14em; text-transform:uppercase;
+    font-size:12px; color:var(--bz3); padding:9px 14px; display:flex; justify-content:space-between; align-items:center;
+    border-bottom:1px solid var(--bz1);
+    background:linear-gradient(180deg, rgba(200,170,110,.07), transparent);
+  }
+  .panel-head .grp-toggle{
+    font-family:var(--serif); text-transform:none; letter-spacing:0; font-size:13px;
+    color:var(--mut); cursor:pointer; border:1px solid var(--bz1); border-radius:4px; padding:2px 9px; background:var(--inner);
+  }
+  .panel-head .grp-toggle:hover{color:var(--fg); border-color:var(--bz2);}
+
+  /* equipment doll grid — canonical paper-doll positions, square slots */
+  .doll{
+    padding:18px; display:grid; gap:9px;
+    grid-template-columns: repeat(5, 1fr);
+    grid-auto-rows:minmax(98px,auto);   /* rows grow so long names wrap (never cut off) */
+    /* WPN tall on the left, primary OFF-HAND tall on the right (mirror); weapon-swap
+       top-left, amulet + off-hand-swap top-right; helm centre; body centre tall. */
+    grid-template-areas:
+      "wswap  .      helm   amu    oswap"
+      "weap   .      body   .      off"
+      "weap   ring1  body   ring2  off"
+      ".      glove  belt   boot   ."
+      "fl1    ch1    ch2    ch3    fl2";
+  }
+  .doll .slot{aspect-ratio:auto;}
+  .slot-helm{grid-area:helm} .slot-amu{grid-area:amu}
+  .slot-weap{grid-area:weap} .slot-body{grid-area:body}
+  .slot-off{grid-area:off} .slot-glove{grid-area:glove}
+  .slot-belt{grid-area:belt} .slot-boot{grid-area:boot}
+  .slot-ring1{grid-area:ring1} .slot-ring2{grid-area:ring2}
+  .slot-wswap{grid-area:wswap} .slot-oswap{grid-area:oswap}
+  .slot-fl1{grid-area:fl1} .slot-fl2{grid-area:fl2}
+  .slot-ch1{grid-area:ch1} .slot-ch2{grid-area:ch2} .slot-ch3{grid-area:ch3}
+
+  /* stash grid */
+  .stash-groups{padding:14px;}
+  .stash-section + .stash-section{margin-top:14px;}
+  .stash-section h4{
+    font-family:var(--display); letter-spacing:.1em; text-transform:uppercase; font-size:11px;
+    color:var(--mut); margin:0 0 8px; display:flex; align-items:center; gap:8px;
+  }
+  .stash-section h4::after{content:""; flex:1; height:1px; background:linear-gradient(90deg, var(--bz1), transparent);}
+  .stash-section h4 .grp-toggle{
+    font-family:var(--serif); text-transform:none; letter-spacing:0; font-size:12px; color:var(--mut);
+    cursor:pointer; border:1px solid var(--bz1); border-radius:4px; padding:1px 8px; background:var(--inner);
+  }
+  .stash-section h4 .grp-toggle:hover{color:var(--fg);}
+  .grid12{display:grid; grid-template-columns:repeat(6, minmax(0,1fr)); gap:8px;}
+  #stash .slot{min-height:110px;}
+  .gem-cell{grid-column:span 3;}
+
+  /* ---------- active-skill list (Gems section) ---------- */
+  .skills{display:flex; flex-direction:column; gap:6px;}
+  .sk-empty{color:var(--mut); font-style:italic; padding:6px;}
+  .skill{border:1px solid var(--bz1); border-radius:6px; background:linear-gradient(180deg,#1f1810,#15100a); overflow:hidden;}
+  .skill.off{opacity:.5;}
+  .sk-head{display:grid; grid-template-columns:18px 16px 30px 1fr auto auto; gap:10px; align-items:center; padding:7px 11px;}
+  .sk-head .sk-inc{accent-color:var(--bz3); cursor:pointer;}
+  .sk-ico{width:30px; height:30px; object-fit:contain; filter:drop-shadow(0 1px 2px rgba(0,0,0,.6));}
+  .sk-ico.ph{display:grid; place-items:center; color:rgba(27,162,155,.4); font-size:16px;}
+  .sup-ico{width:20px; height:20px; object-fit:contain; flex:0 0 auto;}
+  .sk-tw{cursor:pointer; color:var(--bz3); font-size:11px; user-select:none; text-align:center;}
+  .sk-name{font-family:var(--display); font-size:16px; color:var(--gem); letter-spacing:.02em; text-decoration:none; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  a.sk-name:hover{color:var(--bz-hi); text-decoration:underline;}
+  .sk-meta{font-family:var(--mono); font-size:11px; color:var(--mut); white-space:nowrap;}
+  .sk-granted{font-family:var(--mono); font-size:9px; letter-spacing:.08em; text-transform:uppercase; color:var(--parch);
+    border:1px solid var(--bz1); border-radius:3px; padding:1px 5px; white-space:nowrap; opacity:.85;}
+  .sk-price{font-family:var(--mono); font-size:14px; color:var(--val); white-space:nowrap;}
+  .sk-price .bpc-cur{height:13px; vertical-align:-2px;}
+  .sk-body{display:none; padding:2px 12px 10px 44px; border-top:1px solid var(--line);}
+  .skill.open .sk-body{display:block;}
+  .sk-cut{font-family:var(--mono); font-size:11px; color:var(--mut); margin:8px 0 7px;}
+  .sk-cut a{color:var(--bz3);} .sk-hint{color:rgba(170,158,130,.55);}
+  .sk-sups{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:3px;}
+  .sk-sups .sup{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--mut); padding:2px 0;}
+  .sk-sups .sup .sup-free{margin-left:auto; font-family:var(--mono); font-size:10px; color:rgba(170,158,130,.5); letter-spacing:.05em; text-transform:uppercase;}
+  .sk-sups .sup-tag{font-family:var(--mono); font-size:9px; text-transform:uppercase; letter-spacing:.08em; color:var(--unique); border:1px solid rgba(175,96,37,.5); border-radius:3px; padding:0 4px;}
+  .sk-sups .sup-price{margin-left:auto; font-family:var(--mono); font-size:12px; color:var(--val);}
+  .sk-sups .sup-price .bpc-cur{height:11px; vertical-align:-2px;}
+  .sk-sups .sup.none{font-style:italic;}
+  .sk-sups .sup.granted{opacity:.72;}
+  .sk-sups .sup.granted .sup-nm{text-decoration:line-through; text-decoration-color:rgba(170,158,130,.5);}
+  .sk-sups .sup-tag.act{color:var(--gem); border-color:rgba(27,162,155,.5);}
+  /* gems grouped under their host item (D-0006 §D) */
+  .host-group + .host-group{margin-top:12px;}
+  .host-head{display:flex; align-items:center; gap:8px; margin:2px 0 6px;}
+  .host-head .host-name{font-family:var(--display); font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:var(--bz3);}
+  .host-head::after{content:""; flex:1; height:1px; background:linear-gradient(90deg, rgba(200,170,110,.35), transparent);}
+  .host-head.host-unique .host-name{color:var(--unique);}
+  .host-head .host-uq{order:2; font-family:var(--mono); font-size:9px; letter-spacing:.08em; text-transform:uppercase; color:var(--unique);
+    border:1px solid rgba(175,96,37,.5); border-radius:3px; padding:0 5px;}
+  .host-group .skill{margin-bottom:6px;}
+
+  /* ---------- THE SLOT ---------- */
+  .slot{
+    position:relative; border-radius:5px; cursor:pointer;
+    display:flex; flex-direction:column; min-height:98px; padding-top:20px;  /* grows to fit name */
+    background:linear-gradient(155deg, #2a2014, #15100a);
+    border:2px solid transparent;
+    box-shadow:
+      inset 0 0 0 1px rgba(0,0,0,.6),
+      inset 0 2px 10px rgba(0,0,0,.55),
+      0 1px 0 rgba(232,212,166,.06);
+    transition:transform .14s ease, box-shadow .2s ease, filter .25s ease, opacity .25s ease;
+    overflow:hidden;
+    opacity:0; transform:translateY(8px);
+  }
+  .slot.in-view{opacity:1; transform:none;}
+  .slot .bezel{ /* bronze bevel ring */
+    position:absolute; inset:0; border-radius:4px; pointer-events:none;
+    box-shadow:inset 0 0 0 2px rgba(122,106,79,.5), inset 0 0 0 3px rgba(0,0,0,.5);
+  }
+  .slot .label{
+    position:absolute; left:6px; right:6px; top:6px; font-family:var(--mono); z-index:2;
+    font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:rgba(200,188,160,.75);
+    pointer-events:none; text-shadow:0 1px 2px #000, 0 0 3px #000; transition:opacity .12s;
+  }
+  /* the top-left purchase cart takes over that corner while shown, so fade the small slot
+     label out of its way (the item is still identified by its icon + name + doll position) */
+  .slot:hover .label, .slot.bought .label{ opacity:0; }
+  .slot .ico-wrap{       /* fills the space between top band and name, CENTERING the icon */
+    flex:1 1 auto; min-height:46px; width:100%; z-index:1; overflow:hidden;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .slot .ico{           /* the item/gem image (size capped per item via inline max-w/h) */
+    width:100%; height:100%; object-fit:contain; pointer-events:none;
+    filter:drop-shadow(0 2px 5px rgba(0,0,0,.7));
+  }
+  .slot.has-ico .glyph{display:none;}
+  .slot .iname{
+    /* name as a bottom band on a dark scrim — wraps FULLY (no clamp), so the card grows
+       and text is never cut off; still reads cleanly via the scrim. */
+    position:relative; z-index:3; width:100%; padding:7px 7px 7px; pointer-events:none;
+    background:linear-gradient(to top, rgba(10,7,4,.97), rgba(10,7,4,.88));
+    font-family:var(--display); font-size:12px; line-height:1.16; letter-spacing:.02em;
+    color:var(--fg); text-shadow:0 1px 2px #000; word-break:break-word; overflow-wrap:anywhere;
+  }
+  .slot.slot-weap .iname, .slot.slot-off .iname, .slot.slot-body .iname{ font-size:13px; }
+  .slot .glyph{
+    position:absolute; inset:0; display:grid; place-items:center; pointer-events:none;
+    font-family:var(--display); font-size:34px; color:rgba(232,212,166,.10);
+  }
+  .slot .pricetag{
+    position:absolute; right:7px; top:6px; font-family:var(--mono); font-size:11px; z-index:2;
+    color:var(--val); pointer-events:none; text-shadow:0 1px 2px #000, 0 0 3px #000; display:flex; align-items:center; gap:2px;
+  }
+  .slot .pricetag .bpc-cur{height:12px;vertical-align:-2px}
+  .slot .cnt{
+    position:absolute; right:7px; bottom:7px; font-family:var(--mono); font-size:12px; color:var(--bz-hi); z-index:4;
+    background:rgba(0,0,0,.6); border-radius:3px; padding:0 4px; pointer-events:none;
+  }
+  .slot:hover{transform:translateY(-2px); z-index:5;}
+
+  /* rarity glows */
+  .slot.r-unique{border-color:rgba(175,96,37,.7);}
+  .slot.r-unique .iname{color:var(--unique);}
+  .slot.r-unique:hover{box-shadow:inset 0 0 0 1px rgba(0,0,0,.6), 0 0 18px rgba(175,96,37,.55), inset 0 0 22px rgba(175,96,37,.25);}
+  .slot.r-rare{border-color:rgba(255,255,119,.55);}
+  .slot.r-rare .iname{color:var(--rare);}
+  .slot.r-rare:hover{box-shadow:inset 0 0 0 1px rgba(0,0,0,.6), 0 0 18px rgba(255,255,119,.4), inset 0 0 22px rgba(255,255,119,.16);}
+  .slot.r-magic{border-color:rgba(136,136,255,.5);}
+  .slot.r-magic .iname{color:var(--magic);}
+  .slot.r-magic:hover{box-shadow:inset 0 0 0 1px rgba(0,0,0,.6), 0 0 16px rgba(136,136,255,.4);}
+  .slot.r-gem{border-color:rgba(27,162,155,.55);}
+  .slot.r-gem .iname{color:var(--gem);}
+  .slot.r-gem:hover{box-shadow:inset 0 0 0 1px rgba(0,0,0,.6), 0 0 18px rgba(27,162,155,.45);}
+  .slot.r-normal .iname{color:var(--normal);}
+
+  /* included = lit gold corner check; excluded = voided */
+  .slot .incmark{
+    position:absolute; left:6px; bottom:6px; width:27px; height:27px; border-radius:4px;
+    border:1px solid var(--bz2); background:rgba(13,10,6,.85); display:grid; place-items:center;
+    font-size:18px; color:transparent; line-height:1; cursor:pointer; z-index:7;
+    box-shadow:0 0 0 1px rgba(0,0,0,.5); opacity:0; pointer-events:none; transition:opacity .12s;
+  }
+  .slot:hover .incmark{opacity:1; pointer-events:auto;}        /* checkbox only on hover */
+  .slot.off .incmark{opacity:1;}                               /* keep visible while excluded */
+  .slot .incmark:hover{border-color:var(--bz-hi);}
+  .slot.on .incmark{background:radial-gradient(circle at 40% 35%, var(--bz3), var(--bz1)); color:#160f08; border-color:var(--bz-hi); box-shadow:0 0 8px rgba(200,170,110,.6);}
+  /* no checkbox where there's nothing to include/exclude */
+  .slot.nolist .incmark, .slot.skipped .incmark, .slot.loading .incmark, .slot.empty .incmark{display:none;}
+  /* purchased tracker = green cart in the TOP-left corner (mirror of the include check) */
+  .slot .buymark{
+    position:absolute; left:6px; top:6px; width:27px; height:27px; border-radius:4px;
+    border:1px solid var(--bz2); background:rgba(13,10,6,.85); display:grid; place-items:center;
+    color:rgba(190,205,185,.5); line-height:1; cursor:pointer; z-index:7;
+    box-shadow:0 0 0 1px rgba(0,0,0,.5); opacity:0; pointer-events:none;
+    transition:opacity .12s, color .12s, background .12s, border-color .12s;
+  }
+  .slot:hover .buymark{opacity:1; pointer-events:auto;}        /* reveal on hover */
+  .slot .buymark:hover{border-color:#7fe084; color:#a6e3aa;}
+  .slot.bought .buymark{opacity:1; color:#0c1f0d; border-color:#7fe084;
+    background:radial-gradient(circle at 40% 35%, #6fcf73, #2f7d33); box-shadow:0 0 8px rgba(95,191,99,.6);}
+  /* the cart shows on any real item the user might buy -- including ones we couldn't appraise
+     (not found / no listing / skipped). Only hidden while still appraising, on empty slots,
+     or on items the user has excluded from the total. */
+  .slot.loading .buymark, .slot.empty .buymark, .slot.off .buymark{display:none;}
+  .slot.on{box-shadow:inset 0 0 0 1px rgba(0,0,0,.6), inset 0 2px 10px rgba(0,0,0,.55), 0 0 0 1px rgba(200,170,110,.25);}
+  .slot.off{filter:grayscale(.9) brightness(.55); opacity:.62;}
+  .slot.off::after{
+    content:"VOID"; position:absolute; inset:0; display:grid; place-items:center;
+    font-family:var(--display); font-size:13px; letter-spacing:.3em; color:rgba(208,107,94,.85);
+    background:repeating-linear-gradient(45deg, rgba(0,0,0,.0) 0 7px, rgba(208,107,94,.10) 7px 14px);
+    pointer-events:none;
+  }
+  /* unpriced / no-listing hatched frame */
+  .slot.nolist{
+    background:
+      repeating-linear-gradient(45deg, rgba(0,0,0,.0) 0 8px, rgba(170,158,130,.07) 8px 16px),
+      linear-gradient(155deg,#221a10,#120d08);
+    border-color:rgba(170,158,130,.3); border-style:dashed;
+  }
+  .slot.nolist .iname{color:var(--mut);}
+  .slot.skipped{opacity:.5; border-style:dotted;}
+  /* search-result border cue — same slot border STYLE as everything else, just recoloured
+     (clean colour at rest + a matching glow on hover, like the rarity borders). */
+  .slot.notfound{border-color:#d6463a; border-style:solid;}
+  .slot.fewresults{border-color:#e08a2b; border-style:solid;}
+  .slot.notfound:hover{box-shadow:inset 0 0 0 1px rgba(0,0,0,.6), 0 0 18px rgba(214,70,58,.5), inset 0 0 22px rgba(214,70,58,.22);}
+  .slot.fewresults:hover{box-shadow:inset 0 0 0 1px rgba(0,0,0,.6), 0 0 18px rgba(224,138,43,.45), inset 0 0 22px rgba(224,138,43,.2);}
+  /* purchased state is shown by the green cart alone (no slot ring) */
+  /* empty placeholder slot (no item assigned) */
+  .slot.empty{cursor:default; opacity:.5;
+    background:repeating-linear-gradient(45deg, rgba(0,0,0,.0) 0 9px, rgba(90,76,56,.10) 9px 18px), var(--inner);
+    border:2px dashed rgba(90,76,56,.4);}
+  .slot.empty:hover{transform:none;}
+  .slot.empty .glyph{font-size:24px; color:rgba(232,212,166,.07);}
+  .slot.loading{cursor:default;}
+  .slot.loading .iname{color:var(--mut); opacity:.7;}
+  .slot.pulse{animation:slotPulse .9s ease;}
+  @keyframes slotPulse{0%{box-shadow:0 0 0 0 rgba(200,170,110,.55);}100%{box-shadow:0 0 0 14px rgba(200,170,110,0);}}
+  /* "Appraising" overlay while an item is still being priced (blinking hourglass) */
+  .slot .appraising{
+    position:absolute; inset:0; z-index:5; display:none; flex-direction:column; gap:3px;
+    align-items:center; justify-content:center; pointer-events:none; text-align:center;
+    background:rgba(8,5,3,.66);
+    font-family:var(--mono); font-size:10px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--bz-hi); text-shadow:0 1px 3px #000;
+  }
+  .slot.loading .appraising{display:flex;}
+  /* gentle "breathing" fade rather than a hard blink */
+  .slot .appraising .hg{font-size:22px; line-height:1; animation:appBreath 2.4s ease-in-out infinite;}
+  .slot .appraising .apptxt{animation:appBreath 2.4s ease-in-out infinite;}
+  @keyframes appBreath{0%,100%{opacity:.32} 50%{opacity:1}}
+  @media (prefers-reduced-motion:reduce){ .slot .appraising .hg, .slot .appraising .apptxt{animation:none;} }
+
+  /* edit-affixes pip on rare slots */
+  .slot .editbtn{
+    position:absolute; right:6px; bottom:6px; width:18px;height:18px; border-radius:3px;
+    border:1px solid var(--bz2); background:var(--inner); color:var(--bz3); cursor:pointer;
+    display:grid; place-items:center; font-size:11px; line-height:1; z-index:6; opacity:0; transition:opacity .15s;
+  }
+  .slot:hover .editbtn{opacity:1;}
+  .slot .editbtn:hover{background:var(--bz1); color:var(--bz-hi);}
+
+  /* ---------- carved stone toolbar ---------- */
+  .toolbar{margin-top:16px;}
+  .toolbar .inner{
+    display:flex; gap:10px; flex-wrap:wrap; align-items:center; padding:12px 14px;
+    background:linear-gradient(180deg, #1d1610, #14100a);
+  }
+  .toolbar input#url{
+    flex:1 1 300px; min-width:220px; font-family:var(--serif); font-size:15px; color:var(--fg);
+    padding:9px 12px; background:var(--inner); border:1px solid var(--bz1); border-radius:4px;
+    box-shadow:inset 0 2px 6px rgba(0,0,0,.5);
+  }
+  .toolbar input#url::placeholder{color:rgba(170,158,130,.55);}
+  .stone-sel, .stone-btn{
+    font-family:var(--serif); font-size:14px; color:var(--fg); padding:9px 12px;
+    background:linear-gradient(180deg,#2a2014,#1a130c); border:1px solid var(--bz2); border-radius:4px;
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.4); cursor:pointer;
+  }
+  .stone-sel{color:var(--mut);}
+  .stone-btn:hover, .stone-sel:hover{border-color:var(--bz3);}
+  .stone-btn.go{
+    background:linear-gradient(180deg, var(--bz3), var(--bz1)); color:#160f08; font-weight:600;
+    font-family:var(--display); letter-spacing:.05em; border-color:var(--bz-hi);
+    box-shadow:0 0 14px rgba(200,170,110,.3), inset 0 1px 0 rgba(255,255,255,.25);
+  }
+  .stone-btn.go:hover{filter:brightness(1.08);}
+  .chk{display:inline-flex; align-items:center; gap:6px; color:var(--mut); font-size:14px; cursor:pointer; user-select:none;}
+  .chk input{accent-color:var(--bz3);}
+  .ctl-label{font-family:var(--mono); font-size:11px; color:rgba(170,158,130,.7); letter-spacing:.06em; text-transform:uppercase;}
+
+  /* progress / error */
+  .status-line{margin-top:12px; min-height:20px; color:var(--mut); font-size:15px; text-align:center; font-style:italic;}
+  .status-line .spark{color:var(--bz3); font-style:normal;}
+  .err{
+    margin-top:12px; color:var(--bad); border:1px solid var(--bad); border-radius:5px; padding:12px 14px;
+    background:rgba(208,107,94,.08); text-align:center; font-size:15px;
+  }
+
+  /* ---------- recent characters portraits ---------- */
+  .recent-wrap{margin-top:18px;}
+  .recent-wrap .inner{padding:12px 14px;}
+  .recent-row{display:flex; gap:10px; flex-wrap:wrap; align-items:stretch;}
+  .portrait{
+    position:relative; display:flex; gap:9px; align-items:center; cursor:pointer; padding:7px 26px 7px 9px;
+    background:linear-gradient(180deg,#1f1810,#15100a); border:1px solid var(--bz1); border-radius:5px;
+    transition:border-color .15s, transform .15s;
+  }
+  .portrait:hover{border-color:var(--bz3); transform:translateY(-1px);}
+  .portrait.pinned{border-color:rgba(200,170,110,.55); box-shadow:0 0 0 1px rgba(200,170,110,.18), inset 0 0 12px rgba(200,170,110,.06);}
+  .portrait .pmug{
+    width:30px;height:30px;border-radius:50%;flex:0 0 auto;
+    background:radial-gradient(circle at 38% 32%, var(--bz2), #20180f 70%);
+    display:grid;place-items:center;font-family:var(--display);color:var(--bz-hi);font-size:14px;
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.5);
+  }
+  .portrait .pmeta{line-height:1.15;}
+  .portrait .pname{font-family:var(--display); font-size:14px; color:var(--fg); letter-spacing:.02em;}
+  .portrait .psub{font-size:12px; color:var(--mut);}
+  .portrait .pstar{flex:0 0 auto; cursor:pointer; font-size:15px; line-height:1; color:var(--mut); width:16px; text-align:center;}
+  .portrait .pstar:hover{color:var(--bz3);}
+  .portrait.pinned .pstar{color:var(--bz3); text-shadow:0 0 6px rgba(200,170,110,.5);}
+  .portrait .px{
+    position:absolute; top:4px; right:5px; width:17px; height:17px; border-radius:4px;
+    display:grid; place-items:center; font-size:11px; color:var(--mut); cursor:pointer;
+    opacity:0; transition:opacity .12s, background .12s, color .12s;
+  }
+  .portrait:hover .px{opacity:1;}
+  .portrait .px:hover{background:rgba(208,107,94,.18); color:var(--bad);}
+  .recent-more{background:none;border:1px dashed var(--bz1);color:var(--mut);border-radius:5px;cursor:pointer;font-family:var(--serif);font-size:13px;padding:0 12px;align-self:center;}
+  .recent-more:hover{color:var(--fg);border-color:var(--bz2);}
+  /* removed section */
+  #removedWrap{margin-top:10px;}
+  .removed-toggle{background:none;border:0;color:var(--mut);cursor:pointer;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:2px 0;}
+  .removed-toggle:hover{color:var(--fg);}
+  .removed-row{margin-top:8px;}
+  .portrait.removed-item{opacity:.6; cursor:pointer; padding-right:9px;}
+  .portrait.removed-item:hover{opacity:1; border-color:var(--ok);}
+  .portrait.removed-item .prestore{flex:0 0 auto; margin-left:4px; color:var(--ok); font-size:14px;}
+
+  /* ---------- the orb medallion total ---------- */
+  .orb-dock{
+    position:fixed; right:22px; bottom:22px; z-index:40; display:flex; align-items:flex-end; gap:12px;
+  }
+  .orb{
+    width:138px;height:138px;border-radius:50%; position:relative; flex:0 0 auto;
+    background:
+      radial-gradient(circle at 38% 30%, rgba(232,212,166,.55), rgba(200,170,110,.12) 38%, transparent 60%),
+      radial-gradient(circle at 50% 60%, #3a2c18, #18110a 75%);
+    box-shadow:
+      0 0 0 3px var(--bz1), 0 0 0 5px #120d08, 0 0 0 6px var(--bz2),
+      0 6px 28px rgba(0,0,0,.7), inset 0 0 28px rgba(0,0,0,.6);
+    display:grid; place-items:center; text-align:center;
+  }
+  .orb::before{ content:""; position:absolute; inset:8px; border-radius:50%;
+    box-shadow:inset 0 0 22px rgba(200,170,110,.18); pointer-events:none;}
+  .orb .otitle{font-family:var(--display); font-size:10px; letter-spacing:.22em; text-transform:uppercase; color:var(--bz3); opacity:.85;}
+  .orb .oval{font-family:var(--mono); font-size:23px; color:var(--bz-hi); font-weight:600; line-height:1.1; text-shadow:0 0 12px rgba(200,170,110,.4);}
+  .orb .oval .bpc-cur{height:18px;vertical-align:-3px}
+  .orb .osub{font-family:var(--mono); font-size:10px; color:var(--parch);}
+  .orb.pulse{animation:orbPulse 1s ease;}
+  @keyframes orbPulse{0%{box-shadow:0 0 0 3px var(--bz1),0 0 0 5px #120d08,0 0 0 6px var(--bz2),0 0 38px 6px rgba(200,170,110,.7),inset 0 0 28px rgba(0,0,0,.6);}100%{box-shadow:0 0 0 3px var(--bz1),0 0 0 5px #120d08,0 0 0 6px var(--bz2),0 6px 28px rgba(0,0,0,.7),inset 0 0 28px rgba(0,0,0,.6);}}
+  .orb-detail{
+    background:var(--panel); border:1px solid var(--bz1); border-radius:6px; padding:9px 12px;
+    font-family:var(--mono); font-size:12px; color:var(--mut); box-shadow:0 4px 18px rgba(0,0,0,.5);
+    line-height:1.7;
+  }
+  .orb-detail b{color:var(--fg);} .orb-detail .bpc-cur{height:13px;vertical-align:-2px}
+  .orb-detail .lab{color:var(--bz3); display:inline-block; min-width:54px;}
+
+  /* ---------- THE TOOLTIP (Awakened PoE Trade style) ---------- */
+  #tt{
+    position:fixed; z-index:60; width:400px; pointer-events:none; opacity:0; transform:scale(.96);
+    transition:opacity .12s ease, transform .12s ease; font-family:var(--serif);
+    filter:drop-shadow(0 8px 22px rgba(0,0,0,.8));
+  }
+  #tt.show{opacity:1; transform:scale(1);}
+  .tt-frame{border:1px solid var(--bz2); background:#0c0805; border-radius:3px; box-shadow:inset 0 0 0 1px rgba(0,0,0,.8);}
+  .tt-head{
+    text-align:center; padding:10px 12px 9px; font-family:var(--display); letter-spacing:.04em; font-size:22px; line-height:1.15;
+    border-bottom:1px solid rgba(0,0,0,.6);
+  }
+  .tt-head .base{font-family:var(--serif); font-size:15px; opacity:.85; display:block; margin-top:1px;}
+  .tt-head.h-unique{background:linear-gradient(180deg,#2a160a,#180d05); color:var(--unique);}
+  .tt-head.h-rare{background:linear-gradient(180deg,#26230c,#141205); color:var(--rare);}
+  .tt-head.h-magic{background:linear-gradient(180deg,#15163a,#0b0c1c); color:var(--magic);}
+  .tt-head.h-currency{background:linear-gradient(180deg,#221d12,#120f08); color:var(--currency);}
+  .tt-head.h-gem{background:linear-gradient(180deg,#0c2725,#061312); color:var(--gem);}
+  .tt-head.h-normal{background:linear-gradient(180deg,#1c1c1c,#101010); color:var(--normal);}
+  .tt-body{padding:13px 16px 16px;}
+  .tt-div{display:flex; align-items:center; gap:8px; margin:10px 0; color:var(--bz2);}
+  .tt-div::before,.tt-div::after{content:""; flex:1; height:1px; background:linear-gradient(90deg,transparent,var(--bz1),transparent);}
+  .tt-div .dia{font-size:11px; color:var(--bz3);}
+  .tt-prices{font-family:var(--mono); font-size:18px;}
+  .tt-prices .row{display:flex; justify-content:space-between; padding:3px 0; align-items:center;}
+  .tt-prices .row .k{color:var(--mut); letter-spacing:.04em;}
+  .tt-prices .row .v{color:var(--val); white-space:nowrap;}
+  .tt-prices .v .bpc-cur{height:17px;vertical-align:-3px}
+  .tt-prices .v .bpc-exsub{color:#6a6abf;}
+  .tt-conf{margin-top:10px; font-family:var(--mono); font-size:14px; color:var(--mut);}
+  .tt-conf .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:0;}
+  .tt-conf .high{background:var(--ok);} .tt-conf .medium{background:var(--warn);}
+  .tt-conf .low{background:var(--bad);} .tt-conf .none{background:#555;}
+  .tt-note{margin-top:8px; font-style:italic; color:var(--parch); font-size:15px; line-height:1.32;}
+  .tt-link{margin-top:9px; font-family:var(--mono); font-size:13px; color:var(--bz3); letter-spacing:.04em;}
+  .tt-empty{font-style:italic; color:var(--mut); font-size:15px;}
+  .tt-mods{font-family:var(--serif); font-size:16px; line-height:1.34; margin:1px 0;}
+  .tt-mod{text-align:center;}
+  .tt-mod.exp{color:var(--val);}
+  .tt-mod.imp{color:#9aa0d8;}
+  .tt-modsep{height:1px; background:linear-gradient(90deg,transparent,var(--bz1),transparent); margin:7px 0;}
+
+  /* ---------- THE PICKER (crafting-tooltip modal) ---------- */
+  #pickwrap{position:fixed; inset:0; z-index:80; display:none; align-items:center; justify-content:center; padding:20px;
+    background:rgba(8,5,3,.72); backdrop-filter:blur(2px);}
+  #pickwrap.show{display:flex;}
+  .pick{
+    width:min(460px,96vw); max-height:88vh; overflow:auto; font-family:var(--serif);
+    border:1px solid var(--bz2); background:#0c0805; border-radius:4px;
+    box-shadow:0 16px 50px rgba(0,0,0,.85), inset 0 0 0 1px rgba(0,0,0,.8);
+  }
+  .pick .ph{
+    text-align:center; padding:11px 12px 9px; font-family:var(--display); font-size:18px; letter-spacing:.04em;
+    background:linear-gradient(180deg,#26230c,#141205); color:var(--rare); border-bottom:1px solid rgba(0,0,0,.6); position:relative;
+  }
+  .pick .ph .scope{display:block; font-family:var(--serif); font-size:12px; color:var(--parch); margin-top:2px; letter-spacing:0;}
+  .pick .ph .step{position:absolute; top:9px; right:12px; font-family:var(--mono); font-size:11px; color:var(--bz3);}
+  .pick .pbody{padding:12px 14px 14px;}
+  .pdiv{display:flex; align-items:center; gap:8px; margin:9px 0 6px; color:var(--bz2); font-family:var(--mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase;}
+  .pdiv::before,.pdiv::after{content:""; flex:1; height:1px; background:linear-gradient(90deg,transparent,var(--bz1),transparent);}
+  .pseudo-switch{
+    display:flex; align-items:center; gap:8px; margin:9px 0 4px; padding:8px 10px;
+    background:rgba(136,136,255,.06); border:1px solid rgba(136,136,255,.25); border-radius:4px;
+    font-size:13px; color:var(--magic); cursor:pointer;
+  }
+  .pseudo-switch .sw{
+    width:34px;height:18px;border-radius:10px;background:#1a130c;border:1px solid var(--bz1);position:relative;flex:0 0 auto;transition:background .2s;
+  }
+  .pseudo-switch .sw::after{content:"";position:absolute;top:1px;left:1px;width:14px;height:14px;border-radius:50%;background:var(--mut);transition:left .2s,background .2s;}
+  .pseudo-switch.on .sw{background:rgba(136,136,255,.4);} .pseudo-switch.on .sw::after{left:17px;background:var(--bz-hi);}
+  .afxlist{margin-top:4px;}
+  .afx{
+    display:grid; grid-template-columns:22px 1fr 66px 66px; gap:7px; align-items:center;
+    padding:7px 4px; border-top:1px solid rgba(122,106,79,.22);
+  }
+  .afx .abullet{display:grid;place-items:center;}
+  .afx .abullet input{display:none;}
+  .afx .dia{
+    width:16px;height:16px;display:grid;place-items:center;cursor:pointer;color:var(--bz1);font-size:11px;
+    border:1px solid var(--bz1); transform:rotate(45deg); border-radius:2px; background:var(--inner);
+  }
+  .afx .abullet input:checked + .dia{color:#160f08; background:radial-gradient(circle at 40% 35%, var(--bz3), var(--bz1)); border-color:var(--bz-hi); box-shadow:0 0 6px rgba(200,170,110,.5);}
+  .afx .dia span{transform:rotate(-45deg);}
+  .afx .atext{font-family:var(--serif); font-size:15px; color:var(--fg); line-height:1.2;}
+  .afx .atext .roll{color:var(--magic);}
+  .afx .atext .range{color:var(--mut); font-size:12px; font-family:var(--mono);}
+  .afx .mm{
+    width:100%; font-family:var(--mono); font-size:13px; text-align:center; color:var(--fg);
+    background:var(--inner); border:1px solid var(--bz1); border-radius:3px; padding:5px 4px;
+  }
+  .afx .mm:focus{outline:none; border-color:var(--bz3); box-shadow:0 0 0 1px rgba(200,170,110,.3);}
+  .afx .mmhead{font-family:var(--mono); font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); text-align:center;}
+  .afx.no{opacity:.5;}
+  .afx.no .atext{color:var(--mut);}
+  .afx.no .reason{display:block; font-size:11px; font-style:italic; color:rgba(170,158,130,.7);}
+  .pseudo-row .atext{color:var(--magic);}
+  /* multi stat-group editor */
+  .grpbox{border:1px solid var(--bz1); border-radius:5px; margin:8px 0; background:rgba(0,0,0,.16);}
+  .grpbox.eqbox{border-style:dashed;}
+  .grphd{display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:6px 8px; border-bottom:1px solid rgba(122,106,79,.25);
+    background:linear-gradient(180deg, rgba(60,52,28,.40), rgba(20,17,8,.30)); border-radius:5px 5px 0 0;}
+  .grphd .grptitle{font-family:var(--display); font-size:12px; letter-spacing:.06em; color:var(--bz3); text-transform:uppercase;}
+  .grphd .grptype{font-size:12px; padding:3px 6px;}
+  .grphd .grpthr{font-family:var(--mono); font-size:12px; color:var(--parch); display:flex; align-items:center; gap:5px;}
+  .grphd .mm{width:46px; font-family:var(--mono); font-size:13px; text-align:center; color:var(--fg);
+    background:var(--inner); border:1px solid var(--bz1); border-radius:3px; padding:4px;}
+  .grphd .mm:focus{outline:none; border-color:var(--bz3); box-shadow:0 0 0 1px rgba(200,170,110,.3);}
+  .grphd .grprm{margin-left:auto; background:none; border:1px solid var(--bz1); color:var(--mut); width:22px; height:22px;
+    border-radius:4px; cursor:pointer; line-height:1; font-size:12px;}
+  .grphd .grprm:hover{color:var(--bad); border-color:rgba(208,107,94,.5);}
+  .grpbox .afx{padding-left:8px; padding-right:8px;}
+  .grpbox .afx.afxhead{padding-top:5px; padding-bottom:2px; border-top:0;}
+  .afx.r4{grid-template-columns:22px 1fr 58px 58px 22px;}
+  .afx.r5{grid-template-columns:22px 1fr 52px 52px 42px 22px;}
+  .afx .rowrm{background:none; border:0; color:var(--mut); cursor:pointer; font-size:13px; line-height:1; padding:2px; opacity:.6;}
+  .afx .rowrm:hover{color:var(--bad); opacity:1;}
+  .afx.added .atext{color:var(--parch);}
+  .grphint{font-family:var(--serif); font-size:11px; font-style:italic; color:var(--mut); letter-spacing:0;}
+  /* "+ add stat filter" search */
+  .addwrap{padding:6px 8px 8px;}
+  .addstat{width:100%; background:none; border:1px dashed var(--bz1); border-radius:4px; color:var(--bz3);
+    font-family:var(--serif); font-size:12px; padding:6px; cursor:pointer;}
+  .addstat:hover{border-color:var(--bz3); color:var(--bz-hi);}
+  .addpanel{position:relative;}
+  .addsearch{width:100%; font-family:var(--serif); font-size:13px; color:var(--fg); background:var(--inner);
+    border:1px solid var(--bz2); border-radius:4px; padding:7px 9px; box-sizing:border-box;}
+  .addsearch:focus{outline:none; border-color:var(--bz3); box-shadow:0 0 0 1px rgba(200,170,110,.3);}
+  .addresults{max-height:230px; overflow:auto; margin-top:4px; border:1px solid var(--bz1); border-radius:4px; background:var(--panel);}
+  .addres{display:flex; align-items:baseline; gap:8px; padding:6px 9px; cursor:pointer; border-bottom:1px solid rgba(122,106,79,.15);}
+  .addres:hover{background:rgba(200,170,110,.1);}
+  .addres .ar-t{flex:1; font-family:var(--serif); font-size:13px; color:var(--fg);}
+  .addres .ar-g{font-family:var(--mono); font-size:9px; letter-spacing:.08em; text-transform:uppercase; color:var(--mut);}
+  .ar-hint{padding:8px 9px; font-size:12px; color:var(--mut); font-style:italic;}
+  /* mod-priority survey */
+  .svtop{display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:12px; color:var(--parch); margin:2px 0 8px;}
+  .svlink{margin-left:auto; background:none; border:1px solid var(--bz1); border-radius:4px; color:var(--bz3);
+    font-family:var(--serif); font-size:12px; padding:4px 9px; cursor:pointer;}
+  .svlink:hover{border-color:var(--bz3); color:var(--bz-hi);}
+  .svlist{display:flex; flex-direction:column;}
+  .svrow{display:grid; grid-template-columns:1fr 130px 20px; gap:8px; align-items:center;
+    padding:7px 6px; border-top:1px solid rgba(122,106,79,.18); border-left:3px solid transparent;}
+  .svrow:first-child{border-top:0;}
+  .svtxt{font-family:var(--serif); font-size:14px; color:var(--fg); line-height:1.2;}
+  .svtxt .roll{color:var(--magic);} .svtxt .range{color:var(--mut); font-size:12px; font-family:var(--mono);}
+  .svrow .svtier{width:100%; font-size:12px; padding:4px 6px;}
+  .svrow[data-tier="required"]{border-left-color:var(--bz3);}
+  .svrow[data-tier="nice"]{border-left-color:#5b8f5e;}
+  .svrow[data-tier="notimp"]{border-left-color:var(--bz1);}
+  .svrow[data-tier="skip"]{border-left-color:transparent; opacity:.5;}
+  .svrow .rowrm{background:none;border:0;color:var(--mut);cursor:pointer;font-size:13px;padding:2px;opacity:.6;}
+  .svrow .rowrm:hover{color:var(--bad);opacity:1;}
+  /* drag-and-drop affixes between groups */
+  .afx.draggable-row .atext{cursor:grab;}
+  .afx.draggable-row.dragging{opacity:.45;}
+  .grpbox.dragover{outline:2px dashed var(--bz3); outline-offset:-3px; background:rgba(200,170,110,.07);}
+  .grpempty{padding:10px 8px; font-size:12px; color:var(--mut); font-style:italic; text-align:center; border:1px dashed transparent;}
+  .paddgrp{margin:8px 0 2px;}
+  .paddgrp .addgrp{width:100%; justify-content:center; text-align:center; color:var(--bz3); border-style:dashed; font-size:12px;}
+  .unsrch{margin-top:8px;}
+  .ptrade{margin-top:12px;}
+  .ptrade .viewtrade{width:100%; justify-content:center; text-align:center; color:var(--bz3); border-color:var(--bz2); font-size:13px;}
+  .ptrade .viewtrade:hover{color:var(--bz-hi); border-color:var(--bz3);}
+  .pbtns{display:flex; gap:9px; margin-top:10px;}
+  .pbtns .stone-btn{flex:1; text-align:center; justify-content:center;}
+  .pbtns .stone-btn.search{background:linear-gradient(180deg,var(--bz3),var(--bz1)); color:#160f08; font-family:var(--display); letter-spacing:.04em; border-color:var(--bz-hi);}
+  .pbtns .stone-btn.skip{color:var(--bad); border-color:rgba(208,107,94,.4);}
+  .pbulk{display:flex; gap:9px; margin-top:9px; padding-top:9px; border-top:1px dashed var(--bz1);}
+  .pbulk .stone-btn{flex:1; text-align:center; justify-content:center; font-size:12px; padding:7px 10px;}
+  .pbulk .pa-skip{color:var(--parch);}
+  .pbulk .pa-skip.small{font-size:11px; padding:6px 10px; opacity:.85;}
+  .pbulk .pa-skip.small:hover{opacity:1; color:var(--fg);}
+  /* Autoscan — prominent glowing bulk action at the TOP of the picker (D-0006 §E), glow tuned to
+     this skin's bronze accent (--bz3) instead of a generic hue so it reads as part of the theme. */
+  .pautoscan{margin:0 0 12px; padding-bottom:11px; border-bottom:1px dashed var(--bz1);}
+  .stone-btn.autoscan{
+    --accent: var(--bz-hi);            /* the skin's brightest accent (gold highlight) */
+    display:flex; width:100%; justify-content:center; align-items:center; gap:7px;
+    position:relative; font-family:var(--display); font-weight:600; letter-spacing:.06em; font-size:15px;
+    padding:11px 14px; color:#1a140d;
+    background:linear-gradient(180deg, var(--bz3), var(--bz1));
+    border-color:var(--accent);
+    box-shadow: 0 0 0 1px var(--accent) inset,
+                0 0 9px  color-mix(in srgb, var(--accent) 55%, transparent),
+                0 0 20px color-mix(in srgb, var(--bz3) 40%, transparent),
+                inset 0 1px 0 rgba(255,255,255,.28);
+    animation: autoscanPulse 1.8s ease-in-out infinite;
+  }
+  .stone-btn.autoscan:hover{ filter:brightness(1.1); }
+  @keyframes autoscanPulse{
+    0%,100%{ box-shadow: 0 0 0 1px var(--accent) inset,
+                         0 0 7px  color-mix(in srgb, var(--accent) 45%, transparent),
+                         0 0 15px color-mix(in srgb, var(--bz3) 30%, transparent),
+                         inset 0 1px 0 rgba(255,255,255,.28); }
+    50%    { box-shadow: 0 0 0 1px var(--accent) inset,
+                         0 0 13px color-mix(in srgb, var(--accent) 72%, transparent),
+                         0 0 28px color-mix(in srgb, var(--bz3) 52%, transparent),
+                         inset 0 1px 0 rgba(255,255,255,.28); }
+  }
+  @media (prefers-reduced-motion: reduce){ .stone-btn.autoscan{ animation:none; } }
+
+  /* ---------- responsive collapse ---------- */
+  @media (max-width:720px){
+    .board{grid-template-columns:1fr; grid-template-areas:"doll" "stash";}
+    .doll{grid-template-columns:1fr; grid-template-areas:none; }
+    .doll .slot{aspect-ratio:auto; min-height:64px;}
+    .grid12{grid-template-columns:repeat(4,1fr);}
+    .gem-cell{grid-column:span 4;}
+    .orb-dock{position:static; justify-content:center; margin-top:24px;}
+    .slot .iname{font-size:13px;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .slot{transition:none; opacity:1; transform:none;}
+    .orb.pulse, .slot.pulse{animation:none;}
+    #tt{transition:opacity .01s;}
+  }
+
+  /* ============ PUBLIC-MODE additions (B-001 / D-0008) ============ */
+  /* top strip: nav + bridge badge */
+  .topnav{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:14px;}
+  .topnav .brandmark{font-family:var(--display); font-size:15px; letter-spacing:.08em; color:var(--bz3); text-transform:uppercase;}
+  .topnav .navspace{flex:1 1 20px;}
+  .topnav a.navlink{font-family:var(--serif); font-size:14px; color:var(--mut); text-decoration:none; border-bottom:1px solid transparent; transition:color .12s, border-color .12s;}
+  .topnav a.navlink:hover{color:var(--bz-hi); border-color:var(--bz2);}
+  .bridge-badge{display:inline-flex; align-items:center; gap:7px; font-family:var(--mono); font-size:12px; letter-spacing:.04em;
+    padding:5px 11px; border-radius:5px; border:1px solid var(--bz1); background:var(--inner); color:var(--mut);}
+  .bridge-badge .dot{width:8px;height:8px;border-radius:50%; background:#555; flex:0 0 auto;}
+  .bridge-badge.on{border-color:#2c5a36; background:rgba(45,90,54,.14); color:#8fe0a0;}
+  .bridge-badge.on .dot{background:#5fbf63; box-shadow:0 0 7px rgba(95,191,99,.7);}
+
+  /* the calm inline upgrade card (shown only when NO extension is detected) */
+  .upgrade{margin-top:16px;}
+  .upgrade .inner{padding:16px 18px;}
+  .upgrade-head{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:4px;}
+  .upgrade-head .uh-title{font-family:var(--display); font-size:17px; letter-spacing:.04em; color:var(--bz-hi);}
+  .upgrade-head .uh-tag{font-family:var(--mono); font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--parch);
+    border:1px solid var(--bz1); border-radius:3px; padding:1px 6px;}
+  .upgrade p.uh-lead{color:var(--mut); font-size:15px; margin:2px 0 12px; max-width:760px;}
+  .upgrade .cols{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:640px){ .upgrade .cols{grid-template-columns:1fr;} }
+  .upgrade .cols h5{font-family:var(--mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase; margin:0 0 6px;}
+  .upgrade .does h5{color:var(--ok);} .upgrade .never h5{color:var(--parch);}
+  .upgrade ul{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:5px;}
+  .upgrade li{font-size:14px; color:var(--fg); display:flex; gap:8px; align-items:flex-start; line-height:1.32;}
+  .upgrade li::before{flex:0 0 auto; font-family:var(--mono); font-size:13px; line-height:1.4;}
+  .upgrade .does li::before{content:"✓"; color:var(--ok);}
+  .upgrade .never li::before{content:"✕"; color:var(--parch);}
+  .upgrade .stores{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; align-items:center;}
+  .upgrade .stores .stlab{font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--parch);}
+  .store-btn{display:inline-flex; align-items:center; gap:7px; font-family:var(--serif); font-size:14px; color:var(--fg);
+    padding:8px 14px; background:linear-gradient(180deg,#2a2014,#1a130c); border:1px solid var(--bz2); border-radius:4px; text-decoration:none;}
+  .store-btn:hover{border-color:var(--bz3); color:var(--bz-hi);}
+  .store-btn.disabled{opacity:.5; cursor:not-allowed; pointer-events:none;}
+  .upgrade .uh-foot{margin-top:12px; font-size:12.5px; color:var(--parch);}
+  .upgrade .uh-foot a{color:var(--bz3);}
+
+  /* the manual-pricing panel: unpriced rares the visitor prices themselves */
+  .manual-wrap{margin-top:16px;}
+  .manual-wrap .inner{padding:0;}
+  .manual-head{display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:11px 16px; border-bottom:1px solid var(--bz1);
+    background:linear-gradient(180deg, rgba(200,170,110,.07), transparent);}
+  .manual-head .mh-title{font-family:var(--display); letter-spacing:.12em; text-transform:uppercase; font-size:12px; color:var(--bz3);}
+  .manual-head .mh-sub{font-family:var(--serif); font-size:13px; color:var(--mut);}
+  .manual-head .mh-space{flex:1 1 20px;}
+  .manual-body{padding:8px 14px 14px;}
+  .manual-actions{display:flex; gap:10px; flex-wrap:wrap; align-items:center; padding:6px 2px 12px;}
+  .mrow{display:grid; grid-template-columns:34px minmax(0,1.4fr) auto; gap:12px; align-items:center;
+    padding:10px 6px; border-top:1px solid rgba(122,106,79,.2);}
+  .mrow:first-child{border-top:0;}
+  .mrow.done{opacity:.72;}
+  .mrow .mr-ico{width:32px; height:32px; object-fit:contain; filter:drop-shadow(0 1px 2px rgba(0,0,0,.6));}
+  .mrow .mr-ico.ph{display:grid; place-items:center; color:rgba(200,170,110,.35); font-size:16px; border:1px solid var(--bz1); border-radius:4px;}
+  .mrow .mr-name{font-family:var(--display); font-size:15px; color:var(--fg); letter-spacing:.01em; line-height:1.2; min-width:0; overflow-wrap:anywhere;}
+  .mrow.r-rare .mr-name{color:var(--rare);} .mrow.r-magic .mr-name{color:var(--magic);} .mrow.r-unique .mr-name{color:var(--unique);}
+  .mrow .mr-slot{display:block; font-family:var(--mono); font-size:10px; letter-spacing:.05em; text-transform:uppercase; color:var(--mut); margin-top:2px;}
+  .mrow .mr-right{display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;}
+  .mrow .mr-input{width:150px; font-family:var(--mono); font-size:13px; color:var(--fg); padding:7px 9px;
+    background:var(--inner); border:1px solid var(--bz1); border-radius:4px; box-shadow:inset 0 1px 4px rgba(0,0,0,.4);}
+  .mrow .mr-input::placeholder{color:rgba(170,158,130,.5);}
+  .mrow .mr-input:focus{outline:none; border-color:var(--bz3); box-shadow:0 0 0 1px rgba(200,170,110,.3);}
+  .mrow .mr-price{font-family:var(--mono); font-size:14px; color:var(--val); white-space:nowrap; min-width:70px; text-align:right;}
+  .mrow .mr-price .bpc-cur{height:13px; vertical-align:-2px;}
+  .mrow .mr-src{font-family:var(--mono); font-size:9px; letter-spacing:.06em; text-transform:uppercase; color:var(--parch);
+    border:1px solid var(--bz1); border-radius:3px; padding:1px 5px; white-space:nowrap;}
+  .mrow .mr-src.cache{color:#9ac2e0; border-color:rgba(120,160,200,.4);}
+  .mrow .mr-src.manual{color:#c8aa6e; border-color:var(--bz2);}
+  .mrow .mr-src.trade{color:#8fe0a0; border-color:rgba(95,191,99,.4);}
+  .mrow .mr-err{font-family:var(--serif); font-size:12px; font-style:italic; color:var(--bad); flex-basis:100%; text-align:right;}
+  .m-flash{animation:mFlash 1s ease;}
+  @keyframes mFlash{0%{background:rgba(200,170,110,.18);}100%{background:transparent;}}
+  .manual-empty{padding:14px 6px; color:var(--mut); font-style:italic; font-size:14px;}
+
+  /* footer */
+  .site-foot{margin-top:26px; padding:16px 4px 4px; border-top:1px solid var(--bz1);
+    display:flex; gap:14px; flex-wrap:wrap; align-items:center; font-family:var(--mono); font-size:12px; color:var(--mut);}
+  .site-foot a{color:var(--bz3); text-decoration:none;}
+  .site-foot a:hover{color:var(--bz-hi); text-decoration:underline;}
+  .site-foot .foot-space{flex:1 1 20px;}
+  .site-foot .ggg-note{color:var(--parch); font-style:italic; font-family:var(--serif); font-size:13px;}
+
+  /* manual-pricing modal (reuses .pick styling; public: trade link + whisper + extension) */
+  .pick .mp-lead{font-size:14px; color:var(--mut); line-height:1.4; margin:2px 0 12px;}
+  .pick .mp-mods{margin:2px 0 12px;}
+  .pick .mp-block{margin:12px 0;}
+  .pick .mp-block .mp-lbl{font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--bz3); margin-bottom:5px;}
+  .pick .mp-input{width:100%; box-sizing:border-box; font-family:var(--mono); font-size:14px; color:var(--fg); padding:9px 11px;
+    background:var(--inner); border:1px solid var(--bz2); border-radius:4px;}
+  .pick .mp-input:focus{outline:none; border-color:var(--bz3); box-shadow:0 0 0 1px rgba(200,170,110,.3);}
+  .pick .mp-hint{font-size:12px; color:var(--parch); margin-top:5px; font-style:italic;}
+  .pick .mp-err{color:var(--bad); font-size:13px; margin-top:6px; min-height:16px;}
+  .pick .mp-ok{color:var(--ok); font-size:13px; margin-top:6px; min-height:16px;}
+</style></head>
+<body>
+<div class="stage">
+
+  <!-- ===== top nav + live-pricing bridge badge ===== -->
+  <div class="topnav">
+    <span class="brandmark">PoE1 Build Price Checker</span>
+    <span class="navspace"></span>
+    <span class="bridge-badge" id="bridgeBadge" title="Install the Trade Bridge extension to price rares hands-free from your own IP."><span class="dot"></span><span id="bridgeText">no extension</span></span>
+    <a class="navlink" href="/how-it-works.html">How it works</a>
+  </div>
+
+  <!-- ===== character banner ===== -->
+  <div class="frame banner" id="banner" hidden>
+    <div class="inner">
+      <div class="crest" id="crest">?</div>
+      <div class="name-block">
+        <div class="char-name" id="bName">—</div>
+        <div class="char-sub" id="bSub"></div>
+        <div class="saved-note" id="savedNote"></div>
+      </div>
+      <div class="banner-spacer"></div>
+      <div class="banner-right">
+        <div class="bantot" id="bantot" hidden>
+          <div class="bt-seg" id="btSeg" role="group" aria-label="price tier">
+            <button type="button" data-tier="min">min</button>
+            <button type="button" data-tier="median">median</button>
+            <button type="button" data-tier="high">high</button>
+          </div>
+          <div class="bt-val" id="btVal">—</div>
+          <div class="bt-inc" id="btInc"></div>
+        </div>
+        <div class="research-row" id="researchRow" hidden>
+          <button class="stone-btn pob-btn" id="pobBtn" type="button" hidden title="Copy this build's Path of Building import code">
+            <svg class="pob-ico" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V5a2 2 0 0 1 2-2h10"></path></svg>
+            <span class="pob-lbl">pob import</span>
+          </button>
+          <button class="stone-btn re-all" id="reAll" type="button" title="Re-run every trade search for this build">&#8635; Search all again</button>
+        </div>
+        <div class="rate-line" id="rateLine" hidden></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== intro (no build yet) ===== -->
+  <div class="intro" id="intro">
+    <h2>What does this build cost?</h2>
+    <p>Paste a poe.ninja build link, a Path of Building code, or a pobb.in link below. Gems and uniques are priced from the poe.ninja economy; rares you price yourself with one click or a pasted buyout. <a href="/how-it-works.html" style="color:var(--bz3)">How it works &rarr;</a></p>
+  </div>
+
+  <!-- ===== live pricing indicator (above the board) ===== -->
+  <div class="status-line" id="status"></div>
+
+  <!-- ===== main board ===== -->
+  <div class="board" id="board" hidden>
+    <!-- equipment paper-doll -->
+    <div class="doll-wrap">
+      <div class="frame">
+        <div class="inner">
+          <div class="panel-head">
+            <span class="ph-l"><span>Equipment</span>
+              <span class="legend" id="legend">
+                <span class="lg-item"><span class="lg-sw notfound"></span> not found</span>
+                <span class="lg-item"><span class="lg-sw fewresults"></span> &lt;5</span>
+              </span></span>
+            <span class="grp-toggle" data-grp="equipment">toggle all</span>
+          </div>
+          <div class="doll" id="doll"></div>
+        </div>
+      </div>
+    </div>
+    <!-- stash grid -->
+    <div class="stash-wrap">
+      <div class="frame">
+        <div class="inner">
+          <div class="panel-head"><span>Stash</span><span style="color:var(--mut);font-family:var(--serif);text-transform:none;letter-spacing:0;font-size:12px">flasks · jewels · gems</span></div>
+          <div class="stash-groups" id="stash"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== manual / community pricing for rares ===== -->
+  <div class="frame manual-wrap" id="manualWrap" hidden>
+    <div class="inner">
+      <div class="manual-head">
+        <span class="mh-title">Rares to price</span>
+        <span class="mh-sub" id="manualSub"></span>
+        <span class="mh-space"></span>
+        <button class="stone-btn autoscan" id="autoscanBtn" type="button" hidden title="Price every rare below hands-free via the Trade Bridge extension (runs on your own IP)">&#9889; Autoscan</button>
+      </div>
+      <div class="manual-body">
+        <div class="manual-actions" id="manualIntro"></div>
+        <div id="manualRows"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== calm inline upgrade card (only when no extension) ===== -->
+  <div class="frame upgrade" id="upgradeCard" hidden>
+    <div class="inner">
+      <div class="upgrade-head">
+        <span class="uh-title">Price rares hands-free</span>
+        <span class="uh-tag">optional</span>
+      </div>
+      <p class="uh-lead">The Trade Bridge browser extension prices your rares automatically &mdash; it runs the same trade searches from <b>your</b> browser and IP, so nothing here ever has to talk to the trade site. The site is fully usable without it; this just saves you the copy-paste.</p>
+      <div class="cols">
+        <div class="does">
+          <h5>What it does</h5>
+          <ul>
+            <li>Runs each rare's trade search from your own browser, logged-out</li>
+            <li>Fills in the cheapest buyout and folds it into your total</li>
+            <li>Shares that price to the community cache (short-lived) so the next visitor sees it too</li>
+            <li>Open source &mdash; every line is readable in the repo and the store listing</li>
+          </ul>
+        </div>
+        <div class="never">
+          <h5>What it never does</h5>
+          <ul>
+            <li>No login, no session cookie, no POESESSID &mdash; zero account risk</li>
+            <li>Touches only <code>pathofexile.com/api/trade</code> and this site &mdash; nothing else</li>
+            <li>No tabs, no browsing history, no all-sites access</li>
+            <li>Not affiliated with or endorsed by Grinding Gear Games</li>
+          </ul>
+        </div>
+      </div>
+      <div class="stores">
+        <span class="stlab">Get it:</span>
+        <a class="store-btn" id="storeChrome" href="#" target="_blank" rel="noopener">Chrome</a>
+        <a class="store-btn" id="storeEdge" href="#" target="_blank" rel="noopener">Edge</a>
+        <a class="store-btn" id="storeFirefox" href="#" target="_blank" rel="noopener">Firefox</a>
+      </div>
+      <div class="uh-foot">Prefer not to install anything? You never have to &mdash; use the trade links and paste-a-price above. <a href="/how-it-works.html">Read exactly what the extension can and can't do &rarr;</a></div>
+    </div>
+  </div>
+
+  <!-- ===== carved stone toolbar ===== -->
+  <div class="frame toolbar">
+    <div class="inner">
+      <form id="f" style="display:contents">
+        <input id="url" placeholder="poe.ninja link · PoB code · pobb.in link" spellcheck="false" autocomplete="off">
+        <select id="league" class="stone-sel" title="Trade league to price against (Auto = the build's own league)"><option value="">League: Auto</option></select>
+        <select id="liststatus" class="stone-sel" title="Listing status the trade links use"></select>
+        <label class="chk" title="Bypass the cached copy and re-fetch the build fresh from poe.ninja"><input type="checkbox" id="refresh"> fresh pull</label>
+        <button class="stone-btn go" id="go" type="submit">Appraise</button>
+      </form>
+    </div>
+  </div>
+  <div id="errbox"></div>
+
+  <!-- ===== recent characters ===== -->
+  <div class="frame recent-wrap" id="recentWrap" hidden>
+    <div class="inner">
+      <div class="panel-head" style="border:0;padding:0 0 9px"><span>Saved Characters</span></div>
+      <div class="recent-row" id="recent"></div>
+      <div id="removedWrap" hidden></div>
+    </div>
+  </div>
+
+  <!-- ===== footer ===== -->
+  <footer class="site-foot">
+    <a href="/how-it-works.html">How it works</a>
+    <a id="footRepo" href="#" target="_blank" rel="noopener">Open source</a>
+    <a id="footCacheToggle" href="#" role="button">Community cache: on</a>
+    <span class="foot-space"></span>
+    <span class="ggg-note">Not affiliated with or endorsed by Grinding Gear Games. Path of Exile is a trademark of GGG.</span>
+  </footer>
+</div>
+
+<!-- ===== tooltip ===== -->
+<div id="tt"><div class="tt-frame"><div id="ttinner"></div></div></div>
+
+<!-- ===== picker modal ===== -->
+<div id="pickwrap"><div class="pick" id="pick"></div></div>
+
+<script src="/config.js"></script>
+<script src="/assets/sample.js"></script>
+<script src="/assets/core.js"></script>
+<script>
+"use strict";
+const $=s=>document.querySelector(s), E=bpc.esc;
+const CFG = window.BPC_CONFIG || {};
+
+/* canonical equipment slot -> doll grid-area class */
+const SLOT_CLASS = {
+  "Helmet":"slot-helm","Amulet":"slot-amu","Weapon":"slot-weap","Body Armour":"slot-body",
+  "Off-hand":"slot-off","Weapon (swap)":"slot-wswap","Off-hand (swap)":"slot-oswap",
+  "Gloves":"slot-glove","Belt":"slot-belt","Boots":"slot-boot"
+};
+const SLOT_GLYPH = {
+  "Helmet":"⚰","Amulet":"◈","Weapon":"⚔","Body Armour":"⛨",
+  "Off-hand":"◉","Weapon (swap)":"⚔","Off-hand (swap)":"◉","Focus":"◉",
+  "Gloves":"✋","Belt":"═","Boots":"➜","Ring":"○","Jewel":"❖",
+  "Flask":"⚗"
+};
+const SHORT = {"Body Armour":"Body","Weapon":"Wpn","Off-hand":"Off-Hand",
+  "Weapon (swap)":"Wpn ⇄","Off-hand (swap)":"Off ⇄"};
+const catClass = c => ({unique:"r-unique",rare:"r-rare",magic:"r-magic",gem:"r-gem",normal:"r-normal"}[c]||"r-normal");
+
+/* ---------- controls ---------- */
+$('#liststatus').innerHTML = bpc.STATUS_ORDER.map(o=>`<option value="${o}">${E(bpc.STATUS_LABEL[o])}</option>`).join('');
+// The public function can't call the trade `data/leagues` endpoint, so seed a small override
+// list (Auto = use the build's own league). The loaded build's league is added when it lands.
+const SEED_LEAGUES=['Standard','Hardcore'];
+function seedLeagues(extra){
+  const have=new Set(SEED_LEAGUES); const opts=SEED_LEAGUES.slice();
+  if(extra && !have.has(extra)){ opts.unshift(extra); }
+  $('#league').innerHTML='<option value="">League: Auto</option>'+opts.map(l=>`<option>${E(l)}</option>`).join('');
+  if([...$('#league').options].some(o=>o.value===bpc.state.league)) $('#league').value=bpc.state.league;
+}
+seedLeagues();
+function syncControls(){
+  $('#liststatus').value = bpc.state.status;
+  $('#refresh').checked = bpc.state.refresh;
+  if([...$('#league').options].some(o=>o.value===bpc.state.league)) $('#league').value = bpc.state.league;
+}
+$('#f').addEventListener('submit',e=>{ e.preventDefault(); const u=$('#url').value.trim(); if(u) bpc.startUrl(u); });
+$('#liststatus').addEventListener('change',e=>bpc.setControl('status',e.target.value));
+$('#league').addEventListener('change',e=>bpc.setControl('league',e.target.value));
+$('#refresh').addEventListener('change',e=>bpc.setControl('refresh',e.target.checked));
+
+/* ---------- side data ---------- */
+let recentExpanded=false, recentData=[], removedShown=false;
+function lsArr(k){ try{ return JSON.parse(localStorage.getItem(k)||'[]')||[]; }catch(e){ return []; } }
+function lsSave(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+let pinned=lsArr('bpc_recent_pinned'), removed=lsArr('bpc_recent_removed');
+bpc.on('recent',bs=>{ recentData=bs||[]; renderRecent(); });
+
+function mug(b){ return `<div class="pmug">${E((b.character||'?').slice(0,1).toUpperCase())}</div>
+    <div class="pmeta"><div class="pname">${E(b.character||'Unknown')}</div>
+    <div class="psub">${E(b.char_class||'')} ${b.level?('lvl '+b.level):''}</div></div>`; }
+function renderRecent(){
+  const wrap=$('#recentWrap');
+  if(!recentData.length){ wrap.hidden=true; return; }
+  wrap.hidden=false;
+  const rmSet=new Set(removed), pinSet=new Set(pinned);
+  const active=recentData.filter(b=>!rmSet.has(b.key));
+  const pinnedItems=pinned.map(k=>active.find(b=>b.key===k)).filter(Boolean);
+  const ordered=pinnedItems.concat(active.filter(b=>!pinSet.has(b.key)));
+  const show=recentExpanded?ordered:ordered.slice(0,5);
+  let h=show.map(b=>{
+    const isP=pinSet.has(b.key);
+    return `<div class="portrait ${isP?'pinned':''}" data-k="${E(b.key)}">
+      <span class="pstar" data-pin="${E(b.key)}" title="${isP?'unpin':'pin to front'}">${isP?'★':'☆'}</span>
+      ${mug(b)}
+      <span class="px" data-remove="${E(b.key)}" title="remove from list">✕</span></div>`;
+  }).join('');
+  if(ordered.length>5) h+=`<button class="recent-more" id="recMore">${recentExpanded?'show fewer':('+'+(ordered.length-5)+' more')}</button>`;
+  $('#recent').innerHTML=h;
+
+  const removedItems=recentData.filter(b=>rmSet.has(b.key));
+  const rm=$('#removedWrap');
+  if(!removedItems.length){ rm.hidden=true; rm.innerHTML=''; return; }
+  rm.hidden=false;
+  let rh=`<button class="removed-toggle" id="rmToggle">${removedShown?'▾':'▸'} Removed (${removedItems.length}) — click one to restore</button>`;
+  if(removedShown) rh+=`<div class="recent-row removed-row">${removedItems.map(b=>
+    `<div class="portrait removed-item" data-k="${E(b.key)}">${mug(b)}<span class="prestore">↩</span></div>`).join('')}</div>`;
+  rm.innerHTML=rh;
+}
+function togglePin(k){ const i=pinned.indexOf(k); if(i>=0) pinned.splice(i,1); else pinned.push(k); lsSave('bpc_recent_pinned',pinned); renderRecent(); }
+function removeRecent(k){ if(removed.indexOf(k)<0) removed.push(k); const pi=pinned.indexOf(k); if(pi>=0) pinned.splice(pi,1);
+  lsSave('bpc_recent_removed',removed); lsSave('bpc_recent_pinned',pinned); renderRecent(); }
+function restoreRecent(k){ const i=removed.indexOf(k); if(i>=0) removed.splice(i,1); lsSave('bpc_recent_removed',removed); renderRecent(); }
+$('#recent').addEventListener('click',e=>{
+  if(e.target.id==='recMore'){ recentExpanded=!recentExpanded; renderRecent(); return; }
+  const star=e.target.closest('[data-pin]'); if(star){ e.stopPropagation(); togglePin(star.dataset.pin); return; }
+  const x=e.target.closest('[data-remove]'); if(x){ e.stopPropagation(); removeRecent(x.dataset.remove); return; }
+  const p=e.target.closest('.portrait'); if(p) bpc.startCache(p.dataset.k);
+});
+$('#removedWrap').addEventListener('click',e=>{
+  if(e.target.closest('#rmToggle')){ removedShown=!removedShown; renderRecent(); return; }
+  const it=e.target.closest('.removed-item'); if(it) restoreRecent(it.dataset.k);
+});
+
+/* ---------- status / progress / error ---------- */
+bpc.on('phase',p=>{
+  if(p==='loading'){ $('#status').innerHTML='<span class="spark">✦</span> opening the stash…'; $('#errbox').innerHTML=''; }
+  if(p==='queued') $('#status').innerHTML='<span class="spark">✦</span> queued…';
+});
+bpc.on('progress',m=>{ if(['queued','running','loading'].includes(bpc.state.phase)) $('#status').innerHTML=`<span class="spark">✦</span> ${E(m||'appraising…')}`; });
+bpc.on('done',()=>{
+  const t=bpc.totals(); const manual=bpc.manualRows().filter(r=>!r.priced).length;
+  const parts=[];
+  if(t.priced) parts.push(t.priced+' item'+(t.priced!==1?'s':'')+' priced from poe.ninja');
+  if(manual) parts.push(manual+' rare'+(manual!==1?'s':'')+' to price yourself');
+  $('#status').textContent = parts.join(' · ');
+});
+bpc.on('error',m=>{ $('#status').textContent=''; $('#errbox').innerHTML=`<div class="err">${E(m)}</div>`; });
+
+/* ---------- meta / banner ---------- */
+let pobCode='';
+bpc.on('meta',m=>{
+  $('#intro').hidden=true; $('#board').hidden=false; $('#banner').hidden=false; $('#legend').hidden=false;
+  $('#crest').textContent=(m.character||'?').slice(0,1).toUpperCase();
+  // character name links back to its poe.ninja page when we have a real source URL
+  const nm=E(m.character||'Unknown Exile'), su=m.source_url||'';
+  $('#bName').innerHTML = /^https?:\/\//i.test(su)
+    ? `<a class="name-link" href="${E(su)}" target="_blank" rel="noopener" title="View this build on poe.ninja">${nm}</a>`
+    : nm;
+  $('#bSub').innerHTML=`<b>${E(m['class']||'')}</b> &middot; Level ${m.level||'?'} &middot; ${E(m.league||'')}`;
+  if(m.divine_to_chaos){
+    $('#rateLine').hidden=false;
+    $('#rateLine').innerHTML=`1 ${bpc.curImg('div')} = ${bpc.nfmt(Math.round(m.divine_to_chaos),0)} ${bpc.curImg('chaos')}`;
+  } else $('#rateLine').hidden=true;
+  pobCode = m.pob_code || '';
+  $('#pobBtn').hidden = !pobCode;
+});
+$('#pobBtn').addEventListener('click',()=>{
+  if(!pobCode) return;
+  if(navigator.clipboard) navigator.clipboard.writeText(pobCode).catch(()=>{});
+  const b=$('#pobBtn'), lbl=b.querySelector('.pob-lbl');
+  b.classList.add('copied'); if(lbl) lbl.textContent='copied!';
+  setTimeout(()=>{ b.classList.remove('copied'); if(lbl) lbl.textContent='pob import'; },1200);
+});
+
+/* ---------- build the slot skeleton on items ---------- */
+let staggerIdx=0;
+bpc.on('items',()=>{ buildBoard(); revealSlots(); });
+bpc.on('priced',ev=>{ (ev.keys||[]).forEach(updateSlot); renderSkills(); refreshHoveredTooltip(); });
+bpc.on('enabled',()=>{ syncEnabledMarks(); renderSkills(); });
+bpc.on('purchased',ev=>{ if(ev&&ev.key) updateSlot(ev.key); });
+bpc.on('totals',renderTotals);
+
+function buildBoard(){
+  staggerIdx=0;                 // reset per build, else 2nd+ loads stagger-delay slots for seconds
+  const groups = bpc.itemsByGroup();
+  // equipment doll
+  const eqGroup = groups.find(g=>g.group==='equipment');
+  const doll=$('#doll'); doll.innerHTML='';
+  // Two rings: assign ring1 / ring2 area to the two ring items in order.
+  let ringN=0;
+  (eqGroup?eqGroup.items:[]).forEach(it=>{
+    let area = SLOT_CLASS[it.slot];
+    if(it.slot==='Ring'){ ringN++; area = ringN===1 ? 'slot-ring1' : 'slot-ring2'; }
+    const el=slotEl(it, area||'');
+    doll.appendChild(el);
+  });
+
+  // the flask belt occupies the doll's bottom row: 5 GENERIC belt slots, filled in flask order.
+  // PoE1 has a 5-slot belt; no life/mana name-classification (D-0006 §C) — a slot is just belt position N.
+  const flGroup=groups.find(g=>g.group==='flask');
+  const flasks=flGroup?flGroup.items.slice():[];   // JOB.items flask order == belt order (engine-preserved)
+  const beltAreas=['slot-fl1','slot-ch1','slot-ch2','slot-ch3','slot-fl2'];
+  beltAreas.forEach((area,i)=>{ const it=flasks[i];
+    doll.appendChild(it ? slotEl(it,area) : emptySlot(area,'⚗')); });
+  const extraFlasks=flasks.slice(5);   // overflow beyond the 5 belt cells -> render in the stash (never drop)
+
+  // stash sections (jewel/gem -- flasks moved to the doll)
+  const stash=$('#stash'); stash.innerHTML='';
+  const order=[['jewel','Jewels'],['gem','Gems']];
+  order.forEach(([gk,title])=>{
+    const g=groups.find(x=>x.group===gk); if(!g) return;
+    const sec=document.createElement('div'); sec.className='stash-section';
+    const h=document.createElement('h4');
+    h.innerHTML=`${E(title)} <span class="grp-toggle" data-grp="${gk}">toggle</span>`;
+    sec.appendChild(h);
+    if(gk==='gem'){                       // gems render as an active-skill list, not slots
+      const wrap=document.createElement('div'); wrap.className='skills'; wrap.id='skills';
+      sec.appendChild(wrap); stash.appendChild(sec);
+      return;
+    }
+    const grid=document.createElement('div');
+    grid.className='grid12';
+    g.items.forEach(it=>{ grid.appendChild(slotEl(it,'')); });
+    sec.appendChild(grid); stash.appendChild(sec);
+  });
+  if(extraFlasks.length){                 // overflow flasks that didn't fit the doll
+    const sec=document.createElement('div'); sec.className='stash-section';
+    const h=document.createElement('h4'); h.innerHTML='Flasks <span class="grp-toggle" data-grp="flask">toggle</span>';
+    sec.appendChild(h);
+    const grid=document.createElement('div'); grid.className='grid12';
+    extraFlasks.forEach(it=>grid.appendChild(slotEl(it,'')));
+    sec.appendChild(grid); stash.appendChild(sec);
+  }
+  renderSkills();
+}
+
+/* ---------- active-skill list (poe.ninja-priced; active skill + supports feed the total) ---------- */
+const skillsOpen = new Set();
+function renderSkills(){
+  const wrap=$('#skills'); if(!wrap) return;
+  // D-0006 §D: group the gem section by HOST ITEM (core.js bpc.gemGroups() -> ordered groups,
+  // each {key, slot, name, base, unique, header, items[]}); group + row order follow state.items.
+  // A host may hold several skill rows; unknown-host gems fall under a generic "Gems" header.
+  const groups=bpc.gemGroups();
+  const hasAny=groups.some(g=>g.items.length);
+  if(!hasAny){ wrap.innerHTML='<div class="sk-empty">No active skills found.</div>'; return; }
+  let h='';
+  for(const g of groups){
+    if(!g.items.length) continue;
+    h+=`<div class="host-group">
+      <div class="host-head${g.unique?' host-unique':''}">
+        <span class="host-name" title="skills socketed in this item">${E(g.header)}</span>
+        ${g.unique?'<span class="host-uq" title="host item is a unique">unique</span>':''}
+      </div>`;
+    for(const it of g.items){ h+=skillRowHTML(it); }
+    h+=`</div>`;
+  }
+  wrap.innerHTML=h;
+}
+function skillRowHTML(it){
+  const k=String(it.index), p=bpc.state.priced[k]||{};
+  const priced=p.chaos && p.chaos.median!=null;
+  const on=!!bpc.state.enabled[k];
+  const open=skillsOpen.has(k);
+  const lvl=it.level||0, sock=(it.sockets!=null?it.sockets:0);
+  const total = priced ? p.chaos.median : null;   // headline == p.total_chaos (active + supports, granted excluded)
+  return `<div class="skill ${on?'on':'off'} ${priced?'':'noprice'} ${open?'open':''}" data-k="${E(k)}">
+      <div class="sk-head">
+        <input type="checkbox" class="sk-inc" data-k="${E(k)}" ${on?'checked':''} ${priced?'':'disabled'} title="include in total">
+        <span class="sk-tw">${open?'▾':'▸'}</span>
+        ${it.icon?`<img class="sk-ico" src="${E(it.icon)}" alt="" loading="lazy">`:'<span class="sk-ico ph">◆</span>'}
+        ${p.trade_url?`<a class="sk-name" href="${E(p.trade_url)}" target="_blank" rel="noopener" title="search this skill on trade (Lv ${lvl})">${E(it.name)}</a>`:`<span class="sk-name">${E(it.name)}</span>`}
+        ${it.granted?'<span class="sk-granted" title="item-provided skill — comes free with the host item, so excluded by default">granted</span>':''}
+        <span class="sk-meta">Lv ${lvl}${sock?` · ${sock} sup`:''}</span>
+        <span class="sk-price">${total!=null?bpc.priceHTML(total):'<span class="bpc-dash">—</span>'}</span>
+      </div>
+      <div class="sk-body">
+        <div class="sk-cut">priced from the poe.ninja gem economy: active skill + every support gem${p.trade_url?` &middot; <a href="${E(p.trade_url)}" target="_blank" rel="noopener">view on trade &#8599;</a>`:''} <span class="sk-hint">(each gem by name / level / quality / corruption)</span></div>
+        <ul class="sk-sups">${supportsHTML(it,p)}</ul>
+      </div>
+    </div>`;
+}
+function supportsHTML(it,p){
+  // D-0006 §D.2: nest the active gem's linked gems by INDEX (gems[1:] <-> it.supports[i]), not by
+  // name — a link can hold a 2nd ACTIVE (support:false) that still nests and still carries a price.
+  // bpc.gemBreakdown() already does the index alignment; gems[0] is the active, gems[1:] the links.
+  const bd=bpc.gemBreakdown(String(it.index));
+  const nested=(bd.gems||[]).slice(1);
+  if(!nested.length) return '<li class="sup none">no support gems</li>';
+  return nested.map(g=>{
+    const ic = g.icon ? `<img class="sup-ico" src="${E(g.icon)}" alt="" loading="lazy">` : '';
+    const nm = g.trade_url?`<a href="${E(g.trade_url)}" target="_blank" rel="noopener">${E(g.name)}</a>`:E(g.name);
+    const q=(g.quality?`/${g.quality}`:''), corr=(g.corrupted?' <span class="sup-tag">corrupted</span>':'');
+    const lv=(g.level?`<span class="sup-tag">Lv ${g.level}${q}</span>`:'');
+    const act=(!g.support?' <span class="sup-tag act">linked active</span>':'');
+    // granted nested gem: excluded (chaos is null) -> struck 'granted' marker instead of a price
+    const tail = g.granted
+      ? '<span class="sup-free" title="item-granted — not counted in the total">granted</span>'
+      : `<span class="sup-price">${(g.chaos!=null)?bpc.priceHTML(g.chaos):'<span class="bpc-dash">—</span>'}</span>`;
+    return `<li class="sup${g.granted?' granted':''}">${ic}<span class="sup-nm">${nm}</span> ${lv}${corr}${act}${tail}</li>`;
+  }).join('');
+}
+
+function emptySlot(areaClass, glyph){    // empty flask placeholder slot
+  const el=document.createElement('div');
+  el.className='slot empty in-view'+(areaClass?(' '+areaClass):'');
+  el.innerHTML=`<div class="bezel"></div><div class="glyph">${glyph||'◆'}</div>`;
+  return el;
+}
+function slotEl(it, areaClass){
+  const k=String(it.index);
+  const el=document.createElement('div');
+  el.className='slot '+catClass(it.category)+(areaClass?(' '+areaClass):'');
+  el.dataset.k=k; el.dataset.slot=it.slot||'';
+  el.style.setProperty('--stagger', (staggerIdx++)*45+'ms');
+  fillSlotContents(el,it);
+  return el;
+}
+
+// poecdn icons are footprint-sized (1x1 = 47px, 2x3 = 94x141, ...). Cap upscaling to ~1.4x
+// native so small items (amulets/rings/jewels) stay crisp instead of being blown up to fill.
+function iconCap(url){
+  try{
+    const seg=url.split('/gen/image/')[1].split('/')[0];
+    const o=JSON.parse(atob(seg.replace(/-/g,'+').replace(/_/g,'/'))).slice(-1)[0];
+    const sc=o.scale||1;
+    return `max-width:${Math.round((o.w||1)*47*sc*1.4)}px;max-height:${Math.round((o.h||1)*47*sc*1.4)}px`;
+  }catch(e){ return ''; }
+}
+// shopping-cart glyph for the "purchased" tracker
+const CART_SVG='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.3"></circle><circle cx="18" cy="20" r="1.3"></circle><path d="M2.5 3.5H5l2.1 10.4a1.4 1.4 0 0 0 1.4 1.1h8.3a1.4 1.4 0 0 0 1.4-1.1L21 7H5.6"></path></svg>';
+function fillSlotContents(el,it){
+  const k=String(it.index);
+  const label = (it.group==='equipment'||it.group==='flask') ? (SHORT[it.slot]||it.slot) : '';
+  const glyph = SLOT_GLYPH[it.slot]||SLOT_GLYPH[it.group]||'◆';
+  const cnt = it.count>1 ? `<span class="cnt">×${it.count}</span>` : '';
+  // rares/magic get a "price it" pip that opens the manual pricer (trade link + paste + extension)
+  const editbtn = (it.category==='rare' || it.category==='magic')
+    ? `<button class="editbtn" data-edit="${E(k)}" title="price this rare — paste a buyout or open the trade search">✎</button>` : '';
+  if(it.icon) el.classList.add('has-ico');
+  el.innerHTML =
+    `<div class="bezel"></div>`+
+    (label?`<div class="label">${E(label)}</div>`:'')+
+    (it.icon?`<div class="ico-wrap"><img class="ico" src="${E(it.icon)}" alt="" loading="lazy" style="${iconCap(it.icon)}"></div>`:'')+
+    `<div class="glyph">${glyph}</div>`+
+    `<div class="iname">${E(it.name)}</div>`+
+    `<div class="incmark" title="Include / exclude this item's value in the total">✔</div>`+
+    `<div class="buymark" title="Mark as purchased — removes its value from the remaining total">${CART_SVG}</div>`+
+    `<div class="pricetag" data-tag></div>`+
+    `<div class="appraising"><span class="hg">⌛</span><span class="apptxt">Appraising</span></div>`+
+    cnt + editbtn;
+}
+
+function revealSlots(){
+  const slots=[...document.querySelectorAll('.slot')];
+  const reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
+  slots.forEach((el)=>{
+    if(reduce){ el.classList.add('in-view'); return; }
+    const d=parseFloat(el.style.getPropertyValue('--stagger'))||0;
+    setTimeout(()=>el.classList.add('in-view'), d);
+  });
+  // after items, paint whatever's already priced (mock loads all at once)
+  bpc.state.items.forEach(it=>updateSlot(String(it.index)));
+}
+
+function itemByKey(k){ return bpc.state.items.find(it=>String(it.index)===String(k)); }
+
+function updateSlot(k){
+  k=String(k);
+  const el=document.querySelector('.slot[data-k="'+cssEsc(k)+'"]');
+  const it=itemByKey(k); if(!el||!it) return;
+  const p=bpc.state.priced[k];
+  // clickable if it has a trade link, OR it's a rare/magic whose manual pricer can be opened
+  const pickable = it.category==='rare' || it.category==='magic';
+  el.style.cursor = ((p && p.trade_url) || pickable) ? 'pointer' : 'default';
+  el.classList.remove('nolist','skipped','loading','on','off','notfound','fewresults','bought');
+  const tag=el.querySelector('[data-tag]');
+  if(!p){ el.classList.add('loading'); if(tag) tag.innerHTML=''; return; }
+  const priced = p.chaos.median!=null;
+  if(p.method==='skipped'){ el.classList.add('skipped','nolist'); }
+  else if(!priced){ el.classList.add('nolist'); }
+  // result-count border cue — only for SEARCHED items (uniques/rares/magic) whose number came
+  // from an actual listing search (poe.ninja / cache / extension), never a pasted whisper.
+  const searched = (it.category==='unique'||it.category==='rare'||it.category==='magic') && p.source!=='manual';
+  if(searched){
+    if(!priced) el.classList.add('notfound');                    // red: nothing matched
+    else if(p.total_found!=null && p.total_found<5) el.classList.add('fewresults');  // orange: <5 listings
+  }
+  if(priced){
+    el.classList.toggle('on', !!bpc.state.enabled[k]);
+    el.classList.toggle('off', !bpc.state.enabled[k]);
+    el.classList.toggle('bought', !!bpc.state.enabled[k] && bpc.isPurchased(k));
+    if(tag) tag.innerHTML=compactPrice(cardEx(p));
+    // pulse on (re)price
+    if(!matchMedia('(prefers-reduced-motion:reduce)').matches){ el.classList.remove('pulse'); void el.offsetWidth; el.classList.add('pulse'); }
+  } else {
+    // unappraised (not found / no listing / skipped): still purchasable for tracking; no value
+    // to drop from the total, but it gets the same green "bought" ring.
+    el.classList.toggle('bought', bpc.isPurchased(k));
+    if(tag) tag.innerHTML='';
+  }
+}
+
+function syncEnabledMarks(){
+  bpc.state.items.forEach(it=>{
+    const k=String(it.index); const el=document.querySelector('.slot[data-k="'+cssEsc(k)+'"]');
+    const p=bpc.state.priced[k]; if(!el||!p||p.chaos.median==null) return;
+    el.classList.toggle('on', !!bpc.state.enabled[k]);
+    el.classList.toggle('off', !bpc.state.enabled[k]);
+    el.classList.toggle('bought', !!bpc.state.enabled[k] && bpc.isPurchased(k));
+  });
+}
+
+/* compact price for the slot corner: divine if big else chaos */
+function compactPrice(ex){
+  const p=bpc.price(ex);
+  if(p.empty) return '';
+  if(p.div!=null) return p.divStr+' '+bpc.curImg('div');
+  return p.exStr+' '+bpc.curImg('chaos');
+}
+/* card corner shows the user's selected tier (falls back to median if that tier is null) */
+function cardEx(p){ const v=p.chaos[bpc.state.tier]; return v!=null ? v : p.chaos.median; }
+function repaintTierPrices(){
+  bpc.state.items.forEach(it=>{
+    const k=String(it.index); const el=document.querySelector('.slot[data-k="'+cssEsc(k)+'"]');
+    const p=bpc.state.priced[k]; if(!el||!p||p.chaos.median==null) return;
+    const tag=el.querySelector('[data-tag]'); if(tag) tag.innerHTML=compactPrice(cardEx(p));
+  });
+}
+function cssEsc(s){ return String(s).replace(/"/g,'\\"'); }
+
+/* ---------- slot interactions: click=open trade, checkbox=include, hover=tooltip ---------- */
+$('#board').addEventListener('click',e=>{
+  const edit=e.target.closest('[data-edit]');
+  if(edit){ e.stopPropagation(); hideTip(); openManual(edit.dataset.edit); return; }
+  const tw=e.target.closest('.sk-tw');                 // skill disclosure triangle
+  if(tw){ const sk=tw.closest('.skill'); const k=sk.dataset.k;
+    if(skillsOpen.has(k)) skillsOpen.delete(k); else skillsOpen.add(k);
+    sk.classList.toggle('open'); tw.textContent = sk.classList.contains('open')?'▾':'▸'; return; }
+  const sinc=e.target.closest('.sk-inc');              // skill include checkbox
+  if(sinc){ bpc.setEnabled(sinc.dataset.k, sinc.checked); return; }
+  const inc=e.target.closest('.incmark');             // the checkbox toggles include/exclude
+  if(inc){ e.stopPropagation(); const sk=inc.closest('.slot').dataset.k; const sp=bpc.state.priced[sk];
+    if(sp && sp.chaos.median!=null) bpc.setEnabled(sk, !bpc.state.enabled[sk]); return; }
+  const buy=e.target.closest('.buymark');             // the cart toggles purchased (priced items also drop out of the remaining total)
+  if(buy){ e.stopPropagation(); const sk=buy.closest('.slot').dataset.k; const sp=bpc.state.priced[sk];
+    if(!sp) return;                                                 // still appraising -> nothing to mark yet
+    if(sp.chaos.median!=null && !bpc.state.enabled[sk]) return;   // excluded priced item -> no cart shown
+    bpc.setPurchased(sk, !bpc.isPurchased(sk)); return; }
+  const slot=e.target.closest('.slot'); if(!slot) return;
+  const k=slot.dataset.k; const it=itemByKey(k);
+  // rares/magic open the manual pricer (paste a buyout · open the trade search · extension);
+  // everything else opens its ready-made trade search in a new tab.
+  if(it && (it.category==='rare' || it.category==='magic')){ openManual(k); return; }
+  const u=cardTradeUrl(k);
+  if(u) window.open(u,'_blank','noopener');
+});
+
+/* group toggles in panel heads */
+document.addEventListener('click',e=>{
+  const gt=e.target.closest('.grp-toggle'); if(!gt) return;
+  const grp=gt.dataset.grp;
+  // determine current majority state -> flip
+  const items=bpc.state.items.filter(it=>it.group===grp && bpc.state.priced[String(it.index)] && bpc.state.priced[String(it.index)].chaos.median!=null);
+  const anyOff=items.some(it=>!bpc.state.enabled[String(it.index)]);
+  bpc.setGroupEnabled(grp, anyOff);
+});
+
+/* ---------- tooltip ---------- */
+const tt=$('#tt'); let hoveredKey=null;
+$('#board').addEventListener('mouseover',e=>{
+  const slot=e.target.closest('.slot'); if(!slot) return;
+  hoveredKey=slot.dataset.k; showTip(slot);
+});
+$('#board').addEventListener('mousemove',e=>{
+  const slot=e.target.closest('.slot');
+  if(slot && tt.classList.contains('show')) positionTip(slot);
+});
+$('#board').addEventListener('mouseout',e=>{
+  const slot=e.target.closest('.slot'); if(!slot) return;
+  const to=e.relatedTarget;
+  if(to && slot.contains(to)) return;
+  hoveredKey=null; hideTip();
+});
+function refreshHoveredTooltip(){
+  if(!hoveredKey) return;
+  const slot=document.querySelector('.slot[data-k="'+cssEsc(hoveredKey)+'"]');
+  if(slot && tt.classList.contains('show')) showTip(slot);
+}
+function hideTip(){ tt.classList.remove('show'); }
+function modsHTML(mods){
+  if(!mods) return '';
+  const sec=(arr,cls)=> (arr&&arr.length) ? arr.map(m=>`<div class="tt-mod ${cls}">${E(m)}</div>`).join('') : '';
+  let h=sec(mods.implicit,'imp');
+  if(mods.implicit&&mods.implicit.length && (mods.explicit&&mods.explicit.length))
+    h+='<div class="tt-modsep"></div>';
+  h+=sec(mods.explicit,'exp');
+  return h ? `<div class="tt-mods">${h}</div>` : '';
+}
+function showTip(slot){
+  const k=slot.dataset.k; const it=itemByKey(k); if(!it) return;
+  const p=bpc.state.priced[k];
+  const hc='h-'+(it.category||'normal');
+  let body='';
+  if(it.slot) body+=`<div style="text-align:center;color:var(--mut);font-size:12px;margin-bottom:2px">${E(it.group==='equipment'?it.slot:cap(it.group))}</div>`;
+  body+=modsHTML(it.mods);                 // affixes (equipment / jewels / flasks)
+  body+=`<div class="tt-div"><span class="dia">◆</span></div>`;
+  const manualable = it && (it.category==='rare' || it.category==='magic');
+  if(!p){
+    body+=`<div class="tt-empty">loading…</div>`;
+  } else if(p.chaos.median==null){
+    body+=`<div class="tt-empty">${manualable?'Not priced yet — price it yourself.':'No server price.'}</div>`;
+    if(p.note) body+=`<div class="tt-note">${E(p.note)}</div>`;
+    if(manualable) body+=`<div class="tt-link">click → paste a buyout or open the search ↗</div>`;
+    else if(p.trade_url) body+=`<div class="tt-link">click → open on trade ↗</div>`;
+  } else {
+    body+=`<div class="tt-prices">
+      <div class="row"><span class="k">min</span><span class="v">${bpc.priceHTML(p.chaos.min)}</span></div>
+      <div class="row"><span class="k">median</span><span class="v">${bpc.priceHTML(p.chaos.median)}</span></div>
+      <div class="row"><span class="k">high</span><span class="v">${bpc.priceHTML(p.chaos.high)}</span></div>
+    </div>`;
+    if(p.source==='cache'){
+      // community cache is an OPEN store — anyone can POST. Never present it as a verified
+      // price: neutral dot + explicit "unverified" (the green confidence dot is forgeable).
+      body+=`<div class="tt-conf"><span class="dot none"></span>community &middot; unverified${p.total_found?(' &middot; '+p.total_found+' listings when seeded'):''}</div>`;
+    } else {
+      const srcLbl = p.source==='poe.ninja' ? 'poe.ninja' : p.source==='manual' ? 'you pasted this' : p.source==='trade' ? 'extension' : '';
+      body+=`<div class="tt-conf"><span class="dot ${E(p.confidence)}"></span>${E(p.confidence)} confidence${p.sample_size?(' &middot; '+p.sample_size+' samples'):''}${srcLbl?(' &middot; '+E(srcLbl)):''}</div>`;
+    }
+    if(p.note) body+=`<div class="tt-note">${E(p.note)}</div>`;
+    if(manualable) body+=`<div class="tt-link">click → re-price / open search ↗</div>`;
+    else if(p.trade_url) body+=`<div class="tt-link">click → open on trade ↗</div>`;
+  }
+  $('#ttinner').innerHTML =
+    `<div class="tt-head ${hc}">${E(it.name)}${it.group==='equipment'?'':''}</div>`+
+    `<div class="tt-body">${body}</div>`;
+  positionTip(slot);
+  tt.classList.add('show');
+}
+function positionTip(slot){
+  const r=slot.getBoundingClientRect();
+  const tw=tt.offsetWidth||400, th=tt.offsetHeight||200;
+  let x=r.right+12, y=r.top;
+  if(x+tw>window.innerWidth-8) x=r.left-tw-12;       // flip left
+  if(x<8) x=Math.min(window.innerWidth-tw-8, r.left); // clamp
+  if(y+th>window.innerHeight-8) y=window.innerHeight-th-8;
+  if(y<8) y=8;
+  tt.style.left=x+'px'; tt.style.top=y+'px';
+}
+
+/* ---------- totals (docked top-right in the banner) ---------- */
+function renderTotals(){
+  const t=bpc.totals(), tier=bpc.state.tier;
+  const bt=$('#bantot'); if(!bt) return;
+  bt.hidden=false;
+  const val=$('#btVal');
+  if(t[tier]>0) val.innerHTML=compactPrice(t[tier]);
+  else if(t.purchased>0 && t.remaining===0) val.innerHTML='<span style="color:#7fe084">&#10003; all bought</span>';
+  else val.innerHTML='<span style="color:var(--mut)">—</span>';
+  document.querySelectorAll('#btSeg button').forEach(b=>b.classList.toggle('active', b.dataset.tier===tier));
+  if(t.purchased>0){
+    const spent=t['spent'+cap(tier)]||0;
+    const spentStr = spent>0 ? ` &middot; ${compactPrice(spent)} spent` : '';
+    $('#btInc').innerHTML = `${t.remaining} of ${t.included} left to buy${spentStr}`;
+  } else {
+    $('#btInc').textContent = `${t.included}/${t.priced} included`;
+  }
+  if(!matchMedia('(prefers-reduced-motion:reduce)').matches){ val.classList.remove('flash'); void val.offsetWidth; val.classList.add('flash'); }
+}
+/* tier selector: switch which tier the total + cards show (display-only, remembered) */
+$('#btSeg').addEventListener('click',e=>{ const b=e.target.closest('button[data-tier]'); if(b) bpc.setControl('tier', b.dataset.tier); });
+bpc.on('control',c=>{ if(c.name==='tier'){ renderTotals(); repaintTierPrices(); }
+  else if(c.name==='refresh'){ const r=$('#refresh'); if(r) r.checked=!!c.value; } });
+
+/* re-search: loads show saved prices; this button re-runs every trade search */
+function fmtLocal(tsSec){           // the user's local time + timezone
+  try{ return new Date(tsSec*1000).toLocaleString(undefined,
+    {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'}); }
+  catch(e){ return ''; }
+}
+function updateSavedNote(){
+  const row=$('#researchRow'); if(!row) return;
+  row.hidden = !bpc.state.meta;
+  const ts=bpc.state.savedTs;
+  $('#savedNote').textContent = ts
+    ? (bpc.state.fromSaved ? 'cached · last searched '+fmtLocal(ts) : 'searched '+fmtLocal(ts))
+    : '';
+}
+bpc.on('state', updateSavedNote);
+$('#reAll').addEventListener('click',()=>{ bpc.researchAll(); });
+function cap(s){ return s?s.charAt(0).toUpperCase()+s.slice(1):s; }
+
+/* ============================================================================
+ *  PUBLIC-MODE view logic (replaces the local app's server-side rare picker).
+ *  Rares aren't priced by any server here — the visitor prices them via a trade
+ *  link + a pasted buyout (whisper-paste), the community cache, or the extension
+ *  bridge. See docs/public-contract.md, docs/notes-public-worker.md,
+ *  docs/notes-public-ext.md, docs/backlog.md B-001.
+ * ========================================================================== */
+const pickwrap=$('#pickwrap'), pick=$('#pick');
+
+/* A board card's trade link: in public mode every priceable item already carries a full,
+   never-expiring ?q= browser link from the API (docs/public-contract.md §2.3). */
+function cardTradeUrl(k){ const p=bpc.state.priced[String(k)]; return (p && p.trade_url) || ''; }
+
+/* ---------- the extension bridge badge + calm upgrade card ---------- */
+bpc.on('bridge',b=>{
+  const badge=$('#bridgeBadge'), txt=$('#bridgeText');
+  if(b.active){ badge.classList.add('on'); txt.textContent='bridge active'+(b.version?(' · v'+b.version):''); badge.title='Trade Bridge extension detected — rares can be priced hands-free from your own IP.'; }
+  else { badge.classList.remove('on'); txt.textContent='no extension'; }
+  renderManual();          // autoscan / per-row auto buttons + the upgrade card depend on this
+});
+
+/* ---------- the manual / community pricing panel ---------- */
+function manualRowHTML(r){
+  const it=r.item, k=r.key, p=r.price||{};
+  const rc = it.category==='rare'?'r-rare':it.category==='magic'?'r-magic':it.category==='unique'?'r-unique':'';
+  const ico = it.icon ? `<img class="mr-ico" src="${E(it.icon)}" alt="" loading="lazy">` : `<span class="mr-ico ph">◆</span>`;
+  const slot = it.slot ? `<span class="mr-slot">${E(it.slot)}</span>` : '';
+  let right='';
+  if(r.priced){
+    const srcCls = p.source==='cache'?'cache':p.source==='trade'?'trade':'manual';
+    const srcLbl = p.source==='cache'?'community':p.source==='trade'?'extension':'you';
+    right = `<span class="mr-src ${srcCls}" title="${E(p.note||'')}">${srcLbl}</span>`+
+            `<span class="mr-price">${bpc.priceHTML(p.chaos.median)}</span>`+
+            `<button class="stone-btn mr-edit" data-mk="${E(k)}" type="button" style="padding:5px 10px;font-size:12px">re-price</button>`;
+  } else {
+    const openBtn = r.trade_url ? `<a class="stone-btn" href="${E(r.trade_url)}" target="_blank" rel="noopener" style="padding:6px 11px;font-size:13px">open search ↗</a>` : '';
+    const autoBtn = bpc.state.bridge.active ? `<button class="stone-btn search mr-auto" data-mk="${E(k)}" type="button" style="padding:6px 11px;font-size:13px" title="price this one via the extension">⚡ auto</button>` : '';
+    right = openBtn +
+      `<input class="mr-input" data-mk="${E(k)}" placeholder="35c · 2 div · paste whisper" spellcheck="false" autocomplete="off">`+
+      `<button class="stone-btn search mr-apply" data-mk="${E(k)}" type="button" style="padding:6px 11px;font-size:13px">apply</button>`+ autoBtn;
+    const noteRaw = (p.note && p.source!=='none') ? `<div class="mr-err" style="color:var(--parch);font-style:normal">${E(p.note)}</div>` : '';
+    right += noteRaw;
+  }
+  return `<div class="mrow ${rc} ${r.priced?'done':''}" data-mk="${E(k)}">${ico}<div class="mr-name">${E(it.name)}${slot}</div><div class="mr-right">${right}</div></div>`;
+}
+function renderManual(rows){
+  rows = rows || bpc.manualRows();
+  const wrap=$('#manualWrap');
+  if(!rows.length){ wrap.hidden=true; updateUpgradeCard(0); return; }
+  wrap.hidden=false;
+  const unpriced=rows.filter(r=>!r.priced).length;
+  $('#manualSub').textContent = unpriced ? (unpriced+' still need'+(unpriced===1?'s':'')+' a price') : 'all priced ✓';
+  $('#autoscanBtn').hidden = !(bpc.state.bridge.active && unpriced>0);
+  const intro=$('#manualIntro');
+  if(unpriced){
+    intro.innerHTML = bpc.state.bridge.active
+      ? `<span class="mh-sub">Extension detected — hit <b>Autoscan</b> to price them all from your own IP, or price rows one at a time below.</span>`
+      : `<span class="mh-sub">Click <b>open search</b>, copy a listing's buyout in-game (its whisper), and paste it below — or just type <code>35c</code> / <code>2 div</code>. Prices fold into your total.</span>`;
+  } else intro.innerHTML='';
+  $('#manualRows').innerHTML = rows.map(manualRowHTML).join('');
+  updateUpgradeCard(unpriced);
+}
+function updateUpgradeCard(unpriced){
+  // the calm inline upgrade card only when there are rares to price AND no bridge is present
+  $('#upgradeCard').hidden = !(unpriced>0 && !bpc.state.bridge.active);
+}
+function applyRow(k){
+  const inp=$(`.mr-input[data-mk="${cssEsc(k)}"]`); if(!inp) return;
+  const res=bpc.applyWhisper(k, inp.value);
+  if(!res.ok){ inp.style.borderColor='var(--bad)'; inp.title=res.error;
+    const row=inp.closest('.mrow'); if(row){ row.classList.remove('m-flash'); void row.offsetWidth; row.classList.add('m-flash'); }
+    let err=inp.parentElement.querySelector('.mr-err'); if(!err){ err=document.createElement('div'); err.className='mr-err'; inp.parentElement.appendChild(err); }
+    err.textContent=res.error; }
+  // success -> applyWhisper emits 'manual' which re-renders the panel with the priced row
+}
+$('#manualRows').addEventListener('click',e=>{
+  const apply=e.target.closest('.mr-apply'); if(apply){ applyRow(apply.dataset.mk); return; }
+  const auto=e.target.closest('.mr-auto'); if(auto){ auto.textContent='…'; auto.disabled=true; bpc.priceViaExtension(auto.dataset.mk); return; }
+  const edit=e.target.closest('.mr-edit'); if(edit){ openManual(edit.dataset.mk); return; }
+});
+$('#manualRows').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){ const inp=e.target.closest('.mr-input'); if(inp){ e.preventDefault(); applyRow(inp.dataset.mk); } }
+});
+$('#autoscanBtn').addEventListener('click',()=>{
+  const b=$('#autoscanBtn'); b.disabled=true; const old=b.innerHTML; b.innerHTML='⚡ scanning…';
+  Promise.resolve(bpc.autoscan()).then(()=>{ b.disabled=false; b.innerHTML=old; }).catch(()=>{ b.disabled=false; b.innerHTML=old; });
+});
+bpc.on('manual', renderManual);
+
+/* ---------- the manual-pricing modal (reuses the crafting-tooltip styling) ---------- */
+function openManual(k){
+  k=String(k);
+  const it=itemByKey(k); if(!it) return;
+  const p=bpc.state.priced[k]||{};
+  const tradeUrl = p.trade_url || it.trade_url || '';
+  let body=`<div class="mp-lead">Rares are priced on <b>your</b> machine — this site never runs the search itself.</div>`;
+  body+=modsHTML(it.mods);
+  body+=`<div class="tt-div"><span class="dia">◆</span></div>`;
+  if(tradeUrl) body+=`<div class="mp-block"><a class="stone-btn viewtrade" href="${E(tradeUrl)}" target="_blank" rel="noopener" style="display:block;text-align:center">↗ open this search on the trade site</a></div>`;
+  if(bpc.state.bridge.active) body+=`<div class="mp-block"><button class="stone-btn autoscan" id="mpExt" type="button" style="width:100%">⚡ price via extension</button></div>`;
+  body+=`<div class="mp-block"><div class="mp-lbl">Paste a buyout, or type a price</div>`+
+    `<input class="mp-input" id="mpInput" placeholder='35 chaos   ·   2 div   ·   paste the whole "listed for …" whisper' spellcheck="false" autocomplete="off">`+
+    `<div class="mp-hint">On the trade site, copy a listing's buyout whisper (or its price note) and paste it here. Chaos &amp; Divine fold into your total.</div>`+
+    `<div class="mp-err" id="mpErr"></div></div>`;
+  if(p.chaos && p.chaos.median!=null)
+    body+=`<div class="mp-ok" id="mpCurrent">current: ${bpc.priceHTML(p.chaos.median)}${p.source==='manual'?' — <a href="#" id="mpClear" style="color:var(--bz3)">clear</a>':''}</div>`;
+  body+=`<div class="pbtns"><button class="stone-btn" id="mpCancel" type="button">Close</button><button class="stone-btn search" id="mpApply" type="button">Apply price</button></div>`;
+  pick.innerHTML=`<div class="ph">${E(it.name)}<span class="scope">${E(it.slot||cap(it.category)||'')}</span></div><div class="pbody">${body}</div>`;
+  pickwrap.classList.add('show');
+  const inp=$('#mpInput'); if(inp) inp.focus();
+  function doApply(){ const r=bpc.applyWhisper(k, $('#mpInput').value); if(!r.ok){ $('#mpErr').textContent=r.error; } else closeManual(); }
+  $('#mpApply').onclick=doApply;
+  if(inp) inp.addEventListener('keydown',ev=>{ if(ev.key==='Enter'){ ev.preventDefault(); doApply(); } });
+  $('#mpCancel').onclick=closeManual;
+  const ext=$('#mpExt'); if(ext) ext.onclick=()=>{ ext.textContent='⚡ scanning…'; ext.disabled=true; Promise.resolve(bpc.priceViaExtension(k)).then(closeManual).catch(closeManual); };
+  const clr=$('#mpClear'); if(clr) clr.onclick=ev=>{ ev.preventDefault(); bpc.clearManual(k); closeManual(); };
+}
+function closeManual(){ pickwrap.classList.remove('show'); pick.innerHTML=''; }
+pickwrap.addEventListener('click',e=>{ if(e.target===pickwrap) closeManual(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape' && pickwrap.classList.contains('show')) closeManual(); });
+
+/* ---------- add the loaded build's league to the override dropdown ---------- */
+bpc.on('meta',m=>{ if(m && m.league) seedLeagues(m.league); });
+
+/* ---------- footer + store links (config placeholders) ---------- */
+(function wireStatic(){
+  const s=(CFG && CFG.STORE_URLS)||{};
+  function setStore(id,url){ const a=$('#'+id); if(!a) return;
+    if(url && !/REPLACE_ME/.test(url)){ a.href=url; }
+    else { a.classList.add('disabled'); a.title='store listing coming soon'; a.removeAttribute('href'); } }
+  setStore('storeChrome', s.chrome); setStore('storeEdge', s.edge); setStore('storeFirefox', s.firefox);
+  const repo=$('#footRepo');
+  if(repo){ if(CFG && CFG.REPO_URL && !/REPLACE_ME/.test(CFG.REPO_URL)) repo.href=CFG.REPO_URL;
+    else { repo.classList.add('disabled'); repo.title='repository link coming soon'; repo.removeAttribute('href'); } }
+  const ct=$('#footCacheToggle');
+  if(ct){
+    const paint=()=>{ ct.textContent='Community cache: '+(bpc.cacheOptOut()?'off':'on'); ct.title=bpc.cacheOptOut()?'Turn the shared community price cache back on':'Stop reading from / writing to the shared community price cache'; };
+    paint();
+    ct.addEventListener('click',e=>{ e.preventDefault(); bpc.setCacheOptOut(!bpc.cacheOptOut()); paint(); });
+  }
+})();
+
+/* ---------- boot ----------
+   Every bpc.on(...) handler above is registered before init() runs, so the
+   meta/items/priced/totals/manual/bridge events emitted during a mock load (or a
+   real build) are caught and render the banner, board, manual panel and totals. */
+bpc.init();
+syncControls();
+</script>
+</body></html>

@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="How the PoE1 Build Price Checker works: exactly which servers it talks to, where every price comes from, what is stored and for how long, and how to opt out of the shared cache. Not affiliated with Grinding Gear Games.">
+<title>How it works · PoE1 Build Price Checker</title>
+<!-- Fonts are self-hosted (assets/fonts/) so the browser contacts NO third party for them
+     (B-001 trust promise / "every server this site contacts", below). -->
+<link rel="stylesheet" href="/assets/fonts.css">
+<style>
+  :root{
+    --base:#100c08; --panel:#1a140d; --inner:#0d0a06;
+    --bz1:#5a4c38; --bz2:#7a6a4f; --bz3:#c8aa6e; --bz-hi:#e8d4a6;
+    --fg:#e8dcc4; --mut:#aa9e82; --parch:#aa9e82;
+    --ok:#69c887; --warn:#d9a441; --bad:#d06b5e; --val:#8888ff; --gem:#1ba29b;
+    --serif:'Cormorant Garamond',Georgia,serif; --display:'Marcellus','Cormorant Garamond',serif;
+    --mono:'Consolas','SFMono-Regular',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{ background:radial-gradient(120% 90% at 50% 0%, #1b140c 0%, var(--base) 55%, #0a0705 100%), var(--base);
+    color:var(--fg); font-family:var(--serif); font-size:17px; line-height:1.55; padding:0 18px 80px; -webkit-font-smoothing:antialiased;}
+  .stage{max-width:820px; margin:0 auto;}
+  a{color:var(--bz3);} a:hover{color:var(--bz-hi);}
+  code{font-family:var(--mono); font-size:.86em; background:var(--inner); border:1px solid var(--bz1); border-radius:4px; padding:1px 6px; color:var(--bz-hi); overflow-wrap:anywhere;}
+  .topnav{display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding:18px 0 10px; border-bottom:1px solid var(--bz1); margin-bottom:26px;}
+  .topnav .brandmark{font-family:var(--display); font-size:15px; letter-spacing:.08em; color:var(--bz3); text-transform:uppercase;}
+  .topnav .navspace{flex:1 1 20px;}
+  .topnav a{font-size:14px; text-decoration:none; border-bottom:1px solid transparent;}
+  .topnav a:hover{border-color:var(--bz2);}
+  h1{font-family:var(--display); font-weight:400; letter-spacing:.04em; color:var(--bz-hi); font-size:34px; margin:8px 0 6px;}
+  .lede{color:var(--mut); font-size:18px; margin:0 0 8px;}
+  h2{font-family:var(--display); font-weight:400; letter-spacing:.03em; color:var(--bz3); font-size:22px; margin:34px 0 8px; padding-top:14px; border-top:1px solid rgba(122,106,79,.3);}
+  h3{font-family:var(--display); font-weight:400; color:var(--bz-hi); font-size:17px; margin:18px 0 4px;}
+  p{margin:8px 0;} ul,ol{margin:8px 0; padding-left:22px;} li{margin:5px 0;}
+  .callout{border:1px solid var(--bz2); border-left:4px solid var(--bz3); background:linear-gradient(180deg, rgba(200,170,110,.06), transparent);
+    border-radius:6px; padding:14px 18px; margin:16px 0;}
+  .callout.hard{border-left-color:var(--ok);}
+  .callout .k{font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--bz3); display:block; margin-bottom:4px;}
+  .panel{border:1px solid var(--bz1); border-radius:6px; background:var(--panel); padding:2px 16px; margin:14px 0; box-shadow:inset 0 0 30px rgba(0,0,0,.35);}
+  table{width:100%; border-collapse:collapse; margin:10px 0; font-size:15px;}
+  th,td{text-align:left; padding:8px 10px; border-bottom:1px solid rgba(122,106,79,.25); vertical-align:top;}
+  th{font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--bz3);}
+  td .mono{font-family:var(--mono); font-size:13px;}
+  .src-list{list-style:none; padding:0;}
+  .src-list li{display:flex; gap:12px; align-items:baseline; padding:10px 0; border-top:1px solid rgba(122,106,79,.2);}
+  .src-list li:first-child{border-top:0;}
+  .src-list .rung{flex:0 0 auto; font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:#160f08;
+    background:linear-gradient(180deg,var(--bz3),var(--bz1)); border-radius:4px; padding:3px 8px; margin-top:2px;}
+  .src-list .rung.opt{background:none; border:1px solid var(--bz2); color:var(--parch);}
+  .ep{font-family:var(--mono); font-size:13px; color:var(--bz-hi); overflow-wrap:anywhere;}
+  .ep .m{color:var(--gem);}
+  .no{color:var(--bad); font-weight:600;}
+  .yes{color:var(--ok); font-weight:600;}
+  .cache-toggle{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin:10px 0 4px;}
+  .cache-toggle button{font-family:var(--display); letter-spacing:.03em; font-size:15px; color:#160f08; cursor:pointer;
+    background:linear-gradient(180deg,var(--bz3),var(--bz1)); border:1px solid var(--bz-hi); border-radius:5px; padding:8px 16px;}
+  .cache-toggle button.off{background:linear-gradient(180deg,#3a2f20,#241b10); color:var(--parch); border-color:var(--bz1);}
+  .cache-toggle .st{font-family:var(--mono); font-size:13px; color:var(--mut);}
+  .cache-toggle .st b.on{color:var(--ok);} .cache-toggle .st b.offc{color:var(--bad);}
+  .site-foot{margin-top:40px; padding:16px 0; border-top:1px solid var(--bz1); font-family:var(--mono); font-size:12px; color:var(--mut);
+    display:flex; gap:14px; flex-wrap:wrap; align-items:center;}
+  .site-foot .foot-space{flex:1 1 20px;}
+  .site-foot .ggg{font-family:var(--serif); font-size:13px; font-style:italic; color:var(--parch);}
+  .muted{color:var(--mut);} .small{font-size:14px;}
+</style></head>
+<body>
+<div class="stage">
+  <div class="topnav">
+    <span class="brandmark">PoE1 Build Price Checker</span>
+    <span class="navspace"></span>
+    <a href="/">&larr; Back to the checker</a>
+  </div>
+
+  <h1>How it works</h1>
+  <p class="lede">Paste a build, see what it costs. Here is exactly what happens, which servers are involved, and what is stored &mdash; in plain words.</p>
+
+  <div class="callout hard">
+    <span class="k">The one rule</span>
+    <b>This site never talks to the Path&nbsp;of&nbsp;Exile trade site.</b> The page you are on, the pricing function, and the shared
+    cache <span class="no">never</span> call <code>pathofexile.com</code> &mdash; not the trade search, not any of its data endpoints.
+    Trade prices for rares are produced only on <b>real player machines</b> (you, or a volunteer's PC), never by a server pretending to be one.
+    That single rule is the reason the whole thing is built the way it is.
+  </div>
+
+  <h2>Where every number comes from</h2>
+  <p>Two kinds of items, two different sources:</p>
+  <ul>
+    <li><b>Gems, currency, and named uniques</b> are priced from the <b>poe.ninja economy</b> (a public, cache-friendly dataset). These show up as real numbers the moment a build loads.</li>
+    <li><b>Rares</b> (and magic items, and uniques poe.ninja doesn't list) can't be priced that way &mdash; every rare is unique. For each one you get a ready-made trade search and price it yourself, one of four ways:</li>
+  </ul>
+  <ul class="src-list">
+    <li><span class="rung">Free</span><div><b>The community cache.</b> If another visitor (or a volunteer's daily seeding run) already priced this exact item recently, its price is filled in for you automatically. Short-lived (24&nbsp;hours) and always exact-match. You can turn this off below.</div></li>
+    <li><span class="rung">Rung&nbsp;1</span><div><b>You paste a price.</b> Click <b>open search</b> on a rare, find a comparable listing on the trade site, copy its buyout (the whisper), and paste it back here. Type <code>35c</code> or <code>2&nbsp;div</code> if you already know. It folds into your total and is remembered on your device for that build.</div></li>
+    <li><span class="rung">Rung&nbsp;2</span><div><b>The browser extension</b> (optional). It runs those same trade searches from <b>your</b> browser and IP &mdash; logged out &mdash; and fills the cheapest buyout in automatically. Nothing on our side ever touches the trade API.</div></li>
+    <li><span class="rung opt">Rung&nbsp;0</span><div><b>Run it locally.</b> The whole thing is open source; you can run the desktop/CLI version on your own machine if you'd rather not use the website at all.</div></li>
+  </ul>
+  <div class="callout">
+    <span class="k">Why the split</span>
+    Neither poe.ninja nor the trade site lets a random website read prices directly from a visitor's browser (no cross-origin access). So hands-free rare pricing needs code running <em>with permission</em> on your own machine &mdash; the extension, a userscript, or the local app. Everything else stays free and installs nothing.
+  </div>
+
+  <h2>The exact endpoints</h2>
+  <p>These are every server this site contacts. You can verify them in your browser's Network tab.</p>
+  <div class="panel">
+    <table>
+      <thead><tr><th>When</th><th>Request</th><th>Whose server</th></tr></thead>
+      <tbody>
+        <tr><td>You appraise a build</td><td class="ep"><span class="m">GET/POST</span> <span id="epApi">{API_BASE}</span>/api/build</td><td>Ours (reads poe.ninja only)</td></tr>
+        <tr><td>Item &amp; currency icons render</td><td class="ep"><span class="m">GET</span> web.poecdn.com/&hellip; <span class="muted">(images)</span></td><td>GGG's public image CDN &mdash; <b>your</b> browser, pictures only</td></tr>
+        <tr><td>Filling cached rare prices</td><td class="ep"><span class="m">GET</span> <span id="epWorker">{WORKER_BASE}</span>/cache</td><td>Ours (a dumb key/value store)</td></tr>
+        <tr><td>A rare priced on your machine</td><td class="ep"><span class="m">POST</span> <span id="epWorker2">{WORKER_BASE}</span>/cache</td><td>Ours (writes your result for others)</td></tr>
+        <tr><td>You click a trade link</td><td class="ep"><span class="m">GET</span> pathofexile.com/trade/search/&hellip;</td><td><b>Your</b> browser tab, opened by you</td></tr>
+        <tr><td>The extension prices a rare</td><td class="ep"><span class="m">POST</span> pathofexile.com/api/trade/&hellip;</td><td><b>Your</b> browser &amp; IP (extension only)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small muted">The build function reads only <code>poe.ninja</code>. The cache Worker reads and writes only its own key/value store. Item and currency pictures load as plain images from GGG's public CDN (<code>web.poecdn.com</code>) &mdash; no cookies, nothing about you. Fonts are served from this site, not Google. The only requests to <code>pathofexile.com</code> itself come from your own browser &mdash; a tab you opened, or the extension you chose to install.</p>
+
+  <h2>What's stored, and where</h2>
+  <h3>On your device (localStorage &mdash; never leaves your browser)</h3>
+  <div class="panel">
+    <table>
+      <thead><tr><th>Key</th><th>What</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">bpc_manual:&hellip;</td><td>Prices you pasted for a build's rares, so they survive a reload.</td></tr>
+        <tr><td class="mono">bpc_purchased:&hellip;</td><td>Which items you ticked as "already bought".</td></tr>
+        <tr><td class="mono">bpc_recent_builds</td><td>The builds you looked up, for the "saved characters" shortcuts.</td></tr>
+        <tr><td class="mono">bpc_status / bpc_league / bpc_tier</td><td>Your control preferences.</td></tr>
+        <tr><td class="mono">bpc_cache_optout</td><td>Whether you've opted out of the shared cache (below).</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small muted">No account, no login, and <b>no cookies we set</b> &mdash; no analytics, no ad/tracking pixels, no third-party scripts. The only third-party server your browser touches on a normal page load is GGG's image CDN (<code>web.poecdn.com</code>) for item pictures; it sets nothing and learns nothing but that an icon was fetched. Clear your browser storage and everything on your device is gone.</p>
+
+  <h3>In the shared community cache (short-lived, public prices only)</h3>
+  <p>When a rare is priced on a real machine, its <b>price only</b> is stored so the next visitor with the same build sees it too. Each entry is a chaos number plus a listing count and the trade link &mdash; keyed by a hash of the item's league + name + mods. It holds <b>no</b> character name, account, or anything identifying, and every entry <b>expires after 24 hours</b>. Unpriceable items are simply left blank (a link, never a made-up number).</p>
+  <p>This cache is <b>open</b> &mdash; the recipe is public, so anyone can contribute (that is how the extension shares your results back). So the site treats it as untrusted: a cached price is always shown as <b>community-submitted and unverified</b>, never with the green "verified" dot a poe.ninja price gets, and its confidence is <b>computed from the listing count on our side</b> &mdash; whatever a sender claims is ignored. Values are capped to sane magnitudes, and a per-contributor daily write limit keeps one script from flooding it. It is a convenience, not a source of truth: to trust a number, click through to the live trade search.</p>
+
+  <h3 id="optout">Opt out of the shared cache</h3>
+  <p>With this on (the default), your build reads cached rare prices, and prices produced on your machine (via the extension) are shared back. Turn it off and this site will neither read from nor write to the shared cache &mdash; you'll price every rare yourself.</p>
+  <div class="cache-toggle">
+    <button id="cacheBtn" type="button">Community cache: on</button>
+    <span class="st" id="cacheState">You're using the shared cache. <b class="on">on</b></span>
+  </div>
+
+  <h2>Playing nice with the trade API (rate limits)</h2>
+  <p>Grinding Gear Games publishes rate limits for their trade API and temporarily blocks IPs that ignore them. Because this site never calls that API, it can't cause you a problem. The two places trade calls <em>do</em> happen both behave:</p>
+  <ul>
+    <li><b>The extension</b> ships the same polite limiter the desktop app uses: it reads GGG's rate-limit headers, stays well under every window, honours <code>Retry-After</code>, and prices one search at a time. It runs logged-out (<code>credentials: omit</code>), so it's your per-IP anonymous limit &mdash; no account risk.</li>
+    <li><b>Clicking a trade link</b> is just you opening the normal trade site in a tab, exactly as if you'd searched it by hand.</li>
+  </ul>
+
+  <h2>The extension, precisely</h2>
+  <p>Optional, open source, and deliberately boring:</p>
+  <ul>
+    <li><span class="yes">Only</span> requests to <code>pathofexile.com/api/trade/*</code> and this site's own domain. Nothing else.</li>
+    <li><span class="no">No</span> access to your tabs, browsing history, or other sites. <span class="no">No</span> cookies, <span class="no">no</span> login, <span class="no">no</span> <code>POESESSID</code>.</li>
+    <li>Store-only distribution (Chrome / Edge / Firefox), unminified, with the source readable in the repo and the store listing.</li>
+    <li>The site is fully usable without it &mdash; it only saves you the copy-paste.</li>
+  </ul>
+  <p class="small">Get it (once each store approves the listing): <span id="storeLinks" class="muted">links appear here when published</span>. Read the code: <a id="repoLink" href="#">the open-source repository</a>.</p>
+
+  <div class="callout">
+    <span class="k">Not affiliated with GGG</span>
+    This is a fan-made tool. It is not made, endorsed, or supported by <b>Grinding Gear Games</b>. "Path of Exile" and related marks belong to GGG. "Official" here means transparent and restrained &mdash; not that it comes from GGG.
+  </div>
+
+  <footer class="site-foot">
+    <a href="/">The checker</a>
+    <a id="footRepo" href="#">Open source</a>
+    <span class="foot-space"></span>
+    <span class="ggg">Not affiliated with or endorsed by Grinding Gear Games.</span>
+  </footer>
+</div>
+
+<script src="/config.js"></script>
+<script>
+"use strict";
+(function(){
+  var CFG = window.BPC_CONFIG || {};
+  function clean(v){ return (v && !/REPLACE_ME/.test(v)) ? String(v).replace(/\/+$/,'') : ""; }
+  var api=clean(CFG.API_BASE), worker=clean(CFG.WORKER_BASE), repo=clean(CFG.REPO_URL);
+  function setText(id,v,fallback){ var el=document.getElementById(id); if(el) el.textContent = v || fallback; }
+  setText('epApi', api, '{API_BASE — set in config.js}');
+  setText('epWorker', worker, '{WORKER_BASE — set in config.js}');
+  setText('epWorker2', worker, '{WORKER_BASE — set in config.js}');
+  // repo links
+  ['repoLink','footRepo'].forEach(function(id){ var a=document.getElementById(id);
+    if(a){ if(repo){ a.href=repo; } else { a.removeAttribute('href'); a.style.opacity=.6; a.title='repository link coming soon'; } } });
+  // store links
+  var s=CFG.STORE_URLS||{}, parts=[];
+  [['Chrome',s.chrome],['Edge',s.edge],['Firefox',s.firefox]].forEach(function(pair){
+    var u=clean(pair[1]); if(u) parts.push('<a href="'+u+'" target="_blank" rel="noopener">'+pair[0]+'</a>'); });
+  if(parts.length){ var sl=document.getElementById('storeLinks'); sl.className=''; sl.innerHTML=parts.join(' &middot; '); }
+
+  // ---- cache opt-out toggle (same localStorage key core.js uses) ----
+  function optedOut(){ try{ return localStorage.getItem('bpc_cache_optout')==='1'; }catch(e){ return false; } }
+  function setOptOut(on){ try{ localStorage.setItem('bpc_cache_optout', on?'1':'0'); }catch(e){} }
+  var btn=document.getElementById('cacheBtn'), st=document.getElementById('cacheState');
+  function paint(){
+    var off=optedOut();
+    btn.textContent='Community cache: '+(off?'off':'on');
+    btn.classList.toggle('off', off);
+    st.innerHTML = off ? 'You’ve opted out — this site won’t read from or write to the shared cache. <b class="offc">off</b>'
+                       : 'You’re using the shared cache. <b class="on">on</b>';
+  }
+  paint();
+  btn.addEventListener('click', function(){ setOptOut(!optedOut()); paint(); });
+})();
+</script>
+</body></html>

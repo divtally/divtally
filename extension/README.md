@@ -9,22 +9,37 @@ user's own per-IP rate budget. Ported 1:1 from the app's Python trade client
 limiter state **persisted** so an MV3 service-worker restart can't burst past GGG's cap.
 
 ## Files
-- `manifest.json` — MV3 manifest (Chrome/Edge + Firefox keys).
+- `manifest.json` — **store** MV3 manifest (v1.0.0). Minimal by design: `storage` only,
+  `host_permissions` = **exactly** `https://www.pathofexile.com/api/trade/*`, and a single
+  content-script match placeholder `https://REPLACE-WITH-YOUR-DOMAIN/*` (replace with your real
+  public origin before submitting). No localhost, no `*.pages.dev`, no cookies/tabs/all_urls.
+- `manifest.dev.json` — **local-testing** manifest. Same permissions, but its content-script
+  matches also include `http://127.0.0.1:*/*`, `localhost`, and `*.pages.dev`/`*.vercel.app`
+  staging wildcards so you can exercise the bridge locally. **Never submitted to a store.**
+- `icons/icon{16,32,48,128}.png` — bronze-coin monogram (regenerate with `generate_icons.py`).
+- `generate_icons.py` — Pillow icon generator (dev-only; not shipped in the store zip).
 - `background.js` — service worker: trade search→fetch→cheapest listing + persistent rate limiter.
 - `content.js` — bridge injected into the site (page ⇄ service worker via `postMessage`).
 - `popup.html` / `popup.js` — a built-in tester (no website needed).
 
-## Load it (Chrome / Edge)
-1. Go to `chrome://extensions` (Edge: `edge://extensions`).
-2. Turn on **Developer mode** (top-right in Chrome, left in Edge).
-3. Click **Load unpacked** and select this `extension` folder (the one with `manifest.json`).
-4. The card appears. Click the **service worker** link on the card to open its console/logs.
+## Load it for LOCAL testing (Chrome / Edge)
+The store `manifest.json` has **no localhost match**, so to test the bridge against the local app
+you load the **dev** manifest instead:
+1. Copy `manifest.dev.json` over `manifest.json` **in a scratch copy of this folder** (don't commit
+   the swap), OR temporarily rename: keep `manifest.json` aside and rename `manifest.dev.json` →
+   `manifest.json`.
+2. Go to `chrome://extensions` (Edge: `edge://extensions`), turn on **Developer mode**.
+3. Click **Load unpacked** and select the folder (the one with `manifest.json`).
+4. Click the **service worker** link on the card to open its console/logs.
    *(Reload the extension with the circular ↻ icon after any code edit; reload target tabs too.)*
 
-## Load it (Firefox)
+The **popup tester** (toolbar icon) needs no site and works with either manifest — it is the
+fastest way to confirm search/fetch + rate limiting run from your IP.
+
+## Load it for LOCAL testing (Firefox)
 1. Go to `about:debugging` → **This Firefox** → **Load Temporary Add-on…**
-2. Select the **`manifest.json`** file (not the folder). It's removed when Firefox restarts.
-   The manifest already includes the `gecko.id` and a `background.scripts` fallback Firefox needs.
+2. Select the dev **`manifest.json`** file (the swapped-in `manifest.dev.json`) — not the folder.
+   It's removed when Firefox restarts. Firefox uses the `gecko.id` + `background.scripts` fallback.
 
 ## Test it — three ways, easiest first
 
@@ -57,8 +72,19 @@ object the site already builds for its clickable `?q=` links. The extension retu
 `{ key, amount, currency, total }` (cheapest online listing) or `{ key, error }`.
 
 ## Adding origins
-Edit `manifest.json` → `content_scripts[0].matches` to include each site origin the extension
-should activate on (local dev + every staging/prod domain), then reload the extension.
+For **local/staging** work, edit `manifest.dev.json` → `content_scripts[0].matches`, then reload.
+For **production**, set the real origin in `manifest.json` (replace `REPLACE-WITH-YOUR-DOMAIN`
+with your public host, e.g. `https://poe1price.pages.dev`), then rebuild the store zips.
+
+## Build the store zips
+`python public/dist/build_zips.py` produces two **unminified** artifacts in `public/dist/`:
+`trade-bridge-chrome-edge-1.0.0.zip` and `trade-bridge-firefox-1.0.0.zip`. It reads
+`manifest.json` (the version drives the filenames), copies every source file verbatim, and
+specialises only the manifest per target (Chrome: `service_worker` only; Firefox: adds the
+`background.scripts` fallback + keeps `gecko.id`). It excludes `manifest.dev.json` and
+`generate_icons.py`. It prints a loud warning if the domain placeholder is still present.
+Store-listing copy + permission justifications: `docs/store-listings.md`. Site-side protocol
+spec: `docs/notes-public-ext.md`.
 
 ## Safety / what to watch during testing
 - **Unauthenticated by design:** requests use `credentials:"omit"` → **per-IP** limits, no account

@@ -1,0 +1,8 @@
+# PoE1 Build Price Checker - public serverless function
+#
+# INTENTIONALLY EMPTY: this function is pure Python standard library (urllib for HTTP,
+# json/zlib/base64/xml for parsing). No third-party packages -> no pip install step, fast
+# cold starts, nothing to pin or audit. The vendored `_lib/` package uses only stdlib.
+#
+# (Kept as a file because the task/spec calls for a requirements.txt and Vercel's Python
+# builder looks for one; an empty/comment-only file is valid and installs nothing.)

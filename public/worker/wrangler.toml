@@ -1,0 +1,30 @@
+# Cloudflare Worker config for the PoE1 Build Price Checker community price cache.
+#
+# One-time setup (owner runs these; no code changes needed):
+#   1. npm i -g wrangler            # or use `npx wrangler ...`
+#   2. wrangler login
+#   3. wrangler kv namespace create PRICES
+#        -> prints:  id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+#      Paste that id into the [[kv_namespaces]] block below (replace REPLACE_ME).
+#   4. (optional, for `wrangler dev`) wrangler kv namespace create PRICES --preview
+#        -> paste its id into preview_id.
+#   5. wrangler deploy
+#      -> your endpoint is https://poe1-price-cache.<your-subdomain>.workers.dev/cache
+#      Put that URL in the site config and pass it to seed_cache.py as --worker-url.
+
+name = "poe1-price-cache"
+main = "worker.js"
+compatibility_date = "2026-07-26"
+
+# The community cache. `binding` MUST stay "PRICES" (worker.js reads env.PRICES).
+[[kv_namespaces]]
+binding = "PRICES"
+id = "REPLACE_ME"           # <-- REPLACE with the id from `wrangler kv namespace create PRICES`
+# preview_id = "REPLACE_ME_PREVIEW"   # <-- optional: id from the `--preview` create, for `wrangler dev`
+
+# Optional anti-abuse tuning. Soft per-IP DAILY write budget (entries). Default in worker.js is
+# 600 -- sized to fit one owner-seeder run (~350 entries) with headroom while bounding a single
+# scripted client well under Cloudflare's KV free-tier daily write quota. Raise it only if you
+# seed several times a day from one IP. Uncomment to override:
+# [vars]
+# MAX_WRITES_PER_IP_DAY = "600"

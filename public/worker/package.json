@@ -1,0 +1,11 @@
+{
+  "private": true,
+  "type": "module",
+  "name": "poe1-price-cache-worker",
+  "description": "Community price cache Worker + offline logic tests for the PoE1 Build Price Checker.",
+  "scripts": {
+    "test": "node worker.test.mjs",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  }
+}

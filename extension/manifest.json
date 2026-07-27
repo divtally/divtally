@@ -1,21 +1,31 @@
 {
   "manifest_version": 3,
   "name": "PoE1 Build Price Checker - Trade Bridge",
-  "version": "0.1.0",
-  "description": "Prices rares/uniques for the PoE1 Build Price Checker using YOUR browser + YOUR IP, so the public website never hits GGG's trade rate limits or risks a ban.",
+  "version": "1.0.0",
+  "description": "Prices rares/uniques for the PoE1 Build Price Checker using YOUR browser + YOUR IP, so the public website never hits GGG's trade rate limits or risks a ban. Not affiliated with Grinding Gear Games.",
   "permissions": ["storage"],
-  "host_permissions": ["https://www.pathofexile.com/*"],
+  "host_permissions": ["https://www.pathofexile.com/api/trade/*"],
   "browser_specific_settings": { "gecko": { "id": "bpc-trade-bridge@buildpricechecker" } },
-  "background": { "service_worker": "background.js", "scripts": ["background.js"] },
-  "action": { "default_popup": "popup.html", "default_title": "PoE1 Trade Bridge" },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "background": { "service_worker": "background.js" },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "PoE1 Trade Bridge",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
   "content_scripts": [
     {
-      "matches": [
-        "http://127.0.0.1:8765/*",
-        "http://localhost:8765/*",
-        "https://*.pages.dev/*",
-        "https://*.vercel.app/*"
-      ],
+      "matches": ["https://REPLACE-WITH-YOUR-DOMAIN/*"],
       "js": ["content.js"],
       "run_at": "document_start"
     }
