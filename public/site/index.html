@@ -654,7 +654,14 @@
   .svtxt{font-family:var(--serif); font-size:15px; color:var(--fg); line-height:1.25;}
   .svtxt .roll{color:var(--magic);} .svtxt .range{color:var(--mut); font-size:12px; font-family:var(--mono);}
   .svtxt .reason{display:block; font-size:11px; font-style:italic; color:rgba(170,158,130,.7);}
-  .svrow .svtier{width:100%; font-size:13px; padding:5px 6px;}
+  .svrow .svseg{display:flex; gap:4px; justify-content:flex-end;}
+  .svrow .segbtn{width:34px; height:30px; font-size:15px; line-height:1; cursor:pointer; padding:0;
+    background:rgba(255,255,255,.03); color:var(--mut); border:1px solid var(--bz1); border-radius:5px;
+    transition:color .12s, border-color .12s, box-shadow .12s, background .12s;}
+  .svrow .segbtn:hover{border-color:var(--bz3); color:var(--parch);}
+  .svrow .segbtn.on.t-required{color:var(--bz-hi); border-color:var(--bz-hi); background:rgba(200,170,110,.16); box-shadow:0 0 6px rgba(200,170,110,.35);}
+  .svrow .segbtn.on.t-nice{color:#8fc492; border-color:#5b8f5e; background:rgba(91,143,94,.14);}
+  .svrow .segbtn.on.t-notneeded{color:#c96b5f; border-color:#a05248; background:rgba(160,82,72,.12);}
   .svrow .mm{width:100%; font-family:var(--mono); font-size:14px; text-align:center; color:var(--fg);
     background:var(--inner); border:1px solid var(--bz1); border-radius:3px; padding:6px 4px;}
   .svrow .mm:focus{outline:none; border-color:var(--bz3); box-shadow:0 0 0 1px rgba(200,170,110,.3);}
@@ -727,7 +734,7 @@
     .pick .ph{font-size:19px;}
     .afx{grid-template-columns:20px 1fr 58px 58px; gap:6px;}
     .svrow{grid-template-columns:1fr 104px 50px 50px; gap:6px;}
-    .svrow .svtier{font-size:12px; padding:4px;}
+    .svrow .segbtn{width:28px; height:26px; font-size:13px;}
   }
 
   /* ---------- responsive collapse ---------- */
@@ -1710,11 +1717,17 @@ function pkSync(){
   if(PKM.view==='survey'){
     pick.querySelectorAll('.svrow[data-i]').forEach(row=>{
       const i=+row.dataset.i, kind=row.dataset.kind;
-      const ts=row.querySelector('.svtier'); if(ts) PKM.tier[kind][i]=ts.value;
+      const ts=row.querySelector('.svseg'); if(ts) PKM.tier[kind][i]=ts.dataset.value;
       const mn=row.querySelector('.amin'), mx=row.querySelector('.amax');
       PKM.minmax[kind][i]={ min:mn?pkNum(mn.value):null, max:mx?pkNum(mx.value):null };
     });
-    const cm=pick.querySelector('.countmin'); if(cm) PKM.countMin = (cm.value==='') ? null : pkNum(cm.value);
+    const cm=pick.querySelector('.countmin');
+    if(cm){
+      // an untouched auto default stays "all of them" even as the nice set grows (D-0015:
+      // only an explicit user edit pins a lower threshold)
+      const untouched = cm.dataset.auto==='1' && cm.value===cm.dataset.def;
+      PKM.countMin = untouched ? null : ((cm.value==='') ? null : pkNum(cm.value));
+    }
   } else {
     pick.querySelectorAll('.grpbox[data-gi]').forEach(box=>{
       const gi=+box.dataset.gi;
@@ -1766,7 +1779,8 @@ function scopeControlHTML(rare){
   const s=(rare&&rare.scopes)||{};
   if(!s.category && !s.base) return `<span class="scope-static">${E(rare.scope||'')}</span>`;
   let opts='';
-  if(s.category) opts+=`<option value="category" ${PKM.scope==='category'?'selected':''}>Any ${E(s.category.label)}</option>`;
+  if(s.category){ const cl=s.category.label||''; const disp=/^any\b/i.test(cl)?cl:('Any '+cl);
+    opts+=`<option value="category" ${PKM.scope==='category'?'selected':''}>${E(disp)}</option>`; }
   if(s.base)     opts+=`<option value="base" ${PKM.scope==='base'?'selected':''}>Exact base: ${E(s.base.type)}</option>`;
   const why=(!s.category && s.base) ? `<span class="scope-why" title="This slot has no item-category trade filter, so the search uses the exact base type.">no item-category filter here — using the exact base</span>` : '';
   return `<select class="stone-sel scope-sel" title="Search ANY item of this category (default), or the exact base type">${opts}</select>${why}`;
@@ -1812,7 +1826,12 @@ function svRowHTML(a,i,kind){
   const tier=PKM.tier[kind][i]||'required', mm=PKM.minmax[kind][i]||{};
   const tiers = isEquip ? [['required','Required'],['notneeded','Not needed']]
                         : [['required','Required'],['nice','Nice to have'],['notneeded','Not needed']];
-  const sel=`<select class="svtier">`+tiers.map(([v,l])=>`<option value="${v}" ${tier===v?'selected':''}>${l}</option>`).join('')+`</select>`;
+  const GLYPH={required:'&#9670;', nice:'&#9671;', notneeded:'&#10005;'};
+  const HINT={required:'Required &mdash; a match must have this mod',
+              nice:'Nice to have &mdash; counts toward the &quot;match at least N&quot; group',
+              notneeded:'Not needed &mdash; left out of the search'};
+  const sel=`<div class="svseg" data-value="${E(tier)}" role="radiogroup" aria-label="priority">`+
+    tiers.map(([v,l])=>`<button type="button" class="segbtn t-${v}${tier===v?' on':''}" data-t="${v}" title="${HINT[v]}" aria-pressed="${tier===v}">${GLYPH[v]}</button>`).join('')+`</div>`;
   const note = isEquip ? ` <span class="range">(defence total)</span>` : '';
   const minInp=`<input class="mm amin" value="${mm.min!=null?E(String(mm.min)):''}" inputmode="numeric" placeholder="any">`;
   const maxInp= isEquip ? `<div class="mmx"></div>` : `<input class="mm amax" value="${mm.max!=null?E(String(mm.max)):''}" inputmode="numeric" placeholder="any">`;
@@ -1838,8 +1857,9 @@ function renderSurveyBody(){
   if(PKM.usePseudo) (rare.pseudo||[]).forEach((p,j)=>{ if((PKM.tier.pseudo[j]||'required')==='nice') nice++; h+=svRowHTML(p,j,'pseudo'); });
   h+=`</div>`;
   if(nice>0){
-    const n = PKM.countMin!=null ? Math.max(1,Math.min(PKM.countMin,nice)) : nice;
-    h+=`<div class="countbar" title="How many of the nice-to-have mods a match must have. Default = all of them (strictest); lower it to loosen.">Nice-to-have: match at least <input class="countmin" type="number" min="1" max="${nice}" value="${n}"> of ${nice}</div>`;
+    const auto = PKM.countMin==null;
+    const n = auto ? nice : Math.max(1,Math.min(PKM.countMin,nice));
+    h+=`<div class="countbar" title="How many of the nice-to-have mods a match must have. Default = all of them (strictest); lower it to loosen.">Nice-to-have: match at least <input class="countmin" type="number" min="1" max="${nice}" value="${n}" data-auto="${auto?1:0}" data-def="${n}"> of ${nice}</div>`;
   }
   return h;
 }
@@ -1923,6 +1943,8 @@ function closePicker(){ pickwrap.classList.remove('show'); pick.innerHTML=''; PK
 
 /* ---- event wiring ---- */
 pick.addEventListener('click',e=>{
+  const sb=e.target.closest('.svseg .segbtn');
+  if(sb){ sb.closest('.svseg').dataset.value=sb.dataset.t; pkSync(); renderPicker(); return; }
   const btn=e.target.closest('[data-pk]'); if(!btn) return;
   const act=btn.dataset.pk;
   if(act==='pseudo'){ pkSync(); PKM.usePseudo=!PKM.usePseudo; renderPicker(); return; }   // survey only
