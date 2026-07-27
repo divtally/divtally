@@ -12,14 +12,14 @@
 #      -> your endpoint is https://poe1-price-cache.<your-subdomain>.workers.dev/cache
 #      Put that URL in the site config and pass it to seed_cache.py as --worker-url.
 
-name = "poe1-price-cache"
+name = "divtally-cache"
 main = "worker.js"
 compatibility_date = "2026-07-26"
 
 # The community cache. `binding` MUST stay "PRICES" (worker.js reads env.PRICES).
 [[kv_namespaces]]
 binding = "PRICES"
-id = "REPLACE_ME"           # <-- REPLACE with the id from `wrangler kv namespace create PRICES`
+id = "9d168edde6354dcb850e45411d5f9adb"
 # preview_id = "REPLACE_ME_PREVIEW"   # <-- optional: id from the `--preview` create, for `wrangler dev`
 
 # Optional anti-abuse tuning. Soft per-IP DAILY write budget (entries). Default in worker.js is
