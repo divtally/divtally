@@ -556,6 +556,176 @@ check("version-unique: widely-shared affix treated as fixed roll",
 check("version-unique: <4 listings -> detection disabled",
       _pr._variant_affixes(_vu_item, [[10, [_firep]]])["mappable"], [])
 
+# ================= D-0006 feedback round 1: gem host-grouping, GRANTED, flasks =================
+
+# ---- host-item index: skills[].itemSlot -> host gear (slot label + name + unique flag) ----
+_hchar = {"items": [
+    {"itemSlot": 3, "itemData": {"inventoryId": "BodyArmour", "name": "Blunderbore",
+                                 "baseType": "Astral Plate", "frameType": 3}},
+    {"itemSlot": 9, "itemData": {"inventoryId": "Ring2", "name": "Lost Unity",
+                                 "baseType": "Formless Ring", "frameType": 3}},
+    {"itemSlot": 2, "itemData": {"inventoryId": "Gloves", "name": "",
+                                 "baseType": "Sorcerer Gloves", "frameType": 2}}]}
+_hidx = _pn._host_index(_hchar)
+check("host index slot->label", _hidx[3]["slot_label"], "Body Armour")
+check("host index unique name", _hidx[9]["name"], "Lost Unity")
+check("host index unique flag", _hidx[9]["unique"], True)
+check("host index rare uses base as name", _hidx[2]["name"], "Sorcerer Gloves")
+check("host index rare not unique", _hidx[2]["unique"], False)
+
+# ---- itemProvidedGems index (the granted authority) ----
+_ppairs, _pnoslot = _pn._provided_gem_index(
+    {"itemProvidedGems": [{"slot": 9, "gems": [
+        {"name": "Herald of the Hive", "isBuiltInSupport": False}]}]})
+check("provided pairs slot+name", (9, "herald of the hive") in _ppairs, True)
+check("provided names_noslot empty", _pnoslot, set())
+
+# ---- _gem_is_granted: the signals + the NON-granted socketed case (the owner's bug) ----
+check("granted via itemProvidedGems",
+      _pn._gem_is_granted({"name": "Herald of the Hive"}, {}, 9,
+                          {(9, "herald of the hive")}, set()), True)
+check("granted via isBuiltInSupport",
+      _pn._gem_is_granted({"name": "X", "isBuiltInSupport": True}, {"baseType": "X"},
+                          3, set(), set()), True)
+check("granted via empty itemData",
+      _pn._gem_is_granted({"name": "Herald of the Hive"}, {}, None, set(), set()), True)
+check("SOCKETED herald NOT granted (owner's mis-flag bug)",
+      _pn._gem_is_granted({"name": "Herald of Ice"},
+                          {"baseType": "Herald of Ice", "frameType": 4},
+                          7, {(9, "herald of the hive")}, set()), False)
+check("granted via name-only fallback (slotless provided entry)",
+      _pn._gem_is_granted({"name": "Portal"}, {"baseType": "Portal", "frameType": 4},
+                          3, set(), {"portal"}), True)
+
+# ---- D-0006 on the real fixture: ONLY item-provided gems flagged granted; host info present ----
+if os.path.exists(_fix):
+    _gems_c = [i for i in _items_c if i.group == "gem"]
+    _granted_c = [i.display_name for i in _gems_c if i.granted]
+    check("fixture: only the item-provided gem is granted", _granted_c, ["Herald of the Hive"])
+    for _nm in ("Herald of Ice", "Herald of Ash", "Herald of Purity", "Leap Slam"):
+        _g = next((x for x in _gems_c if x.display_name == _nm), None)
+        check("fixture: socketed " + _nm + " NOT granted", (_g.granted if _g else None), False)
+    _hoth = next((x for x in _gems_c if x.display_name == "Herald of the Hive"), None)
+    check("fixture: granted active name recovered from entry",
+          (_hoth.display_name if _hoth else None), "Herald of the Hive")
+    check("fixture: granted active host is the granting item",
+          (_hoth.host_name if _hoth else None), "Lost Unity")
+    _ek = next((x for x in _gems_c if x.display_name == "Ethereal Knives of the Massacre"), None)
+    check("fixture: main skill host slot", (_ek.host_slot if _ek else None), "Body Armour")
+    check("fixture: main skill host name", (_ek.host_name if _ek else None), "Blunderbore")
+    check("fixture: main skill host unique", (_ek.host_unique if _ek else None), True)
+    _hice = next((x for x in _gems_c if x.display_name == "Herald of Ice"), None)
+    check("fixture: a linked second active reads support=False",
+          (_hice.supports[0]["support"] if _hice and _hice.supports else None), False)
+    check("fixture: each support carries support+granted keys",
+          (all(("support" in s and "granted" in s) for s in _ek.supports) if _ek else False), True)
+    _flasks_c = [i for i in _items_c if i.group == "flask"]
+    check("fixture: 5 flasks emitted", len(_flasks_c), 5)
+    check("fixture: flask belt order preserved",
+          [f.name for f in _flasks_c][:4],
+          ["Wine of the Prophet", "The Overflowing Chalice", "Cinderswallow Urn", "Atziri's Promise"])
+
+# ---- D-0006 price_skill: total == sum of PRICED gems (supports INCLUDED); granted EXCLUDED ----
+class _GemEconD6:
+    def gem_price(self, name, level=20, quality=0, corrupted=False):
+        _t = {"active skill": 10.0, "support a": 3.0, "support b": 5.0}
+        v = _t.get((name or "").lower())
+        return None if v is None else {"chaos": v, "listing_count": 9, "variant": "",
+                                       "divine": None, "level": level, "quality": quality}
+_prg = Pricer.__new__(Pricer)
+class _GClient:
+    league = "SelfTestGemLeague"
+    search_count = 0
+_prg.client = _GClient()
+_prg.status = "online"
+_prg.economy = _GemEconD6()
+_prg.conv = CurrencyConverter.__new__(CurrencyConverter)
+_prg.conv.client = None
+_prg.conv.economy = None
+_prg.conv._rates = {"chaos": 1.0}
+
+# (a) active + 2 supports, all priced -> total = 10+3+5; supports are INCLUDED in the total
+_gd6 = _Item(name="", base_type="Active Skill", type_line="Active Skill", frame_type=4,
+             rarity="Gem", category="gem", group="gem", slot="", gem_level=20, gem_quality=20,
+             supports=[{"name": "Support A", "level": 20, "quality": 20, "corrupted": False,
+                        "icon": "", "support": True, "granted": False},
+                       {"name": "Support B", "level": 20, "quality": 0, "corrupted": False,
+                        "icon": "", "support": True, "granted": False}],
+             host_slot="Body Armour", host_name="Blunderbore", host_unique=True,
+             host_inventory_id="BodyArmour")
+_rg6 = _prg.price_skill(_gd6)
+approx("gem total = active + every support", _rg6.extra["total_chaos"], 18.0)
+check("gem total == sum of priced gems (SUPPORTS INCLUDED)",
+      abs(_rg6.extra["total_chaos"]
+          - sum(x["chaos"] for x in _rg6.extra["gems"] if x["chaos"] is not None)) < 1e-9, True)
+check("gem breakdown = active + 2 supports", len(_rg6.extra["gems"]), 3)
+check("gem breakdown[0] is the active (support False)", _rg6.extra["gems"][0]["support"], False)
+check("gem extra carries host info",
+      (_rg6.extra["host_slot"], _rg6.extra["host_name"], _rg6.extra["host_unique"]),
+      ("Body Armour", "Blunderbore", True))
+check("gem support entries both priced",
+      sum(1 for x in _rg6.extra["gems"] if x["support"] and x["chaos"] is not None), 2)
+
+# (b) granted ACTIVE with a real socketed support: active EXCLUDED, support STILL counts
+_gd6g = _Item(name="", base_type="Active Skill", type_line="Active Skill", frame_type=4,
+              rarity="Gem", category="gem", group="gem", slot="", gem_level=30, granted=True,
+              host_name="Lost Unity",
+              supports=[{"name": "Support A", "level": 20, "quality": 0, "corrupted": False,
+                         "icon": "", "support": True, "granted": False}])
+_rg6g = _prg.price_skill(_gd6g)
+approx("granted active excluded; socketed support still counts", _rg6g.extra["total_chaos"], 3.0)
+check("granted active has NO price in breakdown", _rg6g.extra["gems"][0]["chaos"], None)
+check("granted active flagged granted in breakdown", _rg6g.extra["gems"][0]["granted"], True)
+check("granted extra top-level flag set", _rg6g.extra["granted"], True)
+check("granted total still == sum of priced gems",
+      abs(_rg6g.extra["total_chaos"]
+          - sum(x["chaos"] for x in _rg6g.extra["gems"] if x["chaos"] is not None)) < 1e-9, True)
+
+# (c) fully-granted active, no supports -> total None (nothing to buy), NO misleading number
+_gd6f = _Item(name="", base_type="Herald of the Hive", type_line="Herald of the Hive",
+              frame_type=4, rarity="Gem", category="gem", group="gem", slot="",
+              gem_level=30, granted=True, host_name="Lost Unity")
+_rg6f = _prg.price_skill(_gd6f)
+check("fully-granted skill total None", _rg6f.extra["total_chaos"], None)
+check("fully-granted skill tier median None", _rg6f.tier.median, None)
+check("fully-granted skill confidence none", _rg6f.confidence, "none")
+
+# ---- D-0006 normalize emits ALL flasks in belt order (synthetic 5-utility-flask belt) ----
+def _fl_entry(nm, base, frame, util_line):
+    return {"itemSlot": 14, "itemData": {"name": nm, "baseType": base, "typeLine": base,
+            "frameType": frame, "utilityMods": [util_line]}}
+_char5 = {"account": "a", "name": "C", "level": 90, "class": "Witch", "items": [],
+          "skills": [], "jewels": [], "flasks": [
+    _fl_entry("Wise Oak", "Bismuth Flask", 3, "immune to elemental ailments"),
+    _fl_entry("", "Quicksilver Flask", 1, "40% increased Movement Speed"),
+    _fl_entry("Rumi's Concoction", "Granite Flask", 3, "+3000 to Armour"),
+    _fl_entry("", "Quartz Flask", 1, "10% chance to Dodge"),
+    _fl_entry("", "Basalt Flask", 1, "15% additional Physical Damage Reduction")]}
+_m5, _items5 = _pn.normalize(_char5)
+_fl5 = [i for i in _items5 if i.group == "flask"]
+check("normalize: 5 utility flasks all emitted (none dropped)", len(_fl5), 5)
+check("normalize: flask belt order preserved",
+      [i.base_type for i in _fl5],
+      ["Bismuth Flask", "Quicksilver Flask", "Granite Flask", "Quartz Flask", "Basalt Flask"])
+
+# ---- D-0006 price_build RETURNS the flask group in belt order despite the category sort ----
+def _flaskI(nm, base, frame, cat):
+    return _Item(name=(nm if cat == "unique" else ""), base_type=base, type_line=base,
+                 frame_type=frame, rarity=("Unique" if cat == "unique" else "Magic"),
+                 category=cat, group="flask", slot="Flask", raw={"inventoryId": "Flask"})
+# belt order interleaves magic + unique so the priority sort WOULD scramble it without the fix
+_belt = [_flaskI("F0", "Quicksilver Flask", 1, "magic"),
+         _flaskI("Atziri's Promise", "Amethyst Flask", 3, "unique"),
+         _flaskI("F2", "Sulphur Flask", 1, "magic"),
+         _flaskI("Cinderswallow Urn", "Silver Flask", 3, "unique"),
+         _flaskI("F4", "Granite Flask", 1, "magic")]
+_pr.client.search_count = 0
+_res_belt = [r.item for r in _pr.price_build(list(_belt)) if r.item.group == "flask"]
+check("price_build: all 5 flasks returned (none dropped)", len(_res_belt), 5)
+check("price_build: flask belt order preserved (mixed unique/magic, not category-sorted)",
+      [i.base_type for i in _res_belt],
+      ["Quicksilver Flask", "Amethyst Flask", "Sulphur Flask", "Silver Flask", "Granite Flask"])
+
 if _fails:
     print("FAILED:")
     for f in _fails:

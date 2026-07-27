@@ -404,6 +404,106 @@
     .notch.b{top:auto;bottom:-11px;left:auto;right:-11px}
     .stamp{right:auto;left:46px}
   }
+
+  /* ---------- flask belt (D-0006 §C): 5 generic belt slots, no life/mana ---------- */
+  .beltstrip{display:flex;flex-wrap:wrap;gap:10px;padding:12px 2px 6px}
+  .leg.beltslot{
+    display:flex;flex-direction:column;gap:6px;
+    flex:1 1 138px;min-width:128px;max-width:220px;
+    border:1px solid var(--line);border-top:1px solid var(--line);border-radius:12px;
+    background:linear-gradient(180deg,#fffdf9,#f3efe6);
+    padding:10px 11px 11px;position:relative;
+    box-shadow:0 2px 6px rgba(60,52,40,.08);
+  }
+  .leg.beltslot:hover{background:linear-gradient(180deg,#fffdf9,#f1ede2)}
+  .beltslot .bslot-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .beltslot .bnum{
+    font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.12em;
+    color:#fff;background:var(--ink);border-radius:5px;padding:2px 7px;flex:0 0 auto;
+  }
+  .beltslot .seatchk{width:22px;height:22px}
+  .beltslot .seatchk .box::after{font-size:12px}
+  .beltslot .bname .leg-name{font-weight:700;font-size:13px;color:var(--ink);letter-spacing:.01em;line-height:1.2;display:block}
+  .beltslot .bfoot{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;margin-top:auto}
+  .beltslot .fare{min-width:0;text-align:left;align-items:flex-start}
+  .beltslot .fare .med{font-size:12.5px}
+  .beltslot .fare .rng{font-size:9.5px}
+  .beltslot .note{font-size:10px;font-style:italic;color:var(--ink2)}
+  .beltslot.empty{
+    align-items:center;justify-content:center;gap:7px;
+    border:1px dashed var(--line);border-radius:12px;min-height:84px;
+    background:repeating-linear-gradient(135deg,#f2eee5 0 8px,#ece7dc 8px 16px);
+    color:var(--ink3);box-shadow:none;
+  }
+  .beltslot.empty .bnum{background:var(--line);color:var(--ink2)}
+  .beltslot.empty .bempty{font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--ink3)}
+
+  /* ---------- gem host groups (D-0006 §D): group by host item, nest supports ---------- */
+  .hostgrp{margin-top:6px;border-top:1px dashed var(--line2)}
+  .hostgrp:first-child{border-top:none}
+  .hosthead{
+    display:flex;align-items:center;gap:9px;padding:11px 6px 6px;
+  }
+  .hosthead .hslot{
+    font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+    color:#fff;background:var(--gem);border-radius:5px;padding:3px 8px;flex:0 0 auto;
+  }
+  .hosthead .hname{font-weight:800;font-size:12.5px;letter-spacing:.03em;color:var(--ink)}
+  .hosthead .huniq{
+    font-size:8px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--unique);border:1px solid var(--unique);border-radius:4px;padding:2px 6px;
+  }
+  .hostgrp .leg{border-top:1px dashed var(--line2)}
+  .rtag.granted{background:var(--amber)}
+  /* nested support breakdown under an active gem */
+  .gembreak{padding:0 6px 4px 42px}
+  .gembreak:empty{display:none}
+  .suplist{border-left:2px solid var(--line);margin:2px 0 8px;padding:2px 0 2px 12px;display:flex;flex-direction:column;gap:5px}
+  .supln{display:flex;align-items:baseline;gap:8px;font-size:11.5px}
+  .supln .sdot{width:5px;height:5px;border-radius:50%;background:var(--gem);flex:0 0 auto;position:relative;top:-2px}
+  .supln .sname{font-weight:700;color:var(--ink);min-width:0}
+  .supln .slq{font-family:var(--mono);font-size:9.5px;color:var(--ink3);letter-spacing:.04em}
+  .supln .sprice{margin-left:auto;font-family:var(--mono);font-size:11.5px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .supln .snone{margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--ink3)}
+  .supln.grant .sname{color:var(--ink3)}
+  .supln.grant .sgrant{margin-left:auto;font-size:10px;font-style:italic;color:var(--ink3);text-decoration:line-through}
+  .supln .sdot.sactive{background:var(--ac)}
+  .supln.active .sname{color:var(--ac-d)}
+
+  /* ---------- Autoscan (D-0006 §E): glowing top button, adapts skin accent ---------- */
+  .pautoscan{margin:2px 0 14px}
+  .autoscan-btn{
+    --accent:var(--ac);
+    width:100%;position:relative;cursor:pointer;
+    border:1.5px solid var(--accent);border-radius:11px;
+    background:linear-gradient(150deg,#fff7f2,#ffe9df);
+    color:var(--ac-d);font-family:var(--sans);font-weight:800;
+    letter-spacing:.05em;text-transform:uppercase;font-size:13px;
+    padding:13px 16px;display:flex;align-items:center;justify-content:center;gap:9px;
+    box-shadow:0 0 0 1px var(--accent) inset,
+               0 0 8px  color-mix(in srgb, var(--accent) 55%, transparent),
+               0 0 18px color-mix(in srgb, var(--accent) 35%, transparent);
+    animation:autoscanPulse 1.8s ease-in-out infinite;
+  }
+  .autoscan-btn:hover{filter:brightness(1.06)}
+  .autoscan-btn:active{transform:translateY(1px)}
+  .autoscan-btn .bolt{font-size:15px;line-height:1}
+  @keyframes autoscanPulse{
+    0%,100%{ box-shadow:0 0 0 1px var(--accent) inset,
+                        0 0 6px  color-mix(in srgb, var(--accent) 45%, transparent),
+                        0 0 14px color-mix(in srgb, var(--accent) 25%, transparent); }
+    50%    { box-shadow:0 0 0 1px var(--accent) inset,
+                        0 0 12px color-mix(in srgb, var(--accent) 70%, transparent),
+                        0 0 26px color-mix(in srgb, var(--accent) 45%, transparent); }
+  }
+  @media (prefers-reduced-motion: reduce){ .autoscan-btn{ animation:none } }
+  .pbulk{margin-top:14px;display:flex;justify-content:center}
+  .pa-skip.small{
+    background:none;border:1px solid var(--line);border-radius:9px;
+    color:var(--ink3);font-size:11px;letter-spacing:.05em;font-family:var(--sans);font-weight:700;
+    cursor:pointer;padding:8px 15px;
+  }
+  .pa-skip.small:hover{border-color:var(--ac);color:var(--ac-d)}
 </style></head>
 <body>
 
@@ -554,7 +654,9 @@ function buildTicket(){
         <span class="tsum" data-tsum="${E(grp.group)}"></span>
         <button class="ttog" type="button" data-toggle-group="${E(grp.group)}">All standby</button>
       </div>`;
-    grp.items.forEach(it=>{ legs+=legRow(it); });
+    if(grp.group==='flask') legs+=flaskBeltHTML(grp.items);
+    else if(grp.group==='gem') legs+=gemSectionsHTML();
+    else grp.items.forEach(it=>{ legs+=legRow(it); });
     legs+=`</div>`;
   });
 
@@ -630,13 +732,12 @@ function legRow(it){
   const cnt=it.count>1?` <span class="qty">×${it.count}</span>`:'';
   const isRare=s.advanced&&it.category==='rare';
   return `<div class="leg ${on?'':'off'}" data-k="${E(k)}" data-cat="${E(it.category)}">
-    <div class="seatchk ${priced?'':'nochk'}">
-      ${priced?`<input type="checkbox" class="inc" data-k="${E(k)}" ${on?'checked':''} aria-label="board ${E(it.name)}"><span class="box"></span>`:''}
-    </div>
+    ${seatchkHTML(k,on,priced,it.name)}
     <div class="name">
       <div class="ttl">
         <span class="plain leg-name" data-k="${E(k)}">${E(it.name)}</span>
         <span class="rtag ${E(rt)}">${E(it.rarity||it.category||'')}</span>
+        ${it.granted?`<span class="rtag granted">granted</span>`:''}
         ${isRare?`<button class="amend" type="button" data-amend="${E(k)}">amend</button>`:''}
       </div>
       <div class="slot">${E(it.slot||grpLabel(it.group))}${cnt}</div>
@@ -648,6 +749,70 @@ function legRow(it){
   </div>`;
 }
 function grpLabel(g){ return ({equipment:'Equipment',flask:'Flask',jewel:'Jewel',gem:'Gem'})[g]||''; }
+function seatchkHTML(k,on,priced,name){
+  return `<div class="seatchk ${priced?'':'nochk'}">
+      ${priced?`<input type="checkbox" class="inc" data-k="${E(k)}" ${on?'checked':''} aria-label="board ${E(name)}"><span class="box"></span>`:''}
+    </div>`;
+}
+
+/* ---- flask belt (D-0006 §C): 5 generic belt slots in flask order, overflow shown ---- */
+function flaskBeltHTML(items){
+  const N=5, total=Math.max(N,items.length);
+  let cells='';
+  for(let i=0;i<total;i++){
+    const it=items[i];
+    if(!it){ cells+=`<div class="beltslot empty"><span class="bnum">${i+1}</span><span class="bempty">open</span></div>`; continue; }
+    const s=bpc.state, k=String(it.index), p=s.priced[k], on=!!s.enabled[k];
+    const priced=p&&p.chaos.median!=null;
+    const rt=(it.rarity||it.category||'').toLowerCase();
+    cells+=`<div class="leg beltslot ${on?'':'off'}" data-k="${E(k)}" data-cat="${E(it.category)}">
+      <div class="bslot-top">
+        <span class="bnum">${i+1}</span>
+        ${seatchkHTML(k,on,priced,it.name)}
+      </div>
+      <div class="bname"><span class="plain leg-name" data-k="${E(k)}">${E(it.name)}</span></div>
+      <div class="bfoot">
+        <span class="rtag ${E(rt)}">${E(it.rarity||it.category||'')}</span>
+        <div class="fare" data-fare="${E(k)}"></div>
+      </div>
+      <div class="note" data-note="${E(k)}"></div>
+    </div>`;
+  }
+  return `<div class="beltstrip">${cells}</div>`;
+}
+
+/* ---- gem section (D-0006 §D): group by host item, nest supports under active ---- */
+function gemSectionsHTML(){
+  return bpc.gemGroups().map(g=>{
+    const rows=g.items.map(it=>legRow(it)+`<div class="gembreak" data-gembreak="${E(String(it.index))}"></div>`).join('');
+    const slot=g.slot||'', name=g.name||'Gems';
+    return `<div class="hostgrp">
+      <div class="hosthead">
+        ${slot?`<span class="hslot">${E(slot)}</span>`:''}
+        <span class="hname">${E(name)}</span>
+        ${g.unique?`<span class="huniq">unique</span>`:''}
+      </div>
+      ${rows}
+    </div>`;
+  }).join('');
+}
+/* nested support breakdown for one active gem row (repainted as prices land) */
+function paintGemBreak(k){
+  const host=document.querySelector(`[data-gembreak="${cssEsc(k)}"]`); if(!host) return;
+  const bd=bpc.gemBreakdown(k), sup=(bd.gems||[]).slice(1);
+  if(!sup.length){ host.innerHTML=''; return; }
+  host.innerHTML=`<div class="suplist">`+sup.map(g=>{
+    const lq=`Lv ${E(g.level)}${g.quality?' / '+E(g.quality)+'%':''}${g.corrupted?' · C':''}`;
+    const val=g.granted
+      ? `<span class="sgrant">granted — not counted</span>`
+      : (g.chaos!=null?`<span class="sprice">${bpc.priceHTML(g.chaos)}</span>`:`<span class="snone">&mdash;</span>`);
+    return `<div class="supln ${g.granted?'grant':''}">
+      <span class="sdot"></span>
+      <span class="sname">${E(g.name)}</span>
+      <span class="slq">${lq}</span>
+      ${val}</div>`;
+  }).join('')+`</div>`;
+}
 
 /* ---- fare cell painter (granular; no structural rerender) ---- */
 function paintFare(k){
@@ -683,6 +848,7 @@ function paintFare(k){
       sc.classList.add('nochk'); sc.innerHTML='';
     }
   }
+  if(it&&it.group==='gem') paintGemBreak(k);
   reflectRow(k);
 }
 function refreshName(k,it,p){
@@ -837,6 +1003,8 @@ $('#scrim').addEventListener('click',()=>{ /* declaration must be resolved via b
 function drawSlip(info){
   const r=info.rare, inner=$('#slipInner');
   let usePseudo=!!(r.pseudo&&r.pseudo.length);
+  const remain=bpc.remainingRares().length;
+  const showBulk=!info.single && remain>1;
 
   function affixRowHTML(a){
     if(a.searchable===false || !a.searchable){
@@ -880,6 +1048,11 @@ function drawSlip(info){
       ${info.redo?'<span class="redo">&#8635; Amending declaration &mdash; re-submit to replace fare</span>':''}
     </div>
     <div class="slip-body">
+      ${showBulk?`<div class="pautoscan">
+        <button class="autoscan-btn" id="pSearchAll" type="button"
+                title="price all ${remain} remaining rares with default all-affix searches">
+          <span class="bolt">&#9889;</span> Autoscan${remain>1?` (${remain})`:''}</button>
+      </div>`:''}
       ${(r.pseudo&&r.pseudo.length)?`
         <label class="pseudo-tog">
           <span class="ti"><span class="t1">Combine elemental resistance</span><span class="t2">Declare a single pooled resistance instead of each element.</span></span>
@@ -887,6 +1060,9 @@ function drawSlip(info){
         </label>`:''}
       <div class="declare-cap"><span>Declarable lines</span><span class="rule"></span></div>
       <div id="dlines">${rowsHTML()}</div>
+      ${showBulk?`<div class="pbulk">
+        <button class="pa-skip small" id="pSkipAll" type="button">skip all (don't price)</button>
+      </div>`:''}
     </div>
     <div class="slip-foot">
       ${info.index>0?'<button class="sb" id="dPrev" type="button">&larr; Prev</button>':''}
@@ -899,6 +1075,8 @@ function drawSlip(info){
     const lab=pe.closest('.pseudo-tog');
     lab.addEventListener('click',ev=>{ ev.preventDefault(); pe.checked=!pe.checked; usePseudo=pe.checked; inner.querySelector('#dlines').innerHTML=rowsHTML(); });
   }
+  const sa=inner.querySelector('#pSearchAll'); if(sa) sa.onclick=()=>bpc.searchAllRares();
+  const ka=inner.querySelector('#pSkipAll');   if(ka) ka.onclick=()=>bpc.skipAllRares();
   const pv=inner.querySelector('#dPrev'); if(pv) pv.onclick=()=>bpc.backRare();
   inner.querySelector('#dSkip').onclick=()=>bpc.skipRare(info.key);
   inner.querySelector('#dGo').onclick=()=>{

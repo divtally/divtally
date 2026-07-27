@@ -1,16 +1,27 @@
 /* A realistic, fully-priced job snapshot for demos + headless verification.
- * Lets any UI version render a complete build (totals, exclude toggles, advanced
- * picker, currency icons, PoB copy) with NO backend / no trade calls.
- *   bpc.loadMock(window.BPC_SAMPLE)
+ * Lets any UI version render a complete PoE1 build (totals, exclude toggles, advanced
+ * picker, currency icons, PoB copy, plus the D-0006 host-grouped gem section + 5-slot flask
+ * belt) with NO backend / no trade calls:   bpc.loadMock(window.BPC_SAMPLE)
  *
- * ---- DEMO DATA (not a live pricing result) ----
- * A plausible Path of Exile 1 Firestorm build. The item names, bases, gems, icons
- * and chaos prices are drawn from REAL poe.ninja Allflame economy data (fetched
- * 2026-07-26) so the ?mock preview looks authentic, but the assembled character is
- * fictional. Prices are point-in-time and only illustrative.
+ * ---- DEMO DATA — NOT a live pricing result. EVERY number here is illustrative. ----
+ * A plausible but FICTIONAL Path of Exile 1 Firestorm Elementalist. Item / gem names and
+ * bases are real PoE1 entities, but the assembled character, all chaos prices, and the
+ * item->skill grants are demo fabrications — treat every value as [DEMO], never as a
+ * source-of-truth price. This snapshot is built to EXERCISE the feedback-round-1 UI:
+ *   - a 5-slot FLASK BELT of utility flasks in belt order, no life/mana slots (spec C);
+ *   - GEMS grouped under their HOST ITEM — a 6-link Body skill (Firestorm), a Weapon herald,
+ *     a Helmet aura, a Boots movement link — each support priced individually and nested
+ *     under its active, support costs included in the group total (spec D);
+ *   - exactly ONE genuinely item-granted gem: Herald of Agony, granted by the Lost Unity
+ *     ring, so the GRANTED tag renders in one legitimate place and NOWHERE else. The
+ *     socketed Herald of Ash in the weapon is deliberately NOT granted — that contrast is
+ *     the D-0006 bug fix (heralds are socketed, not item-provided) made visible (spec B).
+ * Icons are real web.poecdn.com PoE1 art; a few are reused across slots/gems purely so every
+ * box has a picture. This is a demo, not a screenshot.
  */
-// real web.poecdn.com PoE1 icon URLs (poe.ninja carries these per item/gem). Rare
-// slots reuse a same-slot unique's art purely so the demo has a picture in the box.
+// real web.poecdn.com PoE1 icon URLs (poe.ninja carries these per item/gem). Rare slots and
+// a few gems reuse a plausible same-slot/same-theme icon purely so the demo has a picture in
+// the box (see header) — the art is illustrative, not the actual item/gem.
 var _IC = {
   helm:"https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQXJtb3Vycy9IZWxtZXRzL0Nyb3duT2ZUaGVJbndhcmRFeWUiLCJ3IjoyLCJoIjoyLCJzY2FsZSI6MX1d/fdb20856e4/CrownOfTheInwardEye.png",
   body:"https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQXJtb3Vycy9Cb2R5QXJtb3Vycy9Cb2R5SW50MUNVbmlxdWUiLCJ3IjoyLCJoIjozLCJzY2FsZSI6MX1d/4f3e22a163/BodyInt1CUnique.png",
@@ -43,7 +54,7 @@ var _TU = "https://www.pathofexile.com/trade/search/Allflame?q=demo";   // demo 
 window.BPC_SAMPLE = {
   state: "done",
   advanced: false,
-  searches: 17,
+  searches: 21,
   meta: {
     character: "AshweaverDemo", "class": "Elementalist", level: 96,
     league: "Allflame", divine_to_chaos: 106, status: "online",
@@ -65,33 +76,72 @@ window.BPC_SAMPLE = {
       mods: { implicit: ["+43 to maximum Life"], explicit: ["+40 to Strength", "+55 to maximum Life", "When you Kill a Rare monster, you gain its Modifiers for 20 seconds"] } },
     { index: 5,  name: "Empyrean Idol",           group: "equipment", category: "rare",   slot: "Amulet",      count: 1, rarity: "Rare", icon: _IC.amulet,
       mods: { implicit: ["+12% to all Elemental Resistances"], explicit: ["+1 to Level of all Fire Skill Gems", "+58 to maximum Life", "+35% to Fire Resistance", "24% increased Fire Damage"] } },
-    { index: 6,  name: "The Taming",              group: "equipment", category: "unique", slot: "Ring",        count: 1, rarity: "Unique", icon: _IC.ring },
+    // Lost Unity (real PoE1 Formless Ring unique) — GRANTS a skill; here it grants the one
+    // genuinely item-provided gem in this demo (Herald of Agony, priced free below).
+    { index: 6,  name: "Lost Unity",              group: "equipment", category: "unique", slot: "Ring",        count: 1, rarity: "Unique", icon: _IC.ring,
+      mods: { implicit: ["+16% to all Elemental Resistances"], explicit: ["Grants Level 30 Herald of Agony Skill", "+45 to maximum Life", "10% increased Damage", "Minions deal (25-35)% increased Damage"] } },
     { index: 7,  name: "Brood Grasp",             group: "equipment", category: "rare",   slot: "Ring",        count: 1, rarity: "Rare", icon: _IC.ring2,
       mods: { implicit: ["+18% to Lightning Resistance"], explicit: ["+33% to Cold Resistance", "+58 to maximum Life", "Adds 8 to 16 Fire Damage to Attacks"] } },
-    { index: 8,  name: "Doryani's Catalyst",      group: "equipment", category: "unique", slot: "Weapon",      count: 1, rarity: "Unique", icon: _IC.weapon },
+    { index: 8,  name: "Doryani's Catalyst",      group: "equipment", category: "unique", slot: "Weapon",      count: 1, rarity: "Unique", icon: _IC.weapon,
+      mods: { implicit: [], explicit: ["Adds (36-56) to (60-72) Lightning Damage", "1.8% of Elemental Damage Leeched as Life", "(30-40)% increased Elemental Damage"] } },
     { index: 9,  name: "Corpse Ward",             group: "equipment", category: "rare",   slot: "Off-hand",    count: 1, rarity: "Rare", icon: _IC.shield,
       mods: { implicit: [], explicit: ["+320 to maximum Energy Shield", "+84 to maximum Life", "+45% to Fire Resistance"] } },
     { index: 16, name: "Piscator's Vigil",        group: "equipment", category: "unique", slot: "Weapon (swap)",    count: 1, rarity: "Unique", icon: _IC.wand },
     { index: 17, name: "Prism Guardian",          group: "equipment", category: "unique", slot: "Off-hand (swap)",  count: 1, rarity: "Unique", icon: _IC.shield2 },
-    { index: 10, name: "Divine Life Flask of Staunching", group: "flask", category: "magic", slot: "Flask",   count: 1, rarity: "Magic", icon: _IC.flask,
-      mods: { implicit: [], explicit: ["Recovers 1990 Life over 4.00 seconds", "Grants Immunity to Bleeding for 4 seconds if used while Bleeding"] } },
-    { index: 11, name: "Eternal Mana Flask of the Mage",  group: "flask", category: "magic", slot: "Flask",   count: 1, rarity: "Magic", icon: _IC.flask },
-    { index: 21, name: "Atziri's Promise",        group: "flask",     category: "unique", slot: "Flask",       count: 1, rarity: "Unique", icon: _IC.flask,
+
+    // ---- FLASK BELT: 5 utility flasks, in belt order (no life/mana slots). All share one
+    // flask icon purely for the demo picture (see header). ----
+    { index: 10, name: "Bottled Faith",           group: "flask", category: "unique", slot: "Flask", count: 1, rarity: "Unique", icon: _IC.flask,
+      mods: { implicit: [], explicit: ["Creates Consecrated Ground on Use", "Consecrated Ground created by this Flask has 100% increased Effect", "+2% to Critical Strike Chance against Enemies on Consecrated Ground during effect"] } },
+    { index: 11, name: "Cinderswallow Urn",       group: "flask", category: "unique", slot: "Flask", count: 1, rarity: "Unique", icon: _IC.flask,
+      mods: { implicit: [], explicit: ["Recover 3% of Life when you Ignite an Enemy", "Onslaught during Flask effect", "20% increased Critical Strike Chance during effect", "Enemies Ignited by you during effect take 10% increased Damage"] } },
+    { index: 21, name: "Atziri's Promise",        group: "flask", category: "unique", slot: "Flask", count: 1, rarity: "Unique", icon: _IC.flask,
       mods: { implicit: [], explicit: ["25% of Physical Damage Converted to Chaos Damage during effect", "Gain 15% of Elemental Damage as Extra Chaos Damage during effect", "+35% to Chaos Resistance during effect"] } },
-    { index: 22, name: "Quicksilver Flask of Adrenaline", group: "flask", category: "magic", slot: "Flask",   count: 1, rarity: "Magic", icon: _IC.flask },
-    { index: 23, name: "Basalt Flask of the Iron Skin",   group: "flask", category: "magic", slot: "Flask",   count: 1, rarity: "Magic", icon: _IC.flask },
+    { index: 22, name: "Quicksilver Flask of Adrenaline", group: "flask", category: "magic", slot: "Flask", count: 1, rarity: "Magic", icon: _IC.flask,
+      mods: { implicit: [], explicit: ["40% increased Movement Speed during effect", "25% increased Movement Speed during effect"] } },
+    { index: 23, name: "Basalt Flask of the Iron Skin",   group: "flask", category: "magic", slot: "Flask", count: 1, rarity: "Magic", icon: _IC.flask,
+      mods: { implicit: [], explicit: ["15% additional Physical Damage Reduction during effect", "+1500 to Armour during effect"] } },
+
+    // ---- JEWELS ----
     { index: 12, name: "Hale Fettle",             group: "jewel",     category: "rare",   slot: "Jewel",       count: 1, rarity: "Rare", icon: _IC.jewel,
       mods: { implicit: [], explicit: ["12% increased maximum Life", "18% increased Fire Damage", "9% increased Cast Speed"] } },
     { index: 13, name: "Watcher's Eye",           group: "jewel",     category: "unique", slot: "Jewel",       count: 1, rarity: "Unique", icon: _IC.jewel },
     { index: 14, name: "Thread of Hope",          group: "jewel",     category: "unique", slot: "Jewel",       count: 1, rarity: "Unique", icon: _IC.jewel2 },
     { index: 15, name: "Blazing Fettle (Large Cluster Jewel)", group: "jewel", category: "rare", slot: "Jewel", count: 1, rarity: "Rare", icon: _IC.jewel,
       mods: { implicit: ["Adds 8 Passive Skills"], explicit: ["Added Small Passive Skills grant: 12% increased Fire Damage", "1 Added Passive Skill is Blowback", "1 Added Passive Skill is Fan the Flames"] } },
+
+    // ---- GEMS: grouped by HOST ITEM. `sockets` = support-gem count (skin label "N sup");
+    // `supports[]` mirrors priced[k].gems[1:] by index (each carries its own support/granted). ----
+    // Body Armour "Rift Shroud" (rare) — the 6-link main skill (active + 5 supports).
     { index: 18, name: "Firestorm",     group: "gem", category: "gem", slot: "", count: 1, rarity: "Gem", level: 21, quality: 20, corrupted: true, sockets: 5, icon: _IC.firestorm,
-      supports: [{name:"Spell Echo Support",level:21,quality:20,corrupted:true,icon:_IC.spellecho},{name:"Controlled Destruction Support",level:21,quality:20,corrupted:true,icon:_IC.cd},{name:"Elemental Focus Support",level:21,quality:20,corrupted:true,icon:_IC.ef},{name:"Concentrated Effect Support",level:21,quality:20,corrupted:true,icon:_IC.conc},{name:"Ignite Proliferation Support",level:21,quality:20,corrupted:true,icon:_IC.ignite}] },
+      host_slot: "Body Armour", host_name: "Rift Shroud", host_unique: false, host_inventory_id: "BodyArmour",
+      supports: [
+        { name: "Spell Echo Support",             support: true, granted: false, level: 21, quality: 20, corrupted: true, icon: _IC.spellecho },
+        { name: "Controlled Destruction Support", support: true, granted: false, level: 21, quality: 20, corrupted: true, icon: _IC.cd },
+        { name: "Elemental Focus Support",        support: true, granted: false, level: 21, quality: 20, corrupted: true, icon: _IC.ef },
+        { name: "Concentrated Effect Support",    support: true, granted: false, level: 21, quality: 20, corrupted: true, icon: _IC.conc },
+        { name: "Ignite Proliferation Support",   support: true, granted: false, level: 21, quality: 20, corrupted: true, icon: _IC.ignite } ] },
+    // Weapon "Doryani's Catalyst" (unique) — a SOCKETED herald (NOT granted: the D-0006 fix).
+    { index: 24, name: "Herald of Ash",  group: "gem", category: "gem", slot: "", count: 1, rarity: "Gem", level: 21, quality: 20, corrupted: false, sockets: 1, icon: _IC.firestorm,
+      host_slot: "Weapon", host_name: "Doryani's Catalyst", host_unique: true, host_inventory_id: "Weapon",
+      supports: [
+        { name: "Combustion Support", support: true, granted: false, level: 20, quality: 20, corrupted: false, icon: _IC.ignite } ] },
+    // Helmet "Crown of the Inward Eye" (unique) — an aura link; Enlighten drives the cost.
     { index: 19, name: "Determination", group: "gem", category: "gem", slot: "", count: 1, rarity: "Gem", level: 21, quality: 20, corrupted: true, sockets: 1, icon: _IC.determination,
-      supports: [{name:"Enlighten Support",level:4,quality:0,corrupted:true,icon:_IC.enlighten}] },
-    { index: 20, name: "Flame Dash",    group: "gem", category: "gem", slot: "", count: 1, rarity: "Gem", level: 21, quality: 20, corrupted: true, sockets: 2, icon: _IC.flamedash, granted: true,
-      supports: [{name:"Second Wind Support",level:21,quality:20,corrupted:true,icon:_IC.secondwind},{name:"Arcane Surge Support",level:21,quality:20,corrupted:true,icon:_IC.arcanesurge}] }
+      host_slot: "Helmet", host_name: "Crown of the Inward Eye", host_unique: true, host_inventory_id: "Helm",
+      supports: [
+        { name: "Enlighten Support", support: true, granted: false, level: 4, quality: 0, corrupted: true, icon: _IC.enlighten } ] },
+    // Boots "Atziri's Step" (unique) — movement / utility link.
+    { index: 20, name: "Flame Dash",    group: "gem", category: "gem", slot: "", count: 1, rarity: "Gem", level: 21, quality: 20, corrupted: true, sockets: 2, icon: _IC.flamedash,
+      host_slot: "Boots", host_name: "Atziri's Step", host_unique: true, host_inventory_id: "Boots",
+      supports: [
+        { name: "Second Wind Support",  support: true, granted: false, level: 21, quality: 20, corrupted: true, icon: _IC.secondwind },
+        { name: "Arcane Surge Support", support: true, granted: false, level: 21, quality: 20, corrupted: true, icon: _IC.arcanesurge } ] },
+    // Ring "Lost Unity" (unique) — the ONE genuinely item-granted gem. granted:true -> GRANTED
+    // badge here (and only here), null price, excluded from totals by default.
+    { index: 25, name: "Herald of Agony", group: "gem", category: "gem", slot: "", count: 1, rarity: "Gem", level: 30, quality: 0, corrupted: false, sockets: 0, granted: true, icon: _IC.determination,
+      host_slot: "Ring", host_name: "Lost Unity", host_unique: true, host_inventory_id: "Ring",
+      supports: [] }
   ],
   priced: {
     "0":  { chaos: { min: 3,     median: 5,     high: 12 },    confidence: "high",   note: "",                                                     method: "unique",      trade_url: _TU, sample_size: 26, total_found: 340 },
@@ -100,35 +150,49 @@ window.BPC_SAMPLE = {
     "3":  { chaos: { min: 3,     median: 4,     high: 9 },     confidence: "high",   note: "",                                                     method: "unique",      trade_url: _TU, sample_size: 30, total_found: 900 },
     "4":  { chaos: { min: 10500, median: 11660, high: 14000 },  confidence: "high",   note: "the chase belt",                                       method: "unique",      trade_url: _TU, sample_size: 20, total_found: 140 },
     "5":  { chaos: { min: 60,    median: 120,   high: 260 },   confidence: "medium", note: "+1 to Level of all Fire Skill Gems drives the price",   method: "rare_default",trade_url: _TU, sample_size: 15, total_found: 160 },
-    "6":  { chaos: { min: 15,    median: 23,    high: 40 },    confidence: "high",   note: "",                                                     method: "unique",      trade_url: _TU, sample_size: 24, total_found: 300 },
+    "6":  { chaos: { min: 10,    median: 18,    high: 35 },    confidence: "high",   note: "grants Herald of Agony (the granted skill is free)",    method: "unique",      trade_url: _TU, sample_size: 24, total_found: 300 },
     "7":  { chaos: { min: 8,     median: 16,    high: 40 },    confidence: "low",    note: "few close listings",                                   method: "rare_default",trade_url: _TU, sample_size: 4,  total_found: 4 },
     "8":  { chaos: { min: 2,     median: 3,     high: 7 },     confidence: "high",   note: "",                                                     method: "unique",      trade_url: _TU, sample_size: 28, total_found: 520 },
     "9":  { chaos: { min: 6,     median: 14,    high: 35 },    confidence: "medium", note: "",                                                     method: "rare_default",trade_url: _TU, sample_size: 16, total_found: 190 },
     "16": { chaos: { min: 1,     median: 1,     high: 3 },     confidence: "high",   note: "",                                                     method: "unique",      trade_url: _TU, sample_size: 30, total_found: 900 },
     "17": { chaos: { min: 3,     median: 5,     high: 11 },    confidence: "high",   note: "",                                                     method: "unique",      trade_url: _TU, sample_size: 22, total_found: 260 },
-    "10": { chaos: { min: 1,     median: 2,     high: 4 },     confidence: "medium", note: "",                                                     method: "magic",       trade_url: _TU, sample_size: 20, total_found: 999 },
-    "11": { chaos: { min: 0.5,   median: 1,     high: 3 },     confidence: "medium", note: "",                                                     method: "magic",       trade_url: _TU, sample_size: 20, total_found: 999 },
+    // ---- FLASK BELT prices (belt order 10,11,21,22,23) ----
+    "10": { chaos: { min: 150,   median: 210,   high: 320 },   confidence: "high",   note: "chase utility flask",                                  method: "unique",      trade_url: _TU, sample_size: 22, total_found: 180 },
+    "11": { chaos: { min: 20,    median: 38,    high: 75 },    confidence: "high",   note: "ignite / onslaught utility",                           method: "unique",      trade_url: _TU, sample_size: 24, total_found: 300 },
     "21": { chaos: { min: 10,    median: 15,    high: 25 },    confidence: "high",   note: "",                                                     method: "unique",      trade_url: _TU, sample_size: 27, total_found: 610 },
     "22": { chaos: { min: 1,     median: 2,     high: 5 },     confidence: "low",    note: "",                                                     method: "magic",       trade_url: _TU, sample_size: 12, total_found: 300 },
     "23": { chaos: { min: 2,     median: 4,     high: 9 },     confidence: "low",    note: "",                                                     method: "magic",       trade_url: _TU, sample_size: 12, total_found: 300 },
+    // ---- JEWELS ----
     "12": { chaos: { min: 3,     median: 6,     high: 14 },    confidence: "low",    note: "",                                                     method: "rare_default",trade_url: _TU, sample_size: 8,  total_found: 40 },
     "13": { chaos: { min: 30,    median: 45,    high: 120 },   confidence: "medium", note: "generic Watcher's Eye; specific mod combos cost far more", method: "unique",   trade_url: _TU, sample_size: 19, total_found: 130 },
     "14": { chaos: { min: 130,   median: 151,   high: 200 },   confidence: "high",   note: "medium ring radius",                                   method: "unique",      trade_url: _TU, sample_size: 21, total_found: 95 },
     "15": { chaos: { min: null,  median: null,  high: null },  confidence: "none",   note: "no listing matches this exact 8-passive + notable combo - open the trade search", method: "rare_default", trade_url: _TU, sample_size: 0, total_found: 0 },
-    "18": { chaos: { min: 428.6, median: 428.6, high: 428.6 }, confidence: "medium", note: "poe.ninja gem economy: active + 5 supports",           method: "skill", trade_url: _TU, sample_size: 6, total_found: 6, kind: "skill", level: 21, quality: 20, corrupted: true, source: "poe.ninja", total_chaos: 428.6, gems: [
-        { name: "Firestorm",                       support: false, level: 21, quality: 20, corrupted: true, chaos: 9.2,  variant: "21/20c", trade_url: _TU },
-        { name: "Spell Echo Support",              support: true,  level: 21, quality: 20, corrupted: true, chaos: 99,   variant: "21/20c", trade_url: _TU },
-        { name: "Controlled Destruction Support",  support: true,  level: 21, quality: 20, corrupted: true, chaos: 88.5, variant: "21/20c", trade_url: _TU },
-        { name: "Elemental Focus Support",         support: true,  level: 21, quality: 20, corrupted: true, chaos: 65,   variant: "21/20c", trade_url: _TU },
-        { name: "Concentrated Effect Support",     support: true,  level: 21, quality: 20, corrupted: true, chaos: 148,  variant: "21/20c", trade_url: _TU },
-        { name: "Ignite Proliferation Support",    support: true,  level: 21, quality: 20, corrupted: true, chaos: 18.9, variant: "21/20c", trade_url: _TU } ] },
-    "19": { chaos: { min: 1039.6, median: 1039.6, high: 1039.6 }, confidence: "medium", note: "poe.ninja gem economy: Enlighten 4 drives the cost", method: "skill", trade_url: _TU, sample_size: 2, total_found: 2, kind: "skill", level: 21, quality: 20, corrupted: true, source: "poe.ninja", total_chaos: 1039.6, gems: [
-        { name: "Determination",     support: false, level: 21, quality: 20, corrupted: true, chaos: 120,   variant: "21/20c", trade_url: _TU },
-        { name: "Enlighten Support", support: true,  level: 4,  quality: 0,  corrupted: true, chaos: 919.6, variant: "4c",     trade_url: _TU } ] },
-    "20": { chaos: { min: 158, median: 158, high: 158 }, confidence: "medium", note: "poe.ninja gem economy: active + 2 supports", method: "skill", trade_url: _TU, sample_size: 3, total_found: 3, kind: "skill", level: 21, quality: 20, corrupted: true, source: "poe.ninja", total_chaos: 158, gems: [
-        { name: "Flame Dash",          support: false, level: 21, quality: 20, corrupted: true, chaos: 19,  variant: "21/20c", trade_url: _TU },
-        { name: "Second Wind Support", support: true,  level: 21, quality: 20, corrupted: true, chaos: 33,  variant: "21/20c", trade_url: _TU },
-        { name: "Arcane Surge Support",support: true,  level: 21, quality: 20, corrupted: true, chaos: 106, variant: "21/20c", trade_url: _TU } ] }
+    // ---- GEMS: each carries host_* + granted + a per-gem gems[] breakdown (spec A/D).
+    // Invariant: total_chaos == sum(g.chaos for g in gems if g.chaos != null) — supports included. ----
+    // Body Armour "Rift Shroud" (rare host) — 6-link Firestorm.  9.2+99+88.5+65+148+18.9 = 428.6
+    "18": { chaos: { min: 428.6, median: 428.6, high: 428.6 }, confidence: "medium", note: "poe.ninja gem economy: active + 5 supports", method: "skill", trade_url: _TU, sample_size: 6, total_found: 6, kind: "skill", level: 21, quality: 20, corrupted: true, source: "poe.ninja", granted: false, host_slot: "Body Armour", host_name: "Rift Shroud", host_base: "Vaal Regalia", host_unique: false, host_inventory_id: "BodyArmour", total_chaos: 428.6, gems: [
+        { name: "Firestorm",                       support: false, granted: false, level: 21, quality: 20, corrupted: true, chaos: 9.2,  variant: "21/20c", note: "", trade_url: _TU },
+        { name: "Spell Echo Support",              support: true,  granted: false, level: 21, quality: 20, corrupted: true, chaos: 99,   variant: "21/20c", note: "", trade_url: _TU },
+        { name: "Controlled Destruction Support",  support: true,  granted: false, level: 21, quality: 20, corrupted: true, chaos: 88.5, variant: "21/20c", note: "", trade_url: _TU },
+        { name: "Elemental Focus Support",         support: true,  granted: false, level: 21, quality: 20, corrupted: true, chaos: 65,   variant: "21/20c", note: "", trade_url: _TU },
+        { name: "Concentrated Effect Support",     support: true,  granted: false, level: 21, quality: 20, corrupted: true, chaos: 148,  variant: "21/20c", note: "", trade_url: _TU },
+        { name: "Ignite Proliferation Support",    support: true,  granted: false, level: 21, quality: 20, corrupted: true, chaos: 18.9, variant: "21/20c", note: "", trade_url: _TU } ] },
+    // Weapon "Doryani's Catalyst" (unique host) — SOCKETED Herald of Ash, NOT granted.  5+8 = 13
+    "24": { chaos: { min: 13,    median: 13,    high: 13 },    confidence: "medium", note: "poe.ninja gem economy: active + 1 support",  method: "skill", trade_url: _TU, sample_size: 8, total_found: 8, kind: "skill", level: 21, quality: 20, corrupted: false, source: "poe.ninja", granted: false, host_slot: "Weapon", host_name: "Doryani's Catalyst", host_base: "Vaal Sceptre", host_unique: true, host_inventory_id: "Weapon", total_chaos: 13, gems: [
+        { name: "Herald of Ash",      support: false, granted: false, level: 21, quality: 20, corrupted: false, chaos: 5, variant: "21/20", note: "", trade_url: _TU },
+        { name: "Combustion Support", support: true,  granted: false, level: 20, quality: 20, corrupted: false, chaos: 8, variant: "20/20", note: "", trade_url: _TU } ] },
+    // Helmet "Crown of the Inward Eye" (unique host) — Determination + Enlighten.  120+919.6 = 1039.6
+    "19": { chaos: { min: 1039.6, median: 1039.6, high: 1039.6 }, confidence: "medium", note: "poe.ninja gem economy: Enlighten 4 drives the cost", method: "skill", trade_url: _TU, sample_size: 2, total_found: 2, kind: "skill", level: 21, quality: 20, corrupted: true, source: "poe.ninja", granted: false, host_slot: "Helmet", host_name: "Crown of the Inward Eye", host_base: "Aventail Helmet", host_unique: true, host_inventory_id: "Helm", total_chaos: 1039.6, gems: [
+        { name: "Determination",     support: false, granted: false, level: 21, quality: 20, corrupted: true, chaos: 120,   variant: "21/20c", note: "", trade_url: _TU },
+        { name: "Enlighten Support", support: true,  granted: false, level: 4,  quality: 0,  corrupted: true, chaos: 919.6, variant: "4c",     note: "", trade_url: _TU } ] },
+    // Boots "Atziri's Step" (unique host) — Flame Dash movement.  19+33+106 = 158
+    "20": { chaos: { min: 158,   median: 158,   high: 158 },   confidence: "medium", note: "poe.ninja gem economy: active + 2 supports", method: "skill", trade_url: _TU, sample_size: 3, total_found: 3, kind: "skill", level: 21, quality: 20, corrupted: true, source: "poe.ninja", granted: false, host_slot: "Boots", host_name: "Atziri's Step", host_base: "Slink Boots", host_unique: true, host_inventory_id: "Boots", total_chaos: 158, gems: [
+        { name: "Flame Dash",          support: false, granted: false, level: 21, quality: 20, corrupted: true, chaos: 19,  variant: "21/20c", note: "", trade_url: _TU },
+        { name: "Second Wind Support", support: true,  granted: false, level: 21, quality: 20, corrupted: true, chaos: 33,  variant: "21/20c", note: "", trade_url: _TU },
+        { name: "Arcane Surge Support",support: true,  granted: false, level: 21, quality: 20, corrupted: true, chaos: 106, variant: "21/20c", note: "", trade_url: _TU } ] },
+    // Ring "Lost Unity" (unique host) — GRANTED Herald of Agony: null price, excluded from total.
+    "25": { chaos: { min: null,  median: null,  high: null },  confidence: "none",   note: "item-granted skill (comes free with the host item)", method: "skill", trade_url: _TU, sample_size: 0, total_found: 0, kind: "skill", level: 30, quality: 0, corrupted: false, source: "poe.ninja", granted: true, host_slot: "Ring", host_name: "Lost Unity", host_base: "Formless Ring", host_unique: true, host_inventory_id: "Ring", total_chaos: null, gems: [
+        { name: "Herald of Agony", support: false, granted: true, level: 30, quality: 0, corrupted: false, chaos: null, variant: "", note: "granted by Lost Unity - not counted", trade_url: _TU } ] }
   },
   rares: {
     "1": { status: "priced", name: "Rift Shroud", scope: "base: Vaal Regalia", kind: "rare", scope_q: { type: "Vaal Regalia" }, affixes: [

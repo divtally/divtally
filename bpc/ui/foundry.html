@@ -299,10 +299,94 @@
 
   .hint{color:var(--cyan-dim);font-size:11px;letter-spacing:.02em;margin:14px 2px 0;opacity:.8}
 
+  /* ===== D-0006 — FLASK BELT (5 slots, flask order, overflow shown; no life/mana names) ===== */
+  .belt{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding:14px 12px;
+    background:linear-gradient(180deg,var(--navy3),var(--navy))}
+  @media (max-width:680px){.belt{grid-template-columns:repeat(3,1fr)}}
+  @media (max-width:420px){.belt{grid-template-columns:repeat(2,1fr)}}
+  .bslot{position:relative;border:1px solid var(--cyan-dim);background:var(--navy2);
+    padding:7px 8px 8px;display:flex;flex-direction:column;gap:5px;min-height:106px;overflow:hidden}
+  .bslot:before{content:"";position:absolute;inset:3px;border:1px solid var(--cyan-faint);pointer-events:none}
+  .bslot>*{position:relative;z-index:1}
+  .bslot .bs-top{display:flex;align-items:center;justify-content:space-between;gap:6px}
+  .bslot .bs-no{font-family:var(--sans);font-size:9px;letter-spacing:.2em;color:var(--navy);
+    background:var(--cyan-dim);padding:1px 6px;text-transform:uppercase}
+  .bslot .bs-cb{display:inline-flex}
+  .bslot .bs-name{color:var(--white);font-size:12px;line-height:1.25;letter-spacing:.01em}
+  .bslot .bs-name a{color:var(--white);border-bottom:1px dotted var(--cyan-dim)}
+  .bslot .bs-name a:hover{border-bottom-color:var(--white)}
+  .bslot .bs-meta{margin-top:auto}
+  .bslot .bs-price{color:var(--white);font-size:13px;text-align:right}
+  .bslot .bs-conf{text-align:right}
+  .bslot.empty{border-style:dashed;border-color:var(--cyan-faint);
+    background:repeating-linear-gradient(135deg,transparent,transparent 7px,rgba(95,176,255,.05) 7px,rgba(95,176,255,.05) 8px)}
+  .bslot.empty .bs-empty{margin:auto;color:var(--cyan-dim);font-size:10px;letter-spacing:.24em;
+    text-transform:uppercase;font-family:var(--sans);opacity:.7}
+  .bslot.over .bs-no{background:var(--cyan)}
+  .bslot.over:after{content:"AUX";position:absolute;top:3px;right:5px;z-index:1;font-family:var(--sans);
+    font-size:8px;letter-spacing:.16em;color:var(--cyan-dim);border:1px solid var(--cyan-faint);padding:0 3px}
+  .bslot.void{opacity:.5}
+  .bslot.void:before{border-color:var(--red)}
+  .bslot.void .bs-price{text-decoration:line-through;text-decoration-color:var(--red)}
+
+  /* ===== D-0006 — GEM SECTION grouped by host item, supports nested under their active ===== */
+  .gems{background:linear-gradient(180deg,var(--navy2),var(--navy))}
+  .gemgroup+.gemgroup .gemhost{border-top:1px solid var(--cyan-dim)}
+  .gemhost{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+    background:var(--navy3);padding:5px 10px;border-bottom:1px solid var(--cyan-faint);
+    font-family:var(--sans);letter-spacing:.14em;text-transform:uppercase;font-size:11px;color:var(--cyan)}
+  .gemhost .gh-uniq{color:#cf9f56;font-size:9px;letter-spacing:.14em;border:1px solid currentColor;padding:0 5px}
+  .skill{padding:8px 10px;border-bottom:1px solid var(--cyan-faint);position:relative}
+  .skill:hover{background:rgba(95,176,255,.05)}
+  .skill .sk-head{display:grid;grid-template-columns:26px 1fr auto;gap:8px;align-items:baseline}
+  .skill .sk-cb{text-align:center;padding-top:1px}
+  .skill .sk-nm{color:var(--white);letter-spacing:.01em}
+  .skill .sk-nm a{color:var(--white);border-bottom:1px dotted var(--cyan-dim)}
+  .skill .sk-nm a:hover{border-bottom-color:var(--white)}
+  .skill .sk-total{color:var(--white);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .sk-granted{font-family:var(--sans);font-size:9px;letter-spacing:.14em;text-transform:uppercase;
+    color:#f3e07a;border:1px solid currentColor;padding:0 5px;margin-left:7px;vertical-align:1px}
+  .sk-list{margin:6px 0 0 26px;border-left:1px solid var(--cyan-faint);padding-left:10px;
+    display:flex;flex-direction:column;gap:3px}
+  .sk-gem{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:baseline;font-size:12px;color:var(--cyan-dim)}
+  .sk-gem .sg-nm{color:var(--cyan)}
+  .sk-gem.active .sg-nm{color:var(--white)}
+  .sk-gem .sg-sub{color:var(--cyan-dim);font-size:11px;letter-spacing:.02em}
+  .sk-gem .sg-px{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--cyan)}
+  .sk-gem.granted .sg-nm,.sk-gem.granted .sg-px{color:var(--cyan-dim);opacity:.65}
+  .sk-gem.granted .sg-px{text-decoration:line-through;text-decoration-color:var(--red)}
+  .skill.void{opacity:.55}
+  .skill.void .sk-total{text-decoration:line-through;text-decoration-color:var(--red)}
+
+  /* ===== D-0006 — AUTOSCAN (glowing, skin-cyan accent) + skip-all in the affix picker ===== */
+  .pautoscan{padding:10px 14px;border-bottom:1px solid var(--cyan-faint);background:var(--navy2)}
+  button.autoscan{--accent:var(--cyan);width:100%;font-family:var(--sans);font-weight:700;
+    letter-spacing:.18em;text-transform:uppercase;font-size:13px;cursor:pointer;padding:11px 14px;
+    position:relative;background:var(--navy3);color:var(--accent);border:1px solid var(--accent);
+    box-shadow:0 0 0 1px var(--accent) inset,
+      0 0 8px  color-mix(in srgb,var(--accent) 55%,transparent),
+      0 0 18px color-mix(in srgb,var(--accent) 35%,transparent);
+    animation:autoscanPulse 1.8s ease-in-out infinite}
+  button.autoscan .az{margin-right:6px}
+  button.autoscan:hover{filter:brightness(1.14);background:var(--navy2)}
+  button.autoscan:active{transform:translateY(1px)}
+  @keyframes autoscanPulse{
+    0%,100%{box-shadow:0 0 0 1px var(--accent) inset,
+      0 0 6px  color-mix(in srgb,var(--accent) 45%,transparent),
+      0 0 14px color-mix(in srgb,var(--accent) 25%,transparent)}
+    50%    {box-shadow:0 0 0 1px var(--accent) inset,
+      0 0 12px color-mix(in srgb,var(--accent) 70%,transparent),
+      0 0 26px color-mix(in srgb,var(--accent) 45%,transparent)}}
+  .pbulk{display:flex;padding:10px 14px;border-top:1px solid var(--cyan-faint);background:var(--navy2)}
+  button.pa-skip.small{font-family:var(--sans);letter-spacing:.12em;text-transform:uppercase;font-size:10px;
+    cursor:pointer;padding:6px 12px;background:none;color:var(--cyan-dim);border:1px solid var(--cyan-faint)}
+  button.pa-skip.small:hover{color:var(--cyan);border-color:var(--cyan-dim)}
+
   @media (prefers-reduced-motion:reduce){
     .draw,.vc-draw path{animation:none!important;stroke-dashoffset:0!important}
     .tb.cost .stamp.print{animation:none!important}
     #status .tick{animation:none}
+    button.autoscan{animation:none!important}
   }
 </style></head>
 <body>
@@ -457,14 +541,17 @@ const ASM_LABEL={equipment:'Equipment Assembly',flask:'Flasks',jewel:'Jewels',ge
 let builtBOM=false;
 
 bpc.on('items',()=>{ buildBOM(); buildRail(); buildTitleblock(); builtBOM=true; scheduleReg(); });
-bpc.on('priced',ev=>{ if(builtBOM){ (ev.keys||[]).forEach(fillRow); markAwaiting(); } });
-bpc.on('enabled',()=>{ if(builtBOM){ refreshVoids(); } });
+bpc.on('priced',ev=>{ if(builtBOM){ (ev.keys||[]).forEach(fillRow); paintFlaskBelt(); paintGems(); markAwaiting(); } });
+bpc.on('enabled',()=>{ if(builtBOM){ refreshVoids(); paintFlaskBelt(); paintGems(); } });
 bpc.on('totals',t=>{ if(builtBOM) stampTotal(t); });
 
 function buildBOM(){
   const s=bpc.state; if(!s.meta){ return; }
   let no=1, h='';
   for(const grp of bpc.itemsByGroup()){
+    // D-0006: flasks render as a 5-slot belt; gems group under their host item.
+    if(grp.group==='flask'){ h+=flaskBoxHTML(); continue; }
+    if(grp.group==='gem'){ h+=gemBoxHTML(); continue; }
     h+=`<div class="bom" data-g="${E(grp.group)}">`+
        `<div class="bomhd"><span>${E(ASM_LABEL[grp.group]||grp.title)}</span>`+
        `<span class="reg-no">SCHED. ${E(ASM_CODE[grp.group]||'XX')}</span></div>`+
@@ -497,7 +584,89 @@ function buildBOM(){
   });
   $('#boot-hint').hidden=true;
   // fill any prices we already have
+  paintFlaskBelt(); paintGems();
   Object.keys(s.priced).forEach(fillRow); markAwaiting();
+}
+
+/* ---------------- D-0006: FLASK BELT (5 slots, flask order, overflow shown) ---------------- */
+// Empty .bom shell for the flask assembly; paintFlaskBelt() fills the belt. The .bomhd lets the
+// generic INCL group-toggle attach (data-g="flask" -> setGroupEnabled).
+function flaskBoxHTML(){
+  return `<div class="bom" data-g="flask">`+
+    `<div class="bomhd"><span>${E(ASM_LABEL.flask)}</span>`+
+    `<span class="reg-no">SCHED. ${ASM_CODE.flask}</span></div>`+
+    `<div class="belt" id="flaskbelt"></div></div>`;
+}
+function paintFlaskBelt(){
+  const box=$('#flaskbelt'); if(!box) return;
+  const grp=bpc.itemsByGroup().find(g=>g.group==='flask');
+  const items=grp?grp.items:[];                 // engine emits flasks in belt order — no life/mana names
+  const SLOTS=5, n=Math.max(SLOTS,items.length);
+  let h='';
+  for(let i=0;i<n;i++){
+    const it=items[i], nn=String(i+1).padStart(2,'0');
+    if(!it){ h+=`<div class="bslot empty"><div class="bs-top"><span class="bs-no">${nn}</span></div>`+
+               `<div class="bs-empty">Empty</div></div>`; continue; }
+    const k=String(it.index), p=bpc.state.priced[k];
+    const priced=!!(p&&p.chaos.median!=null);
+    const excluded=priced&&!bpc.state.enabled[k];
+    const over=i>=SLOTS?' over':'';
+    const nm=(p&&p.trade_url)?`<a href="${E(p.trade_url)}" target="_blank" rel="noopener">${E(it.name)}</a>`:E(it.name);
+    const cb=priced?`<span class="bs-cb"><input type="checkbox" class="inc" data-k="${E(k)}" ${bpc.state.enabled[k]?'checked':''}></span>`:'';
+    const price=p?bpc.priceHTML(p.chaos.median):'<span class="bpc-dash">—</span>';
+    const conf=p?`<span class="conf-tag ${E(p.confidence)}">${E(p.confidence)}</span>`:'';
+    const tag=`<span class="mtag ${E(it.category)}">${E(it.rarity||it.category)}</span>`;
+    h+=`<div class="bslot${over}${excluded?' void':''}" data-k="${E(k)}">`+
+       `<div class="bs-top"><span class="bs-no">${nn}</span>${cb}</div>`+
+       `<div class="bs-name">${nm}</div>`+
+       `<div class="bs-meta">${tag}</div>`+
+       `<div class="bs-price">${price}</div>`+
+       `<div class="bs-conf">${conf}</div></div>`;
+  }
+  box.innerHTML=h;
+}
+
+/* ---------------- D-0006: GEM SECTION grouped by host item, supports nested ---------------- */
+function gemBoxHTML(){
+  return `<div class="bom" data-g="gem">`+
+    `<div class="bomhd"><span>${E(ASM_LABEL.gem)}</span>`+
+    `<span class="reg-no">SCHED. ${ASM_CODE.gem}</span></div>`+
+    `<div class="gems" id="gemsched"></div></div>`;
+}
+function paintGems(){
+  const box=$('#gemsched'); if(!box) return;
+  let h='';
+  bpc.gemGroups().forEach(g=>{                         // ordered host-item groups (core.js §D.1)
+    h+=`<div class="gemgroup"><div class="gemhost"><span>${E(g.header)}</span>`+
+       `${g.unique?'<span class="gh-uniq">Unique</span>':''}</div>`;
+    g.items.forEach(it=>{
+      const k=String(it.index), p=bpc.state.priced[k];
+      const priced=!!(p&&p.chaos.median!=null);
+      const excluded=priced&&!bpc.state.enabled[k];
+      const bd=bpc.gemBreakdown(k);                    // {total, granted, gems:[active, ...supports]}
+      const active=bd.gems[0]||{name:it.name,trade_url:(p&&p.trade_url)||''};
+      const cb=priced?`<span class="sk-cb"><input type="checkbox" class="inc" data-k="${E(k)}" ${bpc.state.enabled[k]?'checked':''}></span>`:`<span class="sk-cb"></span>`;
+      const nm=active.trade_url?`<a href="${E(active.trade_url)}" target="_blank" rel="noopener">${E(active.name)}</a>`:E(active.name);
+      // GRANTED badge reads the corrected skeleton field it.granted ONLY (spec §B.2).
+      const granted=it.granted?`<span class="sk-granted" title="item-granted skill — not bought, excluded by default">Granted</span>`:'';
+      const total=bd.total!=null?bpc.priceHTML(bd.total):'<span class="bpc-dash">—</span>';
+      let sl='';
+      bd.gems.forEach(gm=>{                             // active first, then supports — per-gem prices
+        const meta=[gm.level?('Lv '+gm.level):'',gm.quality?('Q'+gm.quality):'',gm.corrupted?'Cor':''].filter(Boolean).join(' · ');
+        const px=gm.chaos!=null?bpc.priceHTML(gm.chaos):'<span class="bpc-dash">—</span>';
+        const sub=[meta,gm.granted?'granted':''].filter(Boolean).join(' · ');
+        sl+=`<div class="sk-gem${gm.active?' active':''}${gm.granted?' granted':''}">`+
+            `<span class="sg-nm">${E(gm.name)}${sub?` <span class="sg-sub">${E(sub)}</span>`:''}</span>`+
+            `<span class="sg-px">${px}</span></div>`;
+      });
+      h+=`<div class="skill${excluded?' void':''}" data-k="${E(k)}">`+
+         `<div class="sk-head">${cb}<span class="sk-nm">${nm}${granted}</span>`+
+         `<span class="sk-total">${total}</span></div>`+
+         `<div class="sk-list">${sl}</div></div>`;
+    });
+    h+='</div>';
+  });
+  box.innerHTML=h;
 }
 
 function fillRow(k){
@@ -714,6 +883,9 @@ bpc.on('rare',info=>{
   const r=info.rare;
   let usePseudo=!!(r.pseudo && r.pseudo.length);
   const letter=String.fromCharCode(65+(info.index%26)); // DETAIL A, B, ...
+  // D-0006: bulk autoscan / skip-all show only when >1 rare remains in the walkthrough.
+  const remain=(bpc.remainingRares?bpc.remainingRares().length:info.total);
+  const showBulk=!info.single && remain>1;
 
   function tolInput(cls,val){
     return `<span class="tol"><span class="cap l"></span><input class="${cls}" inputmode="decimal" value="${val!=null?E(val):''}"><span class="cap r"></span></span>`;
@@ -740,17 +912,26 @@ bpc.on('rare',info=>{
       `<div class="dhd"><span class="dt">Detail ${letter}</span>`+
         `<span class="dn">${E(r.name)} (${info.index+1}/${info.total})</span></div>`+
       `<div class="dscope">Scope: <b>${E(r.scope)}</b>${info.redo?' &nbsp;<span class="redo-flag">Revised — re-approve to replace</span>':''}</div>`+
+      // D-0006: prominent glowing Autoscan at the TOP of the picker body (prices all remaining rares).
+      (showBulk?`<div class="pautoscan"><button class="autoscan" id="pSearchAll" type="button"`+
+        ` title="price all ${remain} remaining rares with default all-affix searches">`+
+        `<span class="az">⚡</span>Autoscan (${remain})</button></div>`:'')+
       ((r.pseudo&&r.pseudo.length)?
         `<div class="pseudoswitch"><input type="checkbox" id="pseu" ${usePseudo?'checked':''}>`+
         `<span><span class="swlab">Combine Elem. Resist</span> <span class="swsub">— spec the item's total resistance as one dimension</span></span></div>`:'')+
       `<div class="spectable"><div class="spechead"><div></div><div>Spec Line</div><div class="r">Min Tol.</div><div class="r">Max Tol.</div></div>`+
         `<div id="specrows">${rowsHTML()}</div></div>`+
+      // D-0006: small, non-glowing skip-all stays below (near the per-item buttons).
+      (showBulk?`<div class="pbulk"><button class="pa-skip small" id="pSkipAll" type="button">skip all (don't price)</button></div>`:'')+
       `<div class="dfoot">`+
         (info.index>0?`<button class="prev" type="button" id="prev">‹ Prev Sheet</button>`:'')+
         `<button class="approve" type="button" id="approve">${info.redo?'Re-Approve & Price':'Approve & Price'}</button>`+
         `<button class="omit" type="button" id="omit">Omit</button>`+
         `<span class="sheetcount">SHEET ${info.index+1} OF ${info.total}</span></div>`;
     scrim.hidden=false;
+    // D-0006: Autoscan -> price every remaining rare; skip-all -> skip them (unchanged core.js API).
+    const sa=$('#pSearchAll'); if(sa) sa.onclick=()=>bpc.searchAllRares();
+    const ka=$('#pSkipAll'); if(ka) ka.onclick=()=>bpc.skipAllRares();
     const pe=$('#pseu'); if(pe) pe.onchange=()=>{ usePseudo=pe.checked; $('#specrows').innerHTML=rowsHTML(); };
     const pv=$('#prev'); if(pv) pv.onclick=()=>bpc.backRare();
     $('#approve').onclick=()=>{

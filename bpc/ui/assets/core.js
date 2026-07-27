@@ -195,6 +195,89 @@
     return out;
   }
 
+  // ---- gem host grouping + per-gem breakdown (D-0006; additive, non-breaking) ----
+  // Host-item info for a gem row. It rides on the priced entry (p.host_*, authoritative
+  // once the gem prices) and MAY also be copied onto the skeleton row (it.host_*) so a skin
+  // can group BEFORE the price lands. Read priced-first, fall back to the skeleton. Accepts a
+  // skeleton row OR an index/key. Returns {inventory_id, slot, name, base, unique}.
+  function gemHost(itOrKey) {
+    var it = (itOrKey && typeof itOrKey === "object") ? itOrKey
+           : state.items.find(function (x) { return String(x.index) === String(itOrKey); });
+    var p = it ? state.priced[String(it.index)] : null;
+    function f(name) {
+      var v = p ? p[name] : undefined;
+      if (v !== undefined && v !== null && v !== "") return v;
+      v = it ? it[name] : undefined;
+      if (v !== undefined && v !== null && v !== "") return v;
+      return undefined;
+    }
+    return { inventory_id: f("host_inventory_id") || "", slot: f("host_slot") || "",
+             name: f("host_name") || "", base: f("host_base") || "", unique: !!f("host_unique") };
+  }
+  function gemGroupHeader(h) {
+    var slot = h.slot || "", name = h.name || "";
+    if (slot && name) return slot + " — " + name;   // e.g. "Body Armour — Blunderbore"
+    return slot || name || "Gems";
+  }
+  // Group the gem section under its host item. Returns an ORDERED array of
+  //   { key, slot, name, base, unique, header, items:[<skeleton gem row>, ...] }
+  // keyed by host inventoryId (fallback: host_slot, then "" = an ungrouped "Gems" bucket for
+  // PoB imports / unknown hosts). Group order and within-group row order follow state.items,
+  // so skill order is preserved. One host may hold several skill rows — all land under one head.
+  function gemGroups() {
+    var order = [], byKey = {};
+    state.items.forEach(function (it) {
+      if (it.group !== "gem") return;
+      var h = gemHost(it), key = h.inventory_id || h.slot || "";
+      var g = byKey[key];
+      if (!g) { g = byKey[key] = { key: key, slot: h.slot, name: h.name, base: h.base,
+                                   unique: h.unique, header: "", items: [] }; order.push(g); }
+      else {   // a later row may carry host info an earlier sibling lacked — fill the gaps
+        if (!g.slot && h.slot) g.slot = h.slot;
+        if (!g.name && h.name) g.name = h.name;
+        if (!g.base && h.base) g.base = h.base;
+        if (h.unique) g.unique = true;
+      }
+      g.items.push(it);
+    });
+    order.forEach(function (g) { g.header = gemGroupHeader(g); });
+    return order;
+  }
+  // Per-gem breakdown for ONE gem row: the socketed active + its linked gems, each priced.
+  // Reads the priced entry's gems[] (authoritative — gems[0] = active, gems[1:] = linked, in
+  // the SAME order/length as it.supports[], matched by INDEX not by name so a 2nd active in the
+  // link is handled). Falls back to the skeleton (active + supports, prices unknown) if the
+  // gems[] breakdown has not arrived. Returns { total, granted, gems:[{name, support, granted,
+  // active, level, quality, corrupted, chaos, variant, note, trade_url, icon}, ...] }.
+  function gemBreakdown(key) {
+    var k = String(key), p = state.priced[k];
+    var it = state.items.find(function (x) { return String(x.index) === k; });
+    var sups = (it && it.supports) || [];
+    var glist = (p && p.gems && p.gems.length) ? p.gems : null, rows;
+    if (glist) {
+      rows = glist.map(function (g, i) {
+        var sk = i === 0 ? it : sups[i - 1];               // index alignment: gems[i>0] <-> supports[i-1]
+        return { name: g.name, support: !!g.support, granted: !!g.granted, active: i === 0,
+                 level: g.level, quality: g.quality, corrupted: !!g.corrupted,
+                 chaos: (g.chaos == null ? null : g.chaos), variant: g.variant || "",
+                 note: g.note || "", trade_url: g.trade_url || (p && p.trade_url) || "",
+                 icon: (sk && sk.icon) || "" };
+      });
+    } else if (it) {
+      rows = [{ name: it.name, support: false, granted: !!it.granted, active: true,
+                level: it.level, quality: it.quality, corrupted: !!it.corrupted, chaos: null,
+                variant: "", note: "", trade_url: (p && p.trade_url) || "", icon: it.icon || "" }];
+      sups.forEach(function (s) {
+        rows.push({ name: s.name, support: (s.support === undefined ? true : !!s.support),
+                    granted: !!s.granted, active: false, level: s.level, quality: s.quality,
+                    corrupted: !!s.corrupted, chaos: null, variant: "", note: "",
+                    trade_url: (p && p.trade_url) || "", icon: s.icon || "" });
+      });
+    } else { rows = []; }
+    var total = p ? (p.total_chaos != null ? p.total_chaos : (p.chaos ? p.chaos.median : null)) : null;
+    return { total: total, granted: !!(p && p.granted), gems: rows };
+  }
+
   // ---- job lifecycle ----
   function resetJob() {
     if (state.currentRare != null) emit("rare", null);   // close any open picker on the OLD job
@@ -403,6 +486,7 @@
     start: start, startUrl: startUrl, startCache: startCache, rerun: rerun, researchAll: researchAll, setControl: setControl, loadPrefs: loadPrefs,
     price: price, priceHTML: priceHTML, curImg: curImg, nfmt: nfmt, esc: esc, divRate: divRate, tierEx: tierEx,
     totals: totals, setEnabled: setEnabled, setGroupEnabled: setGroupEnabled, isPriced: isPriced, itemsByGroup: itemsByGroup,
+    gemGroups: gemGroups, gemBreakdown: gemBreakdown, gemHost: gemHost,
     setPurchased: setPurchased, isPurchased: isPurchased,
     rareList: rareList, openRare: openRare, reopenRare: reopenRare, backRare: backRare, submitRare: submitRare, skipRare: skipRare, presentNext: presentNext,
     defaultRarePayload: defaultRarePayload, remainingRares: remainingRares, searchAllRares: searchAllRares, skipAllRares: skipAllRares,

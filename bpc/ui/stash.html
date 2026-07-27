@@ -216,6 +216,18 @@
   .sk-sups .sup-price{margin-left:auto; font-family:var(--mono); font-size:12px; color:var(--val);}
   .sk-sups .sup-price .bpc-cur{height:11px; vertical-align:-2px;}
   .sk-sups .sup.none{font-style:italic;}
+  .sk-sups .sup.granted{opacity:.72;}
+  .sk-sups .sup.granted .sup-nm{text-decoration:line-through; text-decoration-color:rgba(170,158,130,.5);}
+  .sk-sups .sup-tag.act{color:var(--gem); border-color:rgba(27,162,155,.5);}
+  /* gems grouped under their host item (D-0006 §D) */
+  .host-group + .host-group{margin-top:12px;}
+  .host-head{display:flex; align-items:center; gap:8px; margin:2px 0 6px;}
+  .host-head .host-name{font-family:var(--display); font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:var(--bz3);}
+  .host-head::after{content:""; flex:1; height:1px; background:linear-gradient(90deg, rgba(200,170,110,.35), transparent);}
+  .host-head.host-unique .host-name{color:var(--unique);}
+  .host-head .host-uq{order:2; font-family:var(--mono); font-size:9px; letter-spacing:.08em; text-transform:uppercase; color:var(--unique);
+    border:1px solid rgba(175,96,37,.5); border-radius:3px; padding:0 5px;}
+  .host-group .skill{margin-bottom:6px;}
 
   /* ---------- THE SLOT ---------- */
   .slot{
@@ -655,8 +667,37 @@
   .pbtns .stone-btn.skip{color:var(--bad); border-color:rgba(208,107,94,.4);}
   .pbulk{display:flex; gap:9px; margin-top:9px; padding-top:9px; border-top:1px dashed var(--bz1);}
   .pbulk .stone-btn{flex:1; text-align:center; justify-content:center; font-size:12px; padding:7px 10px;}
-  .pbulk .pa-search{color:var(--bz3); border-color:var(--bz2);}
   .pbulk .pa-skip{color:var(--parch);}
+  .pbulk .pa-skip.small{font-size:11px; padding:6px 10px; opacity:.85;}
+  .pbulk .pa-skip.small:hover{opacity:1; color:var(--fg);}
+  /* Autoscan — prominent glowing bulk action at the TOP of the picker (D-0006 §E), glow tuned to
+     this skin's bronze accent (--bz3) instead of a generic hue so it reads as part of the theme. */
+  .pautoscan{margin:0 0 12px; padding-bottom:11px; border-bottom:1px dashed var(--bz1);}
+  .stone-btn.autoscan{
+    --accent: var(--bz-hi);            /* the skin's brightest accent (gold highlight) */
+    display:flex; width:100%; justify-content:center; align-items:center; gap:7px;
+    position:relative; font-family:var(--display); font-weight:600; letter-spacing:.06em; font-size:15px;
+    padding:11px 14px; color:#1a140d;
+    background:linear-gradient(180deg, var(--bz3), var(--bz1));
+    border-color:var(--accent);
+    box-shadow: 0 0 0 1px var(--accent) inset,
+                0 0 9px  color-mix(in srgb, var(--accent) 55%, transparent),
+                0 0 20px color-mix(in srgb, var(--bz3) 40%, transparent),
+                inset 0 1px 0 rgba(255,255,255,.28);
+    animation: autoscanPulse 1.8s ease-in-out infinite;
+  }
+  .stone-btn.autoscan:hover{ filter:brightness(1.1); }
+  @keyframes autoscanPulse{
+    0%,100%{ box-shadow: 0 0 0 1px var(--accent) inset,
+                         0 0 7px  color-mix(in srgb, var(--accent) 45%, transparent),
+                         0 0 15px color-mix(in srgb, var(--bz3) 30%, transparent),
+                         inset 0 1px 0 rgba(255,255,255,.28); }
+    50%    { box-shadow: 0 0 0 1px var(--accent) inset,
+                         0 0 13px color-mix(in srgb, var(--accent) 72%, transparent),
+                         0 0 28px color-mix(in srgb, var(--bz3) 52%, transparent),
+                         inset 0 1px 0 rgba(255,255,255,.28); }
+  }
+  @media (prefers-reduced-motion: reduce){ .stone-btn.autoscan{ animation:none; } }
 
   /* ---------- responsive collapse ---------- */
   @media (max-width:720px){
@@ -936,19 +977,14 @@ function buildBoard(){
     doll.appendChild(el);
   });
 
-  // the flask belt occupies the doll's bottom row: life | utility | utility | utility | mana
+  // the flask belt occupies the doll's bottom row: 5 GENERIC belt slots, filled in flask order.
+  // PoE1 has a 5-slot belt; no life/mana name-classification (D-0006 §C) — a slot is just belt position N.
   const flGroup=groups.find(g=>g.group==='flask');
-  const flasks=flGroup?flGroup.items.slice():[];
-  let life=null, mana=null; const utils=[];
-  flasks.forEach(it=>{ const n=(it.name||'').toLowerCase();
-    if(n.indexOf('mana')>=0 && !mana) mana=it;
-    else if(n.indexOf('life')>=0 && !life) life=it;
-    else utils.push(it);
-  });
-  [['slot-fl1',life,'⚗'],['slot-ch1',utils[0],'❋'],['slot-ch2',utils[1],'❋'],
-   ['slot-ch3',utils[2],'❋'],['slot-fl2',mana,'⚗']]
-    .forEach(([area,it,gl])=>{ doll.appendChild(it ? slotEl(it,area) : emptySlot(area,gl)); });
-  const extraFlasks=utils.slice(3);   // overflow beyond the 5 doll cells -> render in the stash (don't drop)
+  const flasks=flGroup?flGroup.items.slice():[];   // JOB.items flask order == belt order (engine-preserved)
+  const beltAreas=['slot-fl1','slot-ch1','slot-ch2','slot-ch3','slot-fl2'];
+  beltAreas.forEach((area,i)=>{ const it=flasks[i];
+    doll.appendChild(it ? slotEl(it,area) : emptySlot(area,'⚗')); });
+  const extraFlasks=flasks.slice(5);   // overflow beyond the 5 belt cells -> render in the stash (never drop)
 
   // stash sections (jewel/gem -- flasks moved to the doll)
   const stash=$('#stash'); stash.innerHTML='';
@@ -984,31 +1020,39 @@ function buildBoard(){
 const skillsOpen = new Set();
 function renderSkills(){
   const wrap=$('#skills'); if(!wrap) return;
-  // sort: included (checked) skills first, then by total cost desc. Unchecked skills —
-  // including gear/passive-granted ones (off by default) — sink to the bottom.
-  const tot=it=>{ const p=bpc.state.priced[String(it.index)]; return (p&&p.chaos.median!=null)?p.chaos.median:-1; };
-  const onState=it=>!!bpc.state.enabled[String(it.index)];
-  const items=bpc.state.items.filter(it=>it.group==='gem').sort((a,b)=>{
-    const oa=onState(a), ob=onState(b);
-    if(oa!==ob) return oa?-1:1;
-    return tot(b)-tot(a);
-  });
-  if(!items.length){ wrap.innerHTML='<div class="sk-empty">No active skills found.</div>'; return; }
+  // D-0006 §D: group the gem section by HOST ITEM (core.js bpc.gemGroups() -> ordered groups,
+  // each {key, slot, name, base, unique, header, items[]}); group + row order follow state.items.
+  // A host may hold several skill rows; unknown-host gems fall under a generic "Gems" header.
+  const groups=bpc.gemGroups();
+  const hasAny=groups.some(g=>g.items.length);
+  if(!hasAny){ wrap.innerHTML='<div class="sk-empty">No active skills found.</div>'; return; }
   let h='';
-  for(const it of items){
-    const k=String(it.index), p=bpc.state.priced[k]||{};
-    const priced=p.chaos && p.chaos.median!=null;
-    const on=!!bpc.state.enabled[k];
-    const open=skillsOpen.has(k);
-    const lvl=it.level||0, sock=(it.sockets!=null?it.sockets:0);
-    const total = priced ? p.chaos.median : null;
-    h+=`<div class="skill ${on?'on':'off'} ${priced?'':'noprice'} ${open?'open':''}" data-k="${E(k)}">
+  for(const g of groups){
+    if(!g.items.length) continue;
+    h+=`<div class="host-group">
+      <div class="host-head${g.unique?' host-unique':''}">
+        <span class="host-name" title="skills socketed in this item">${E(g.header)}</span>
+        ${g.unique?'<span class="host-uq" title="host item is a unique">unique</span>':''}
+      </div>`;
+    for(const it of g.items){ h+=skillRowHTML(it); }
+    h+=`</div>`;
+  }
+  wrap.innerHTML=h;
+}
+function skillRowHTML(it){
+  const k=String(it.index), p=bpc.state.priced[k]||{};
+  const priced=p.chaos && p.chaos.median!=null;
+  const on=!!bpc.state.enabled[k];
+  const open=skillsOpen.has(k);
+  const lvl=it.level||0, sock=(it.sockets!=null?it.sockets:0);
+  const total = priced ? p.chaos.median : null;   // headline == p.total_chaos (active + supports, granted excluded)
+  return `<div class="skill ${on?'on':'off'} ${priced?'':'noprice'} ${open?'open':''}" data-k="${E(k)}">
       <div class="sk-head">
         <input type="checkbox" class="sk-inc" data-k="${E(k)}" ${on?'checked':''} ${priced?'':'disabled'} title="include in total">
         <span class="sk-tw">${open?'▾':'▸'}</span>
         ${it.icon?`<img class="sk-ico" src="${E(it.icon)}" alt="" loading="lazy">`:'<span class="sk-ico ph">◆</span>'}
         ${p.trade_url?`<a class="sk-name" href="${E(p.trade_url)}" target="_blank" rel="noopener" title="search this skill on trade (Lv ${lvl})">${E(it.name)}</a>`:`<span class="sk-name">${E(it.name)}</span>`}
-        ${it.granted?'<span class="sk-granted" title="granted by gear or a passive — not bought, so excluded by default">granted</span>':''}
+        ${it.granted?'<span class="sk-granted" title="item-provided skill — comes free with the host item, so excluded by default">granted</span>':''}
         <span class="sk-meta">Lv ${lvl}${sock?` · ${sock} sup`:''}</span>
         <span class="sk-price">${total!=null?bpc.priceHTML(total):'<span class="bpc-dash">—</span>'}</span>
       </div>
@@ -1017,23 +1061,25 @@ function renderSkills(){
         <ul class="sk-sups">${supportsHTML(it,p)}</ul>
       </div>
     </div>`;
-  }
-  wrap.innerHTML=h;
 }
 function supportsHTML(it,p){
-  const sups=it.supports||[];
-  if(!sups.length) return '<li class="sup none">no support gems</li>';
-  // PoE1: every support gem is a real priced item. p.gems[] carries the per-gem
-  // breakdown (first entry is the active skill; each support has a chaos price).
-  const gp={}; (p.gems||[]).forEach(g=>{ if(g.support) gp[(g.name||'').toLowerCase()]=g; });
-  return sups.map(s=>{
-    const ic = s.icon ? `<img class="sup-ico" src="${E(s.icon)}" alt="" loading="lazy">` : '';
-    const g=gp[(s.name||'').toLowerCase()]||{};
-    const price=(g.chaos!=null)?bpc.priceHTML(g.chaos):'<span class="bpc-dash">—</span>';
-    const nm=g.trade_url?`<a href="${E(g.trade_url)}" target="_blank" rel="noopener">${E(s.name)}</a>`:E(s.name);
-    const q=(s.quality?`/${s.quality}`:''), corr=(s.corrupted?' <span class="sup-tag">corrupted</span>':'');
-    const lv=(s.level?`<span class="sup-tag">Lv ${s.level}${q}</span>`:'');
-    return `<li class="sup">${ic}<span class="sup-nm">${nm}</span> ${lv}${corr}<span class="sup-price">${price}</span></li>`;
+  // D-0006 §D.2: nest the active gem's linked gems by INDEX (gems[1:] <-> it.supports[i]), not by
+  // name — a link can hold a 2nd ACTIVE (support:false) that still nests and still carries a price.
+  // bpc.gemBreakdown() already does the index alignment; gems[0] is the active, gems[1:] the links.
+  const bd=bpc.gemBreakdown(String(it.index));
+  const nested=(bd.gems||[]).slice(1);
+  if(!nested.length) return '<li class="sup none">no support gems</li>';
+  return nested.map(g=>{
+    const ic = g.icon ? `<img class="sup-ico" src="${E(g.icon)}" alt="" loading="lazy">` : '';
+    const nm = g.trade_url?`<a href="${E(g.trade_url)}" target="_blank" rel="noopener">${E(g.name)}</a>`:E(g.name);
+    const q=(g.quality?`/${g.quality}`:''), corr=(g.corrupted?' <span class="sup-tag">corrupted</span>':'');
+    const lv=(g.level?`<span class="sup-tag">Lv ${g.level}${q}</span>`:'');
+    const act=(!g.support?' <span class="sup-tag act">linked active</span>':'');
+    // granted nested gem: excluded (chaos is null) -> struck 'granted' marker instead of a price
+    const tail = g.granted
+      ? '<span class="sup-free" title="item-granted — not counted in the total">granted</span>'
+      : `<span class="sup-price">${(g.chaos!=null)?bpc.priceHTML(g.chaos):'<span class="bpc-dash">—</span>'}</span>`;
+    return `<li class="sup${g.granted?' granted':''}">${ic}<span class="sup-nm">${nm}</span> ${lv}${corr}${act}${tail}</li>`;
   }).join('');
 }
 
@@ -1436,6 +1482,8 @@ function pkRender(){
   const info=pkInfo, r=info.rare;
   const stepHTML=info.single?'':`<span class="step">${info.index+1} / ${info.total}</span>`;
   let h=`<div class="ph">${E(r.name)}${stepHTML}<span class="scope">${E(r.scope||'')}${info.redo?' · re-search to replace':''}</span></div><div class="pbody">`;
+  const remain=bpc.remainingRares().length;
+  if(!info.single&&remain>1) h+=`<div class="pautoscan"><button class="stone-btn autoscan" id="pSearchAll" type="button" title="price all ${remain} remaining rares automatically with their default all-affix searches">⚡ Autoscan (${remain})</button></div>`;
   if(r.pseudo&&r.pseudo.length) h+=`<div class="pseudo-switch ${pkModel.usePseudo?'on':''}" id="pseuSw"><span class="sw"></span><span>Combine elemental resistances</span></div>`;
   pkModel.groups.forEach((g,gi)=>h+=pkGroupBox(g,gi));
   h+=`<div class="paddgrp"><button class="stone-btn addgrp" id="pAddGrp" type="button">+ add stat group</button></div>`;
@@ -1448,10 +1496,9 @@ function pkRender(){
     pkModel.unsearch.forEach(u=>h+=`<div class="afx no r4"><div class="abullet"></div><div class="atext">${E(u.text)}<span class="reason">${E(u.reason||'')}</span></div><div></div><div></div></div>`);
     h+=`</div>`;
   }
-  const remain=bpc.remainingRares().length;
   h+=`<div class="ptrade"><button class="stone-btn viewtrade" id="pViewTrade" type="button">↗ open this search on the trade site</button></div>`;
   h+=`<div class="pbtns">${(!info.single&&info.index>0)?'<button class="stone-btn" id="pBack" type="button">← Back</button>':''}<button class="stone-btn skip" id="pSkip" type="button">Skip</button><button class="stone-btn search" id="pSearch" type="button">${info.redo?'Re-search':'Search'}</button></div>`;
-  if(!info.single&&remain>1) h+=`<div class="pbulk"><button class="stone-btn pa-skip" id="pSkipAll" type="button">Skip all ${remain}</button><button class="stone-btn pa-search" id="pSearchAll" type="button">Search all ${remain} (default)</button></div>`;
+  if(!info.single&&remain>1) h+=`<div class="pbulk"><button class="stone-btn pa-skip small" id="pSkipAll" type="button">skip all (don't price)</button></div>`;
   h+=`</div>`;
   pick.innerHTML=h; pickwrap.classList.add('show'); pkWire();
 }
@@ -1696,6 +1743,8 @@ function pkRenderSurvey(){
   const info=pkInfo,r=info.rare;
   const stepHTML=info.single?'':`<span class="step">${info.index+1} / ${info.total}</span>`;
   let h=`<div class="ph">${E(r.name)}${stepHTML}<span class="scope">${E(r.scope||'')}${info.redo?' · re-search to replace':''}</span></div><div class="pbody">`;
+  const remain=bpc.remainingRares().length;
+  if(!info.single&&remain>1) h+=`<div class="pautoscan"><button class="stone-btn autoscan" id="pSearchAll" type="button" title="price all ${remain} remaining rares automatically with their default all-affix searches">⚡ Autoscan (${remain})</button></div>`;
   h+=`<div class="svtop">Tag how much each mod matters &mdash; the search builds itself. <button class="svlink" id="pToGroups" type="button">edit groups →</button></div>`;
   if(r.pseudo&&r.pseudo.length) h+=`<div class="pseudo-switch ${pkModel.usePseudo?'on':''}" id="pseuSw"><span class="sw"></span><span>Combine elemental resistances</span></div>`;
   h+=`<div class="svlist">`;
@@ -1709,10 +1758,9 @@ function pkRenderSurvey(){
     pkModel.unsearch.forEach(u=>h+=`<div class="afx no r4"><div class="abullet"></div><div class="atext">${E(u.text)}<span class="reason">${E(u.reason||'')}</span></div><div></div><div></div></div>`);
     h+=`</div>`;
   }
-  const remain=bpc.remainingRares().length;
   h+=`<div class="ptrade"><button class="stone-btn viewtrade" id="pViewTrade" type="button">↗ open this search on the trade site</button></div>`;
   h+=`<div class="pbtns">${(!info.single&&info.index>0)?'<button class="stone-btn" id="pBack" type="button">← Back</button>':''}<button class="stone-btn skip" id="pSkip" type="button">Skip</button><button class="stone-btn search" id="pSearch" type="button">${info.redo?'Re-search':'Search'}</button></div>`;
-  if(!info.single&&remain>1) h+=`<div class="pbulk"><button class="stone-btn pa-skip" id="pSkipAll" type="button">Skip all ${remain}</button><button class="stone-btn pa-search" id="pSearchAll" type="button">Search all ${remain} (default)</button></div>`;
+  if(!info.single&&remain>1) h+=`<div class="pbulk"><button class="stone-btn pa-skip small" id="pSkipAll" type="button">skip all (don't price)</button></div>`;
   h+=`</div>`;
   pick.innerHTML=h; pickwrap.classList.add('show'); pkWireSurvey();
 }
@@ -1738,6 +1786,8 @@ function pkRenderClassic(){
   const info=pkInfo,r=info.rare;
   const stepHTML=info.single?'':`<span class="step">${info.index+1} / ${info.total}</span>`;
   let h=`<div class="ph">${E(r.name)}${stepHTML}<span class="scope">${E(r.scope||'')}${info.redo?' · re-search to replace':''}</span></div><div class="pbody">`;
+  const remain=bpc.remainingRares().length;
+  if(!info.single&&remain>1) h+=`<div class="pautoscan"><button class="stone-btn autoscan" id="pSearchAll" type="button" title="price all ${remain} remaining rares automatically with their default all-affix searches">⚡ Autoscan (${remain})</button></div>`;
   h+=`<div class="svtop">Classic: tick the affixes a match must have (all required); set min/max.</div>`;
   if(r.pseudo&&r.pseudo.length) h+=`<div class="pseudo-switch ${pkModel.usePseudo?'on':''}" id="pseuSw"><span class="sw"></span><span>Combine elemental resistances</span></div>`;
   h+=`<div class="grpbox"><div class="grphd"><span class="grptitle">Affixes (all required)</span></div>`+pkAfxHead('and');
@@ -1754,10 +1804,9 @@ function pkRenderClassic(){
     pkModel.unsearch.forEach(u=>h+=`<div class="afx no r4"><div class="abullet"></div><div class="atext">${E(u.text)}<span class="reason">${E(u.reason||'')}</span></div><div></div><div></div></div>`);
     h+=`</div>`;
   }
-  const remain=bpc.remainingRares().length;
   h+=`<div class="ptrade"><button class="stone-btn viewtrade" id="pViewTrade" type="button">↗ open this search on the trade site</button></div>`;
   h+=`<div class="pbtns">${(!info.single&&info.index>0)?'<button class="stone-btn" id="pBack" type="button">← Back</button>':''}<button class="stone-btn skip" id="pSkip" type="button">Skip</button><button class="stone-btn search" id="pSearch" type="button">${info.redo?'Re-search':'Search'}</button></div>`;
-  if(!info.single&&remain>1) h+=`<div class="pbulk"><button class="stone-btn pa-skip" id="pSkipAll" type="button">Skip all ${remain}</button><button class="stone-btn pa-search" id="pSearchAll" type="button">Search all ${remain} (default)</button></div>`;
+  if(!info.single&&remain>1) h+=`<div class="pbulk"><button class="stone-btn pa-skip small" id="pSkipAll" type="button">skip all (don't price)</button></div>`;
   h+=`</div>`;
   pick.innerHTML=h; pickwrap.classList.add('show'); pkWireClassic();
 }

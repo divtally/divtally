@@ -98,3 +98,35 @@ All verify-phase minor findings fixed, suite green (details: `docs/port-notes-fi
 - **Six promise tests added** (RULE 8): status mapping + fallback, rare all-affix default query,
   armour_filters totals, no-match guardrail, `to_chaos` non-chaos currencies, version-unique
   auto-detection (offline, stubbed listings). `python tests.py` green and offline.
+
+## D-0006 - Owner feedback round 1: flasks, gem grouping, autoscan (Locked, 2026-07-26)
+Owner tested the stash skin and requested (his words = the spec):
+- **Flask belt = 5 generic slots.** PoE1 builds run ~5 (usually utility) flasks. The PoE2-derived
+  "life | 3 utility | mana" name-classified doll layout is superseded: every skin displays the
+  build's flasks as a 5-slot belt filled in flask order (overflow beyond 5 still shown, never
+  dropped). No life/mana slot guessing.
+- **Gems grouped by HOST ITEM, supports connected to their active.** Use `skills[].itemSlot` /
+  host `inventoryId` to group each skill under the item it is socketed into; support gems render
+  nested under their active gem with per-gem prices, and support costs stay included in totals.
+  Engine exposes host-item info + per-gem breakdown additively in `PriceResult.extra`
+  (contract.md updated additively - no breaking renames).
+- **GRANTED tag audit:** owner screenshot shows every gem row tagged GRANTED, which is almost
+  certainly wrong (Heralds are socketed, not item-granted). Root-cause end-to-end; only genuinely
+  item-provided gems (`itemProvidedGems` / built-in supports) get the tag, and granted gems are
+  excluded from trade-price totals while their socketed supports still count.
+- **Autoscan button.** At the TOP of the rare affix selector: a glowing (skin-accent) button
+  labeled "Autoscan" that prices all remaining rares automatically with default all-affix
+  searches (the former "Search all N (default)"). A small non-glowing "skip all (don't price)"
+  remains below. **INTERPRETATION NOTE:** owner said "make the skip all button... read
+  'autoscan'"; read as "skip the manual affix flow" = auto-price, since a skip-everything button
+  named Autoscan would price nothing. Flagged to owner for correction if wrong.
+
+**SHIPPED 2026-07-26** (workflow wf_75fc1924-289, 18 agents, 1 fix round): engine emits host-item
+info + per-gem breakdown additively; GRANTED root cause found and fixed - web.py's PoE2-era
+skeleton heuristic (`not inventoryId.startswith("SkillSlot")`) flagged EVERY gem because PoE1 gem
+inventoryId is always None; now reads the engine's `granted` computed from `itemProvidedGems` /
+`isBuiltInSupport` (fixture: exactly Herald of the Hive via Lost Unity flags granted, excluded
+from totals, its supports still counted). All 10 skins + classic: 5-slot belt in flask order,
+host-grouped gems with nested priced supports, glowing Autoscan wired to search-all-default in
+every picker copy. Verify caught + fix round resolved: the unshipped web.py line (blocker) and
+binder.html calling non-exported `bpc.itemGranted` (major). Both re-verified green; tests green.

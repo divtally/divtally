@@ -441,6 +441,75 @@ def _make_item(d: dict, group: str) -> Item:
     )
 
 
+def _host_index(data: dict) -> dict:
+    """Map each equipment itemSlot -> host-item info, so a skill group (skills[].itemSlot)
+    can be grouped under the gear it is socketed into (D-0006). Returns
+    {itemSlot -> {inventory_id, slot_label, name, base, unique}}."""
+    out: dict = {}
+    for entry in data.get("items", []) or []:
+        d = entry.get("itemData")
+        if not d:
+            continue
+        inv = d.get("inventoryId", "") or ""
+        base = d.get("baseType", "") or d.get("typeLine", "") or ""
+        nm = d.get("name", "") or ""
+        out[entry.get("itemSlot")] = {
+            "inventory_id": inv,
+            "slot_label": _INVENTORY_NAMES.get(inv, inv or "?"),
+            "name": nm or base,           # unique/rare name, else the base type
+            "base": base,
+            "unique": d.get("frameType") == 3,
+        }
+    return out
+
+
+def _provided_gem_index(data: dict) -> Tuple[set, set]:
+    """Read the character JSON's `itemProvidedGems` (gems granted by equipped items) into
+    two lookup sets used to flag genuinely item-provided gems (D-0006):
+      * pairs        = {(slot, name_lc)}  -- precise slot+name match (preferred)
+      * names_noslot = {name_lc}          -- entries whose slot is absent (name-only fallback)
+    Each entry is `{slot, gems:[{name, level, quality, isBuiltInSupport}]}`. Verified live in
+    `research/data/char_poe1.json`: `[{slot:9, gems:[{name:"Herald of the Hive", ...}]}]`."""
+    pairs, names_noslot = set(), set()
+    for entry in data.get("itemProvidedGems", []) or []:
+        slot = entry.get("slot")
+        for g in entry.get("gems", []) or []:
+            nm = (g.get("name") or "").strip().lower()
+            if not nm:
+                continue
+            if slot is None:
+                names_noslot.add(nm)
+            else:
+                pairs.add((slot, nm))
+    return pairs, names_noslot
+
+
+def _gem_is_granted(entry: dict, item_data: dict, slot,
+                    provided_pairs: set, provided_names: set) -> bool:
+    """True if a `skills[]` gem is item-provided (granted) -- so it is EXCLUDED from the
+    trade-price total (D-0006). Authoritative signals: the gem's `isBuiltInSupport` flag, or
+    a match in the item's `itemProvidedGems` (by slot+name). A gem whose itemData is EMPTY
+    (no baseType / typeLine / frameType) cannot be a real socketed tradeable gem -- it exists
+    only because an item grants it -- so that is treated as granted too ([INFERRED], but
+    strictly safe: every real socketed gem carries a baseType, so this never mis-flags the
+    socketed Heralds / Leap Slam the owner reported as wrongly "granted").
+
+    ROOT CAUSE of the owner's bug: the granted flag was NOT computed here at all -- the web
+    layer inferred it from `itemData.inventoryId`, which is ALWAYS None for PoE1 skills[]
+    gems, so `not "".startswith("SkillSlot")` flagged EVERY gem granted. The engine now owns
+    this decision from the character JSON; the UI must read `it.granted` (see feedback1-spec)."""
+    if entry.get("isBuiltInSupport"):
+        return True
+    nm = (entry.get("name") or item_data.get("baseType")
+          or item_data.get("typeLine") or "").strip().lower()
+    if nm and ((slot, nm) in provided_pairs or nm in provided_names):
+        return True
+    if not (item_data.get("baseType") or item_data.get("typeLine")
+            or item_data.get("frameType")):
+        return True
+    return False
+
+
 def normalize(data: dict) -> Tuple[BuildMeta, List[Item]]:
     meta = BuildMeta(
         account=data.get("account", ""),
@@ -471,26 +540,52 @@ def normalize(data: dict) -> Tuple[BuildMeta, List[Item]]:
     # gems: each skills[] entry is a GROUP -- allGems[0] is the active skill, the rest are
     # its support gems. Build ONE active-skill Item per group and attach the support list,
     # each carrying its own level/quality/corruption (PoE1 prices every gem as a real item).
+    # D-0006: also attach host-item info (which gear the group is socketed in) + a `granted`
+    # flag (item-provided gems, excluded from the trade total) per gem.
+    host_by_slot = _host_index(data)
+    provided_pairs, provided_names = _provided_gem_index(data)
     seen_skill = set()
     for sk in data.get("skills", []):
         allg = sk.get("allGems", []) or []
         if not allg:
             continue
-        active_d = allg[0].get("itemData", allg[0])
+        slot = sk.get("itemSlot")
+        active_entry = allg[0]
+        active_d = active_entry.get("itemData", active_entry) or {}
         if active_d.get("support"):              # safety: the first gem should be the skill
             continue
         active = _make_item(active_d, "gem")
+        # A genuinely item-provided active (e.g. a Herald granted by a unique ring) has an
+        # EMPTY itemData -- its real name lives only on the entry. Recover it so the row is
+        # not blank (verified: skills[5] "Herald of the Hive", lvl 30, from Lost Unity).
+        if not active.base_type:
+            active.base_type = active.type_line = active_entry.get("name", "") or ""
         # allGems entries carry clean top-level level/quality ints; prefer them over props.
-        active.gem_level = int(allg[0].get("level", active.gem_level) or 0)
-        active.gem_quality = int(allg[0].get("quality", active.gem_quality) or 0)
+        active.gem_level = int(active_entry.get("level", active.gem_level) or 0)
+        active.gem_quality = int(active_entry.get("quality", active.gem_quality) or 0)
+        active.granted = _gem_is_granted(active_entry, active_d, slot,
+                                         provided_pairs, provided_names)
+        host = host_by_slot.get(slot)
+        if host:
+            active.host_slot = host["slot_label"]
+            active.host_name = host["name"]
+            active.host_base = host["base"]
+            active.host_unique = host["unique"]
+            active.host_inventory_id = host["inventory_id"]
         sups = []
         for g in allg[1:]:
-            gd = g.get("itemData", g)
-            sups.append({"name": gd.get("baseType") or gd.get("typeLine") or "",
+            gd = g.get("itemData", g) or {}
+            s_name = gd.get("baseType") or gd.get("typeLine") or g.get("name") or ""
+            sups.append({"name": s_name,
                          "level": int(g.get("level", 0) or 0),
                          "quality": int(g.get("quality", 0) or 0),
                          "corrupted": bool(gd.get("corrupted")),
-                         "icon": gd.get("icon") or ""})
+                         "icon": gd.get("icon") or "",
+                         # `support` is the gem's REAL support-ness (a group can hold >1 active,
+                         # e.g. two Heralds linked together); `granted` marks a built-in/item-
+                         # provided support (excluded from the total, its siblings still count).
+                         "support": bool(gd.get("support")),
+                         "granted": _gem_is_granted(g, gd, slot, provided_pairs, provided_names)})
         active.supports = sups
         sig = (active.base_type, active.gem_level, tuple(s["name"] for s in sups))
         if sig in seen_skill:                    # collapse duplicate setups (e.g. weapon swap)

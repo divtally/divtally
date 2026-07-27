@@ -797,33 +797,59 @@ class Pricer:
         economy (no trade search). PoE1 gems are real, tradeable items priced by
         name + level + quality + corruption -- so the group cost = the active gem + EVERY
         support gem (Awakened/Empower/Enlighten supports can be the biggest cost). Contrast
-        the PoE2 parent's uncut-gem + Jeweller's-Orb synthesis, which is deleted."""
+        the PoE2 parent's uncut-gem + Jeweller's-Orb synthesis, which is deleted.
+
+        D-0006: gems that are item-PROVIDED (`item.granted`, or a support flagged granted) are
+        EXCLUDED from the total -- they come free with the host item, so pricing their nearest
+        tradeable bucket would be a misleading number -- while their socketed siblings still
+        count. The per-gem breakdown + host-item info ride in `extra` so the UI can group rows
+        under a host header and mark only the genuinely-granted gems."""
         econ = self._econ()
         r = PriceResult(item=item, method="skill")
         name = item.base_type or item.type_line
+        active_granted = bool(getattr(item, "granted", False))
         r.trade_url = self._gem_search_url(name, support=bool(item.support),
                                            level=item.gem_level, quality=item.gem_quality,
                                            corrupted=bool(item.corrupted))
+        # host-item grouping info (additive; empty for PoB imports, which carry no itemSlot).
+        host_extra = {
+            "granted": active_granted,
+            "host_slot": getattr(item, "host_slot", "") or "",
+            "host_name": getattr(item, "host_name", "") or "",
+            "host_base": getattr(item, "host_base", "") or "",
+            "host_unique": bool(getattr(item, "host_unique", False)),
+            "host_inventory_id": getattr(item, "host_inventory_id", "") or "",
+        }
         if not econ:
             r.confidence = "none"
             r.note = "couldn't price (poe.ninja economy unavailable)"
             r.extra = {"kind": "skill", "level": item.gem_level, "quality": item.gem_quality,
                        "corrupted": bool(item.corrupted), "source": "poe.ninja",
-                       "total_chaos": None, "gems": []}
+                       "total_chaos": None, "gems": [], **host_extra}
             return r
         breakdown: List[dict] = []
         total = 0.0
         priced_any = False
         min_lc: Optional[int] = None
 
-        def _one(nm, lvl, qual, corr, is_support):
+        def _one(nm, lvl, qual, corr, is_support, is_granted):
             nonlocal total, priced_any, min_lc
-            m = econ.gem_price(nm, int(lvl or 0) or 20, int(qual or 0), bool(corr))
+            # A granted gem is item-provided -> not purchasable -> no price, excluded from the
+            # total (its nearest tradeable bucket would be misleading; it's free with the item).
+            m = None if is_granted else econ.gem_price(nm, int(lvl or 0) or 20,
+                                                       int(qual or 0), bool(corr))
             chaos = (m or {}).get("chaos")
+            if is_granted:
+                where = f" by {host_extra['host_name']}" if host_extra["host_name"] else " (item-provided)"
+                note = "granted" + where + " - not counted"
+            elif chaos is None:
+                note = "no poe.ninja price for this gem"
+            else:
+                note = ""
             breakdown.append({
-                "name": nm, "support": bool(is_support), "level": int(lvl or 0),
-                "quality": int(qual or 0), "corrupted": bool(corr),
-                "chaos": chaos, "variant": (m or {}).get("variant", ""),
+                "name": nm, "support": bool(is_support), "granted": bool(is_granted),
+                "level": int(lvl or 0), "quality": int(qual or 0), "corrupted": bool(corr),
+                "chaos": chaos, "variant": (m or {}).get("variant", ""), "note": note,
                 "trade_url": self._gem_search_url(nm, support=bool(is_support), level=lvl,
                                                   quality=qual, corrupted=bool(corr))})
             if chaos is not None:
@@ -832,26 +858,30 @@ class Pricer:
                 lc = (m or {}).get("listing_count") or 0
                 min_lc = lc if min_lc is None else min(min_lc, lc)
 
-        _one(name, item.gem_level, item.gem_quality, item.corrupted, item.support)
+        _one(name, item.gem_level, item.gem_quality, item.corrupted, item.support, active_granted)
         for s in (item.supports or []):
             if s.get("name"):
-                _one(s["name"], s.get("level"), s.get("quality"), s.get("corrupted"), True)
+                _one(s["name"], s.get("level"), s.get("quality"), s.get("corrupted"),
+                     s.get("support", True), bool(s.get("granted")))
 
         if not priced_any:
             r.confidence = "none"
-            r.note = "no poe.ninja gem price for this skill setup"
+            r.note = ("item-granted skill (comes free with the host item)" if active_granted
+                      else "no poe.ninja gem price for this skill setup")
         else:
             r.tier = PriceTier(minimum=total, median=total, high=total)  # point estimate
             r.sample_size = 1
             r.total_found = 1
             lc = min_lc or 0
             r.confidence = "high" if lc >= 5 else ("medium" if lc >= 2 else "low")
-            nsup = len(item.supports or [])
-            r.note = ("poe.ninja gem prices: active"
+            nsup = sum(1 for g in breakdown if g["support"] and g["chaos"] is not None)
+            lead = "supports only (active is item-granted)" if active_granted else "active"
+            r.note = ("poe.ninja gem prices: " + lead
                       + (f" + {nsup} support" + ("s" if nsup != 1 else "") if nsup else ""))
         r.extra = {"kind": "skill", "level": item.gem_level, "quality": item.gem_quality,
                    "corrupted": bool(item.corrupted), "source": "poe.ninja",
-                   "total_chaos": total if priced_any else None, "gems": breakdown}
+                   "total_chaos": total if priced_any else None, "gems": breakdown,
+                   **host_extra}
         return r
 
     def _skip_trade_url(self, item: Item) -> str:
@@ -883,6 +913,11 @@ class Pricer:
 
     # ---- orchestration ---------------------------------------------------
     def price_build(self, items: List[Item]) -> List[PriceResult]:
+        # Remember each item's position in the build so we can RETURN results in that order
+        # (belt order for flasks, skills[] order for gems, items[] order for gear). Pricing
+        # runs in budget-priority order below, but the report/CLI must display each group in
+        # its source order (owner D-0006: flasks render in belt order, none dropped).
+        order = {id(it): i for i, it in enumerate(items)}
         results: List[PriceResult] = []
         gems = [it for it in items if it.category == CAT_GEM]
         non_gems = [it for it in items if it.category != CAT_GEM]
@@ -909,4 +944,5 @@ class Pricer:
                                note="normal item; not priced", confidence="none"))
         for g in gems:                       # gems price off poe.ninja (no trade search budget)
             results.append(self.price_skill(g))
+        results.sort(key=lambda r: order.get(id(r.item), 1 << 30))    # -> build/display order
         return results

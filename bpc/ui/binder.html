@@ -409,6 +409,85 @@ button#go:active{transform:translateY(0)}
   .rarecard{transition:none}
   .spin{animation:none}
 }
+
+/* ============================================================
+   D-0006 feedback round 1 — flask belt / gem host-groups / autoscan
+   (self-contained; adapts to this skin's purple accent palette)
+   ============================================================ */
+
+/* ---------- flask belt (spec §C): 5 generic belt slots, in flask order ---------- */
+.grid.as-belt,.grid.as-gems{display:block}
+.belt{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;align-items:flex-start;padding:4px 2px 2px}
+.beltslot{width:100%;max-width:var(--card-w);display:flex;flex-direction:column;align-items:center;gap:7px}
+.beltslot .bnum{font-family:"Cinzel";font-weight:600;font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint)}
+.beltslot.over .bnum{color:var(--ac2)}
+.beltph{width:100%;aspect-ratio:178/252;border:1px dashed var(--bd);border-radius:13px;
+  background:radial-gradient(120% 90% at 50% 0%,rgba(124,92,255,.05),transparent 60%),rgba(255,255,255,.012);
+  display:grid;place-items:center;color:var(--faint);font-size:30px;opacity:.55}
+
+/* ---------- gem host-groups (spec §D): group under host item, nest supports ---------- */
+.gemhost{margin:0 auto 16px;max-width:640px;background:linear-gradient(180deg,#140f24,#100b1c);
+  border:1px solid var(--bd);border-radius:14px;overflow:hidden;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 12px 34px -24px #000}
+.gemhost-head{display:flex;align-items:center;gap:9px;padding:10px 14px;
+  background:linear-gradient(180deg,rgba(124,92,255,.12),transparent);border-bottom:1px solid var(--bd);
+  font-family:"Cinzel";font-weight:600;font-size:12.5px;letter-spacing:.04em;color:var(--ink)}
+.gemhost-head .ghslot{color:var(--mut);font-weight:600}
+.gemhost-head.uniq{background:linear-gradient(180deg,rgba(175,96,37,.18),transparent)}
+.gemhost-head .uniqtag{margin-left:auto;font-family:"Marcellus";font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--r-unique);border:1px solid var(--r-unique);border-radius:99px;padding:1px 8px}
+.gemrows{padding:9px 12px 12px;display:flex;flex-direction:column;gap:9px}
+.gemrow{border:1px solid var(--bd2);border-radius:11px;background:linear-gradient(180deg,#1c1533,#161028);padding:9px 11px}
+.gemrow.gm-off{opacity:.5}
+.gr-head{display:flex;align-items:center;gap:9px}
+.gr-icon{width:26px;height:26px;border-radius:8px;flex:none;display:grid;place-items:center;font-size:14px;color:var(--r-gem);
+  background:radial-gradient(circle at 35% 28%,rgba(27,162,155,.35),transparent 60%),rgba(0,0,0,.3);
+  box-shadow:inset 0 0 0 1px var(--r-gem)}
+.gr-name{font-family:"Cinzel";font-weight:600;font-size:12.5px;color:var(--ink)}
+.gr-meta{font-family:"JetBrains Mono";font-size:9.5px;color:var(--faint)}
+.gr-price{margin-left:auto;font-family:"JetBrains Mono";font-weight:700;font-size:12.5px;color:#fff;
+  display:inline-flex;align-items:center;gap:3px}
+.gr-price .bpc-cur{height:1.05em;vertical-align:-.16em}
+.gr-tog{width:22px;height:22px;border-radius:7px;flex:none;background:rgba(0,0,0,.5);border:1px solid var(--r-gem);
+  color:var(--r-gem);display:grid;place-items:center;font-size:11px;line-height:1;transition:.14s}
+.gr-tog:hover{transform:scale(1.12)}
+.gr-tog.off{color:var(--faint);border-color:var(--faint)}
+.gtag{font-family:"Marcellus";font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:var(--warn);
+  border:1px solid var(--warn);border-radius:99px;padding:1px 7px}
+.gr-actmark{font-family:"Marcellus";font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--r-gem);
+  border:1px solid var(--r-gem);border-radius:99px;padding:0 6px;margin-left:5px}
+.gr-sup{margin:8px 0 0 34px;display:flex;flex-direction:column;gap:5px;border-left:1px solid var(--bd2);padding-left:11px}
+.suprow{display:flex;align-items:center;gap:8px;font-size:10.5px}
+.suprow .sn{color:var(--mut)}
+.suprow .sm{font-family:"JetBrains Mono";font-size:9px;color:var(--faint)}
+.suprow .sp{margin-left:auto;font-family:"JetBrains Mono";font-size:10px;color:var(--ink);display:inline-flex;align-items:center;gap:2px}
+.suprow .sp .bpc-cur{height:1em;vertical-align:-.14em}
+.suprow.granted .sn{text-decoration:line-through;color:var(--faint)}
+.suprow.granted .sp{color:var(--faint)}
+.gr-note{font-size:9px;color:var(--mut);font-style:italic;margin-top:5px;line-height:1.3}
+
+/* ---------- Autoscan (spec §E): glowing button at TOP of the picker ---------- */
+.pautoscan{margin:0 0 13px}
+.da.autoscan{
+  --accent:var(--ac2);
+  width:100%;position:relative;font-family:"Cinzel";font-weight:700;letter-spacing:.07em;font-size:13px;
+  padding:12px 10px;border-radius:11px;cursor:pointer;color:#fff;border:1px solid var(--accent);
+  background:linear-gradient(180deg,rgba(124,92,255,.30),rgba(124,92,255,.14));
+  box-shadow:0 0 0 1px rgba(157,131,255,.55) inset,
+             0 0 10px rgba(124,92,255,.55),
+             0 0 22px rgba(124,92,255,.34);
+  animation:autoscanPulse 1.8s ease-in-out infinite;
+}
+.da.autoscan:hover{filter:brightness(1.12);transform:translateY(-1px)}
+@keyframes autoscanPulse{
+  0%,100%{box-shadow:0 0 0 1px rgba(157,131,255,.5) inset,0 0 8px rgba(124,92,255,.45),0 0 16px rgba(124,92,255,.25)}
+  50%    {box-shadow:0 0 0 1px rgba(157,131,255,.72) inset,0 0 14px rgba(124,92,255,.7),0 0 30px rgba(124,92,255,.45)}
+}
+.pbulk{margin-top:12px;text-align:center}
+.da-skipall{background:none;border:1px solid var(--bd2);border-radius:9px;color:var(--mut);
+  font-family:"Marcellus";font-size:10.5px;letter-spacing:.04em;padding:6px 14px;cursor:pointer;transition:.14s}
+.da-skipall:hover{border-color:var(--faint);color:var(--ink)}
+@media(prefers-reduced-motion: reduce){.da.autoscan{animation:none}}
 </style></head>
 <body>
 <div class="shell">
@@ -621,6 +700,11 @@ function rebuildPages(){
   // split each group into pages of <=9 to honor the 3x3 sleeve metaphor
   flatPages=[];
   pages.forEach(g=>{
+    // D-0006: flasks render as ONE 5-slot belt page; gems as ONE host-grouped page — no 9-card split
+    if(g.group==='flask'||g.group==='gem'){
+      flatPages.push({title:g.title,group:g.group,items:g.items,sub:''});
+      return;
+    }
     for(let i=0;i<g.items.length;i+=PER_PAGE){
       flatPages.push({title:g.title,group:g.group,items:g.items.slice(i,i+PER_PAGE),
         sub:g.items.length>PER_PAGE?`part ${Math.floor(i/PER_PAGE)+1}`:''});
@@ -702,12 +786,106 @@ function renderBinder(){
       <button class="grpbtn" data-grp-off="${E(pg.group)}">bench all</button>`;
   }else $('#grpstrip').innerHTML='';
 
-  // cards + empty pocket fillers to keep a 3x3 feel
+  // body dispatch: flasks -> belt (§C), gems -> host-groups (§D), else the 3x3 card grid
+  const grid=$('#grid');
+  grid.classList.toggle('as-belt',pg.group==='flask');
+  grid.classList.toggle('as-gems',pg.group==='gem');
+  if(pg.group==='flask'){renderBelt(pg);}
+  else if(pg.group==='gem'){renderGems(pg);}
+  else{renderCards(pg);}
+}
+
+/* the classic 3x3 card grid (equipment / jewels) */
+function renderCards(pg){
   let h='';
   pg.items.forEach((it,i)=>{h+=cardHTML(it).replace('class="card"',`class="card" style="animation-delay:${i*45}ms"`);});
   const fill=(Math.ceil(pg.items.length/3)*3)-pg.items.length;
   for(let i=0;i<fill;i++)h+=`<div class="sleeve ph"></div>`;
   $('#grid').innerHTML=h;
+}
+
+/* FLASK BELT (§C): 5 generic belt slots filled in flask order; overflow (6+) still rendered;
+   remaining empty slots shown as placeholders. No life/mana classification anywhere. */
+function renderBelt(pg){
+  const items=pg.items||[];
+  const SLOTS=5;
+  const n=Math.max(SLOTS,items.length);
+  let h='<div class="belt">';
+  for(let i=0;i<n;i++){
+    const it=items[i];
+    const over=i>=SLOTS;
+    const label=`Belt ${i+1}`;
+    if(it){
+      h+=`<div class="beltslot ${over?'over':''}"><div class="bnum">${label}</div>${cardHTML(it)}</div>`;
+    }else{
+      h+=`<div class="beltslot empty"><div class="bnum">${label}</div><div class="beltph">⚗</div></div>`;
+    }
+  }
+  h+='</div>';
+  $('#grid').innerHTML=h;
+}
+
+/* GEM SECTION (§D): grouped under host item; supports nested under their active with per-gem prices. */
+function renderGems(pg){
+  const groups=bpc.gemGroups();
+  if(!groups.length){$('#grid').innerHTML=`<div class="empty" style="display:block"><div class="big">No skill gems</div></div>`;return;}
+  let h='';
+  groups.forEach(g=>{
+    const slot=g.slot||'',name=g.name||'';
+    const headMain=name
+      ?`${slot?`<span class="ghslot">${E(slot)} —</span> `:''}${E(name)}`
+      :(slot?E(slot):'Gems');
+    h+=`<div class="gemhost">
+      <div class="gemhost-head ${g.unique?'uniq':''}">${headMain}${g.unique?'<span class="uniqtag">unique</span>':''}</div>
+      <div class="gemrows">`;
+    g.items.forEach(it=>{h+=gemRowHTML(it);});
+    h+=`</div></div>`;
+  });
+  $('#grid').innerHTML=h;
+}
+
+/* one active-gem row + its nested support gems (index-aligned via bpc.gemBreakdown) */
+function gemRowHTML(it){
+  const k=String(it.index);
+  const bd=bpc.gemBreakdown(k);
+  const p=bpc.state.priced[k];
+  const on=!!bpc.state.enabled[k];
+  const granted=!!it.granted;                 // §B.2: row-level GRANTED tag reads the corrected skeleton field (core.js does not export itemGranted)
+  const active=bd.gems[0]||{name:it.name,level:it.level,quality:it.quality};
+  const sups=bd.gems.slice(1);
+  const qv=active.quality!=null?` / ${E(active.quality)}%`:'';
+  const meta=`Lv ${E(active.level!=null?active.level:(it.level!=null?it.level:'?'))}${qv}`;
+  const priceHTML=bd.total!=null?bpc.priceHTML(bd.total):'<span class="bpc-dash">&mdash;</span>';
+  const gtag=granted?'<span class="gtag" title="item-granted skill — not counted in totals">granted</span>':'';
+  const priced=p&&p.chaos&&p.chaos.median!=null;
+  const tog=priced?`<button class="gr-tog ${on?'':'off'}" data-k="${E(k)}" title="${on?'In build (click to bench)':'Benched (click to add)'}">${on?'✓':'✕'}</button>`:'';
+  let sup='';
+  if(sups.length){
+    sup='<div class="gr-sup">';
+    sups.forEach(s=>{
+      const sp=s.chaos!=null?bpc.priceHTML(s.chaos):'<span class="bpc-dash">&mdash;</span>';
+      const sqv=s.quality!=null?` / ${E(s.quality)}%`:'';
+      const sm=`Lv ${E(s.level!=null?s.level:'?')}${sqv}`;
+      const actmark=s.support?'':'<span class="gr-actmark">active</span>';  // a 2nd linked active still nests here
+      sup+=`<div class="suprow ${s.granted?'granted':''}">
+        <span class="sn">${E(s.name)}${actmark}</span>
+        <span class="sm">${sm}</span>
+        <span class="sp mono">${sp}</span></div>`;
+    });
+    sup+='</div>';
+  }
+  const note=(active.note)?`<div class="gr-note">${E(active.note)}</div>`:'';
+  return `<div class="gemrow ${priced&&!on?'gm-off':''}">
+    <div class="gr-head">
+      <span class="gr-icon">◇</span>
+      <span class="gr-name">${E(active.name||it.name)}</span>
+      ${gtag}
+      <span class="gr-meta">${meta}</span>
+      ${tog}
+      <span class="gr-price mono">${priceHTML}</span>
+    </div>
+    ${sup}${note}
+  </div>`;
 }
 
 /* page nav */
@@ -716,7 +894,7 @@ $('#pgNext').addEventListener('click',()=>{if(curPage<flatPages.length-1){curPag
 
 /* grid interactions */
 $('#grid').addEventListener('click',e=>{
-  const tog=e.target.closest('.tog');
+  const tog=e.target.closest('.tog, .gr-tog');
   if(tog){bpc.setEnabled(tog.dataset.k,!bpc.state.enabled[tog.dataset.k]);return;}
   const ed=e.target.closest('[data-edit]');
   if(ed){jumpToReview(ed.getAttribute('data-edit'));return;}
@@ -728,7 +906,12 @@ $('#grpstrip').addEventListener('click',e=>{
 });
 
 /* update one card's toggle + sleeve flip without full re-render (so flip animates) */
-bpc.on('enabled',()=>{updateSleeveStates();});
+bpc.on('enabled',()=>{
+  updateSleeveStates();
+  // gem rows aren't sleeves — re-render the gem page so its toggles/dimming reflect the change
+  const pg=flatPages[curPage];
+  if(pg&&pg.group==='gem')renderBinder();
+});
 function updateSleeveStates(){
   document.querySelectorAll('#grid .sleeve[data-sleeve]').forEach(sl=>{
     const k=sl.dataset.sleeve;const p=bpc.state.priced[k];const on=!!bpc.state.enabled[k];
@@ -865,6 +1048,10 @@ function drawRareCard(info){
   let usePseudo=!!(r.pseudo&&r.pseudo.length);
   focusIdx=-1;
 
+  // §E: bulk actions shown only during the multi-rare walkthrough (not for a single edit-affixes open)
+  const remain=(bpc.remainingRares?bpc.remainingRares().length:0);
+  const showBulk=!info.single && remain>1;
+
   // progress dots
   let dots='';
   for(let i=0;i<info.total;i++){
@@ -912,6 +1099,10 @@ function drawRareCard(info){
       <div class="ghost g2"></div><div class="ghost g1"></div>
       <div class="rarecard" id="rareCard">
         <div class="rarecard-inner">
+          ${showBulk?`<div class="pautoscan">
+            <button class="da autoscan" id="pSearchAll" type="button"
+              title="price all ${remain} remaining rares with default all-affix searches">⚡ Autoscan (${remain})</button>
+          </div>`:''}
           <div class="rc-banner">
             <div class="rc-sigil">✪</div>
             <div>
@@ -934,6 +1125,7 @@ function drawRareCard(info){
       <button class="da da-skip" id="daSkip" title="Skip — don't price (←)">Skip</button>
       <button class="da da-search" id="daSearch" title="Search this item (→)">${info.redo?'Re-search':'Search'} →</button>
     </div>
+    ${showBulk?`<div class="pbulk"><button class="da-skipall" id="pSkipAll" type="button">skip all (don't price)</button></div>`:''}
     <div class="deck-hint">Drag the card or use <kbd>→</kbd> Search · <kbd>←</kbd> Skip · <kbd>↑↓</kbd> focus mod · <kbd>z</kbd> back</div>`;
 
   // pseudo toggle: re-render ONLY the affix list (not whole card -> preserves card identity)
@@ -951,6 +1143,10 @@ function drawRareCard(info){
   $('#daBack').addEventListener('click',()=>doBack());
   $('#daSkip').addEventListener('click',()=>doSkip(info));
   $('#daSearch').addEventListener('click',()=>doSearch(info));
+
+  // §E: Autoscan = price every remaining rare with its default all-affix query; skip-all = don't price
+  const asb=$('#pSearchAll');if(asb)asb.addEventListener('click',()=>bpc.searchAllRares());
+  const sab=$('#pSkipAll');if(sab)sab.addEventListener('click',()=>bpc.skipAllRares());
 
   setupDrag(info);
 }

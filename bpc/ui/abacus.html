@@ -103,6 +103,53 @@
   .totalbox .v{color:var(--grn)}
   .totalbox .inc{color:var(--mut)}
 
+  /* ===== flask belt (5-slot; no life/mana classification) ===== */
+  .belt{margin:6px 0 2px 0}
+  .beltcap{color:var(--mut); margin:0 0 4px 2px; white-space:normal}
+  .beltcap .beltlabel{color:var(--grn); font-weight:600; letter-spacing:.04em}
+  .beltcap .beltmeta{color:var(--mut2); font-size:12px}
+  .beltslots{display:grid; grid-template-columns:repeat(5,1fr); gap:6px; white-space:normal}
+  .slot{border:1px solid var(--bd2); background:var(--bg2); padding:5px 8px; min-height:52px;
+    display:flex; flex-direction:column; gap:2px; position:relative; overflow:hidden;}
+  .slot .slotnum{position:absolute; top:3px; right:6px; color:var(--mut2); font-size:11px}
+  .slot .slotname{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding-right:14px; line-height:1.35}
+  .slot .slotprice{color:var(--fg); margin-top:auto; font-size:12.5px}
+  .slot.filled{cursor:pointer}
+  .slot.filled:hover{background:rgba(57,217,138,.06); border-color:var(--grn-dim)}
+  .slot.off{opacity:.34}
+  .slot.over{border-style:dashed}
+  .slot.empty{border-style:dashed; border-color:var(--bd); background:transparent; justify-content:center; align-items:center}
+  .slot.empty .slotempty{color:var(--mut2); font-size:12px}
+
+  /* ===== gem host-group headers / nested supports / granted ===== */
+  .tbl .hosthdr{color:var(--currency)}
+  .tbl .hosthdr.uniq{color:var(--unique); font-weight:600}
+  .tbl .subrow{color:var(--mut)}
+  .tbl .subrow .supname{color:var(--gem)}
+  .tbl .subrow .supname.gr{color:var(--mut2); text-decoration:line-through}
+  .noteline.grantedline{color:var(--med)}
+  .noteline.grantedline b{color:var(--unique)}
+
+  /* ===== picker Autoscan (glow adapted to terminal green accent) ===== */
+  .picker .pautoscan{white-space:normal; margin:6px 0 8px 2px}
+  .picker .autoscan-btn{
+    font:inherit; font-weight:700; letter-spacing:.06em; cursor:pointer;
+    background:#081210; color:var(--grn); border:1px solid var(--grn);
+    padding:3px 16px; border-radius:0;
+    box-shadow:0 0 0 1px rgba(57,217,138,.35) inset, 0 0 8px rgba(57,217,138,.45), 0 0 18px rgba(57,217,138,.25);
+    animation:autoscanPulse 1.8s ease-in-out infinite;}
+  .picker .autoscan-btn:hover{filter:brightness(1.15); background:#0b1a16}
+  .picker .ascan-key{color:var(--mut); font-size:11px; margin-left:8px}
+  @keyframes autoscanPulse{
+    0%,100%{box-shadow:0 0 0 1px rgba(57,217,138,.35) inset, 0 0 6px rgba(57,217,138,.4), 0 0 14px rgba(57,217,138,.2);}
+    50%    {box-shadow:0 0 0 1px rgba(57,217,138,.6) inset, 0 0 12px rgba(57,217,138,.7), 0 0 26px rgba(57,217,138,.4);}
+  }
+  .picker .pskipall{white-space:normal; margin:3px 0 0 2px}
+  .picker .skipall-btn{
+    font:inherit; font-size:12px; cursor:pointer; background:transparent; color:var(--mut);
+    border:1px solid var(--bd2); padding:1px 12px; border-radius:0;}
+  .picker .skipall-btn:hover{color:var(--grn); border-color:var(--grn-dim)}
+
   .bpc-cur{height:1em; vertical-align:-.14em; margin:0 1px}
 
   /* meta line */
@@ -179,6 +226,7 @@
   @media (prefers-reduced-motion: reduce){
     #caret{animation:none}
     #scroll{scroll-behavior:auto}
+    .picker .autoscan-btn{animation:none}
   }
 </style></head>
 <body>
@@ -331,6 +379,8 @@ function renderResults(){
 
   /* --- box tables per group --- */
   for(const grp of bpc.itemsByGroup()){
+    if(grp.group==='flask'){ h+=renderFlaskBelt(grp); continue; }   // 5-slot belt (§C)
+    if(grp.group==='gem'){ h+=renderGemGroups(grp); continue; }     // host-grouped + nested supports (§D)
     h+='<div class="tbl pre">';
     // group header line with name embedded in top border
     const label=' '+grp.title+' ';
@@ -347,55 +397,7 @@ function renderResults(){
       +'<span class="box">│</span> <span class="hdr">'+pad('C',COL.conf)+'</span> <span class="box">│</span></div>';
     h+='<div><span class="box">├'+H+'┤</span></div>';
 
-    grp.items.forEach((it,idx)=>{
-      const k=String(it.index), p=s.priced[k], on=!!s.enabled[k];
-      const priced = p && p.chaos.median!=null;
-      const cntName = it.name + (it.count>1?(' ×'+it.count):'');
-      const isRareAdv = s.advanced && it.category==='rare';
-      const rownum = idx+1;
-      // INC marker: [x]/[ ] for priced, [-] skipped/unpriced
-      let inc;
-      if(!p) inc='<span class="spin">'+spinGlyph()+'</span> ';
-      else if(!priced) inc='<span class="conf-none">[-]</span>';
-      else inc='<span class="cbx">['+(on?'x':' ')+']</span>';
-
-      const nameHTML='<span class="'+rarClass(it)+'">'+E(pad(cntName,COL.item))+'</span>';
-
-      let minS,medS,highS,confS;
-      if(!p){ minS=pad('…',COL.min,'r'); medS=pad('',COL.med,'r'); highS=pad('',COL.high,'r'); confS=pad('',COL.conf); }
-      else if(!priced){
-        minS=pad('—',COL.min,'r'); medS=pad('not priced',COL.med,'r'); highS=pad('—',COL.high,'r');
-        confS=pad('○',COL.conf);
-      } else {
-        minS=pad(exCell(p.chaos.min)||'—',COL.min,'r');
-        medS=pad(exCell(p.chaos.median)||'—',COL.med,'r');
-        highS=pad(exCell(p.chaos.high)||'—',COL.high,'r');
-        confS=pad(confGlyph(p.confidence),COL.conf);
-      }
-      const confCls = p ? ('conf-'+p.confidence) : 'conf-none';
-
-      // item cell: optionally a trade link wrapping the name; we keep monospace width via pad already applied
-      let itemCell;
-      if(priced && p.trade_url){
-        itemCell='<a href="'+E(p.trade_url)+'" target="_blank" rel="noopener" class="'+rarClass(it)+'" data-noselect="1">'+E(pad(cntName,COL.item))+'</a>';
-      } else {
-        itemCell=nameHTML;
-      }
-
-      h+='<div class="row '+(priced&&!on?'off':'')+'" data-k="'+E(k)+'" data-row="'+rownum+'">'
-        +'<span class="box">│</span> '+pad('',0)+ wrapInc(inc) +' '
-        +'<span class="box">│</span> '+itemCell+' '
-        +'<span class="box">│</span> <span class="cellnum '+(exCell(p&&p.chaos.min)?'':'dash')+'">'+E(minS)+'</span> '
-        +'<span class="box">│</span> <span class="cellnum">'+E(medS)+'</span> '
-        +'<span class="box">│</span> <span class="cellnum">'+E(highS)+'</span> '
-        +'<span class="box">│</span> <span class="'+confCls+'">'+E(confS)+'</span> <span class="box">│</span></div>';
-
-      // note / edit-affixes sub-line
-      let sub='';
-      if(p && p.note) sub+='<span class="noteline">└ '+E(p.note)+'</span>';
-      if(isRareAdv){ sub+=(sub?'  ':'<span class="noteline">└ </span>')+'<span class="editlink" data-edit="'+E(k)+'">[edit affixes]</span>'; }
-      if(sub) h+='<div class="pre" style="white-space:normal">  '+sub+'</div>';
-    });
+    grp.items.forEach((it,idx)=>{ h+=boxRow(it, idx+1); });
     h+='<div><span class="box">└'+H.replace(/┬/g,'┴')+'┘</span></div>';
     h+='</div>';
   }
@@ -411,6 +413,135 @@ function renderResults(){
 
   el.innerHTML=h;
   scheduleMinimap();
+}
+
+/* one box-table data row (shared by every group). rownum is cosmetic (data-row). */
+function boxRow(it, rownum){
+  const s=bpc.state;
+  const k=String(it.index), p=s.priced[k], on=!!s.enabled[k];
+  const priced = p && p.chaos.median!=null;
+  const cntName = it.name + (it.count>1?(' ×'+it.count):'');
+  const isRareAdv = s.advanced && it.category==='rare';
+  const granted = !!it.granted;                 // §B.2 — read the corrected skeleton field only
+  // INC marker: [x]/[ ] for priced, [-] skipped/unpriced/granted, spinner while pending
+  let inc;
+  if(!p) inc='<span class="spin">'+spinGlyph()+'</span> ';
+  else if(!priced) inc='<span class="conf-none">[-]</span>';
+  else inc='<span class="cbx">['+(on?'x':' ')+']</span>';
+
+  const nameHTML='<span class="'+rarClass(it)+'">'+E(pad(cntName,COL.item))+'</span>';
+
+  let minS,medS,highS,confS;
+  if(!p){ minS=pad('…',COL.min,'r'); medS=pad('',COL.med,'r'); highS=pad('',COL.high,'r'); confS=pad('',COL.conf); }
+  else if(!priced){
+    minS=pad('—',COL.min,'r'); medS=pad(granted?'granted':'not priced',COL.med,'r'); highS=pad('—',COL.high,'r');
+    confS=pad('○',COL.conf);
+  } else {
+    minS=pad(exCell(p.chaos.min)||'—',COL.min,'r');
+    medS=pad(exCell(p.chaos.median)||'—',COL.med,'r');
+    highS=pad(exCell(p.chaos.high)||'—',COL.high,'r');
+    confS=pad(confGlyph(p.confidence),COL.conf);
+  }
+  const confCls = p ? ('conf-'+p.confidence) : 'conf-none';
+
+  // item cell: optionally a trade link wrapping the name; monospace width kept via pad already applied
+  let itemCell;
+  if(priced && p.trade_url){
+    itemCell='<a href="'+E(p.trade_url)+'" target="_blank" rel="noopener" class="'+rarClass(it)+'" data-noselect="1">'+E(pad(cntName,COL.item))+'</a>';
+  } else {
+    itemCell=nameHTML;
+  }
+
+  let out='<div class="row '+(priced&&!on?'off':'')+'" data-k="'+E(k)+'" data-row="'+(rownum||0)+'">'
+    +'<span class="box">│</span> '+pad('',0)+ wrapInc(inc) +' '
+    +'<span class="box">│</span> '+itemCell+' '
+    +'<span class="box">│</span> <span class="cellnum '+(exCell(p&&p.chaos.min)?'':'dash')+'">'+E(minS)+'</span> '
+    +'<span class="box">│</span> <span class="cellnum">'+E(medS)+'</span> '
+    +'<span class="box">│</span> <span class="cellnum">'+E(highS)+'</span> '
+    +'<span class="box">│</span> <span class="'+confCls+'">'+E(confS)+'</span> <span class="box">│</span></div>';
+
+  // note / granted / edit-affixes sub-line
+  let sub='';
+  if(granted){
+    const host=(p&&p.host_name)||it.host_name||'';
+    sub+='<span class="noteline grantedline">└ <b>GRANTED</b>'+(host?' by '+E(host):'')+' — comes free with the host item, not counted</span>';
+  } else if(p && p.note){ sub+='<span class="noteline">└ '+E(p.note)+'</span>'; }
+  if(isRareAdv){ sub+=(sub?'  ':'<span class="noteline">└ </span>')+'<span class="editlink" data-edit="'+E(k)+'">[edit affixes]</span>'; }
+  if(sub) out+='<div class="pre" style="white-space:normal">  '+sub+'</div>';
+  return out;
+}
+
+/* a nested support/linked-gem sub-row under its active (display-only; cost already in the active's total) */
+function boxSupportRow(sg, last){
+  const tree=(last?'└ ':'├ ');
+  const lvl=(sg.level!=null?(' L'+sg.level):'')+(sg.quality?('/'+sg.quality+'%'):'');
+  const itemTxt=tree+sg.name+lvl;
+  const cCell=(sg.chaos!=null)?(exCell(sg.chaos)||'—'):'—';
+  const gr=sg.granted?' gr':'';
+  return '<div class="subrow">'
+    +'<span class="box">│</span>     '
+    +'<span class="box">│</span> <span class="supname'+gr+'">'+E(pad(itemTxt,COL.item))+'</span> '
+    +'<span class="box">│</span> <span class="cellnum dash">'+E(pad('',COL.min,'r'))+'</span> '
+    +'<span class="box">│</span> <span class="cellnum">'+E(pad(cCell,COL.med,'r'))+'</span> '
+    +'<span class="box">│</span> <span class="cellnum dash">'+E(pad('',COL.high,'r'))+'</span> '
+    +'<span class="box">│</span> <span class="conf-none">'+E(pad('',COL.conf))+'</span> <span class="box">│</span></div>';
+}
+
+/* FLASK BELT (§C): 5 generic belt slots filled in flask order; empty placeholders for the rest;
+   any flask beyond 5 wraps below (never dropped). No life/mana classification anywhere. */
+function renderFlaskBelt(grp){
+  const s=bpc.state, flasks=grp.items, n=flasks.length, slotCount=Math.max(5,n);
+  let h='<div class="belt">';
+  h+='<div class="beltcap"><span class="beltlabel">▸ FLASK BELT</span> '
+    +'<span class="beltmeta">'+n+' flask'+(n===1?'':'s')+(n>5?(' · '+(n-5)+' over belt'):'')+'</span></div>';
+  h+='<div class="beltslots">';
+  for(let i=0;i<slotCount;i++){
+    const it=flasks[i];
+    if(!it){ h+='<div class="slot empty"><span class="slotnum">'+(i+1)+'</span><span class="slotempty">· empty ·</span></div>'; continue; }
+    const k=String(it.index), p=s.priced[k], on=!!s.enabled[k];
+    const priced=p&&p.chaos.median!=null;
+    const px = priced ? (exCell(p.chaos.median)||'—') : (p?'—':'…');
+    h+='<div class="slot filled row'+(priced&&!on?' off':'')+(i>=5?' over':'')+'" data-k="'+E(k)+'">'
+      +'<span class="slotnum">'+(i+1)+'</span>'
+      +'<span class="slotname '+rarClass(it)+'">'+E(it.name)+'</span>'
+      +'<span class="slotprice">'+E(px)+'</span></div>';
+  }
+  h+='</div></div>';
+  return h;
+}
+
+/* GEM SECTION (§D): grouped under host-item headers; each active gem's supports nested by index
+   with per-gem prices; totals unchanged (supports already in the active's headline). */
+function renderGemGroups(grp){
+  const topInner='─'.repeat(COL.inc+2)+'┬'+'─'.repeat(COL.item+2)+'┬'+'─'.repeat(COL.min+2)+'┬'+'─'.repeat(COL.med+2)+'┬'+'─'.repeat(COL.high+2)+'┬'+'─'.repeat(COL.conf+2);
+  let h='<div class="tbl pre">';
+  h+='<div><span class="box">┌'+topInner+'┐</span></div>';
+  h+='<div><span class="box">│</span> <span class="grpname">'+pad(grp.title.toUpperCase(), totalWidth(), 'l')+'</span> <span class="box">│</span></div>';
+  h+='<div><span class="box">├'+H+'┤</span></div>';
+  h+='<div><span class="box">│</span> <span class="hdr">'+pad('INC',COL.inc)+'</span> '
+    +'<span class="box">│</span> <span class="hdr">'+pad('ITEM',COL.item)+'</span> '
+    +'<span class="box">│</span> <span class="hdr">'+pad('MIN',COL.min,'r')+'</span> '
+    +'<span class="box">│</span> <span class="hdr">'+pad('MED',COL.med,'r')+'</span> '
+    +'<span class="box">│</span> <span class="hdr">'+pad('HIGH',COL.high,'r')+'</span> '
+    +'<span class="box">│</span> <span class="hdr">'+pad('C',COL.conf)+'</span> <span class="box">│</span></div>';
+  const groups=bpc.gemGroups();
+  let rownum=0;
+  groups.forEach(g=>{
+    h+='<div><span class="box">├'+H+'┤</span></div>';
+    const label=(g.header||'Gems')+(g.unique?'  ★ unique':'');
+    h+='<div><span class="box">│</span> <span class="hosthdr'+(g.unique?' uniq':'')+'">'+E(pad(label, totalWidth(), 'l'))+'</span> <span class="box">│</span></div>';
+    h+='<div><span class="box">├'+H+'┤</span></div>';
+    g.items.forEach(it=>{
+      rownum++;
+      h+=boxRow(it, rownum);
+      const bd=bpc.gemBreakdown(String(it.index));
+      const sup=(bd.gems||[]).slice(1);                 // gems[0]=active; gems[1:]=linked, by index
+      sup.forEach((sg,si)=>{ h+=boxSupportRow(sg, si===sup.length-1); });
+    });
+  });
+  h+='<div><span class="box">└'+H.replace(/┬/g,'┴')+'┘</span></div>';
+  h+='</div>';
+  return h;
 }
 function wrapInc(inc){ return inc; }
 function totalWidth(){
@@ -506,6 +637,16 @@ function renderPicker(){
   h+='<div><span class="frame">┤</span><span class="ptitle">'+E(titleTxt)+'</span><span class="frame">├'+'─'.repeat(dashCount)+'</span></div>';
   h+='<div>  <span class="pscope">'+E(r.scope||'')+(info.redo?'  · re-submit to replace':'')+'</span></div>';
 
+  // Autoscan (§E): glowing bulk "price all remaining rares w/ default searches" at the TOP of the
+  // picker; only shown while >1 rare still awaits a decision. Keyboard: [a].
+  const _remain = bpc.remainingRares().length;
+  const _showBulk = !info.single && _remain>1;
+  if(_showBulk){
+    h+='<div class="pautoscan"><button class="autoscan-btn" id="pSearchAll" type="button" '
+      +'title="price all '+_remain+' remaining rares with default all-affix searches">⚡ Autoscan ('+_remain+')</button>'
+      +'<span class="ascan-key">[a] · price every remaining rare with its default search</span></div>';
+  }
+
   if(r.pseudo && r.pseudo.length){
     const pf = (ps.focus===-2);
     h+='<div class="afxrow'+(pf?' foc':'')+'" data-fi="-2"> '
@@ -532,9 +673,18 @@ function renderPicker(){
     + (info.index>0?'<span class="key">[b]</span>ack   ':'')
     + '<span class="key go">[enter]</span>search   '
     + '<span class="key">[s]</span>kip   '
+    + (_showBulk?'<span class="key">[a]</span>utoscan   ':'')
     + '<span class="lbl">·  Tab/↑↓ move · Space toggle · type min/max</span></div>';
+  // small, non-glowing "skip all (don't price)" kept BELOW the picker (§E)
+  if(_showBulk){
+    h+='<div class="pskipall"><button class="skipall-btn" id="pSkipAll" type="button">skip all (don\'t price)</button></div>';
+  }
 
   pickerEl.innerHTML=h;
+
+  // wire Autoscan / skip-all (ids unchanged so the core.js contract binds); labels/placement only
+  const _sa=pickerEl.querySelector('#pSearchAll'); if(_sa) _sa.onclick=()=>bpc.searchAllRares();
+  const _ka=pickerEl.querySelector('#pSkipAll');  if(_ka) _ka.onclick=()=>bpc.skipAllRares();
 
   // wire inputs (no caret animation here; native focus)
   pickerEl.querySelectorAll('input.mm').forEach(inp=>{
@@ -595,6 +745,9 @@ function pickerKey(e){
   if(e.key==='ArrowUp'){ e.preventDefault(); pickerMove(-1); return; }
   if(e.key===' '){ e.preventDefault(); toggleFocused(); return; }
   if(e.key==='Enter'){ e.preventDefault(); submitPicker(); return; }
+  if(e.key.toLowerCase()==='a' && !targetIsInput(e)){
+    if(!ps.info.single && bpc.remainingRares().length>1){ e.preventDefault(); bpc.searchAllRares(); return; }
+  }
   if(e.key.toLowerCase()==='s' && !targetIsInput(e)){ e.preventDefault(); bpc.skipRare(ps.info.key); return; }
   if(e.key.toLowerCase()==='b' && !targetIsInput(e)){ e.preventDefault(); if(ps.info.index>0) bpc.backRare(); return; }
   if(e.key==='Escape'){ e.preventDefault(); bpc.skipRare(ps.info.key); return; }

@@ -47,10 +47,23 @@ class Item:
     raw: Dict[str, Any] = field(default_factory=dict)
     # gems: PoE1 prices each gem as a real item by name + level + quality + corruption.
     # An active-skill gem carries its own level/quality and the list of its support gems
-    # (each a priceable item: {name, level, quality, corrupted, icon}). No uncut/lineage.
+    # (each a priceable item: {name, level, quality, corrupted, icon, support, granted}).
+    # No uncut/lineage.
     gem_level: int = 0
     gem_quality: int = 0
     supports: List[dict] = field(default_factory=list)
+    # gem provenance (D-0006, feedback round 1). `granted` = the gem is provided by an
+    # equipped item (character JSON `itemProvidedGems`) or is a built-in support
+    # (`isBuiltInSupport`) -- it is NOT a bought/tradeable gem, so it is EXCLUDED from the
+    # trade-price total (its socketed supports, if any, still count). host_* describe the
+    # equipment the skill group is socketed into (skills[].itemSlot -> host inventoryId),
+    # for grouping gem rows under a host-item header in the UI.
+    granted: bool = False
+    host_slot: str = ""             # friendly slot label of the host item (e.g. "Body Armour")
+    host_name: str = ""             # host item display name (e.g. "Blunderbore")
+    host_base: str = ""             # host item base type (e.g. "Astral Plate")
+    host_unique: bool = False       # whether the host item is a unique
+    host_inventory_id: str = ""     # raw host inventoryId (stable UI grouping key, e.g. "BodyArmour")
 
     @property
     def display_name(self) -> str:

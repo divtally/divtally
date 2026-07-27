@@ -287,6 +287,86 @@
   .tbtn.primary:hover{color:var(--ac)} .tbtn.primary:hover::after{background:var(--ac)}
   .tbtn.skip{margin-left:auto}
 
+  /* ---------- autoscan (bulk price all remaining rares) ---------- */
+  .pautoscan{margin:4px 0 20px;display:flex;justify-content:center}
+  .autoscan{display:inline-flex;align-items:center;gap:.55em;background:none;cursor:pointer;
+            border:1.5px solid var(--ac);color:var(--ac);font:700 12px/1 var(--sans);
+            letter-spacing:.14em;text-transform:uppercase;padding:12px 22px;border-radius:2px;
+            position:relative;transition:filter .2s,background .2s;
+            box-shadow:0 0 0 1px var(--ac) inset,0 0 8px rgba(194,97,63,.42),0 0 18px rgba(194,97,63,.26);
+            animation:autoscanPulse 1.8s ease-in-out infinite}
+  .autoscan:hover{filter:brightness(1.08);background:rgba(194,97,63,.07)}
+  .autoscan .bolt{font-size:13px;line-height:1}
+  @keyframes autoscanPulse{
+    0%,100%{box-shadow:0 0 0 1px var(--ac) inset,0 0 6px rgba(194,97,63,.34),0 0 14px rgba(194,97,63,.18)}
+    50%    {box-shadow:0 0 0 1px var(--ac) inset,0 0 12px rgba(194,97,63,.55),0 0 26px rgba(194,97,63,.34)}
+  }
+  .pbulk{margin-top:16px;display:flex;justify-content:center}
+  .pskipall{background:none;border:0;cursor:pointer;color:var(--mut);font:400 12px/1.4 var(--sans);
+            letter-spacing:.04em;padding:4px 2px;border-bottom:1px solid transparent;
+            transition:color .2s,border-color .2s}
+  .pskipall:hover{color:var(--ink);border-bottom-color:var(--hair-2)}
+
+  /* ---------- flask belt (5-slot; no life/mana classification) ---------- */
+  .belt{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;padding:18px 0 6px}
+  @media(max-width:760px){.belt{grid-template-columns:repeat(2,1fr)}}
+  .beltslot{border:1px solid var(--hair);background:var(--white);padding:12px 13px 13px;
+            display:flex;flex-direction:column;gap:6px;min-height:120px;position:relative;
+            transition:border-color .2s,opacity .2s}
+  .beltslot:hover{border-color:var(--hair-2)}
+  .beltslot .belttop{display:flex;align-items:center;justify-content:space-between}
+  .beltslot .beltnum{font:400 11px/1 var(--mono);color:var(--ac);letter-spacing:.08em}
+  .beltslot .beltname{font:500 14px/1.25 var(--serif);color:var(--ink);letter-spacing:-.005em}
+  .beltslot .beltname a{color:inherit;border:0}
+  .beltslot .beltname a:hover{color:var(--ac)}
+  .beltslot .beltmeta{font:600 9.5px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;
+            color:var(--mut);margin-top:auto}
+  .beltslot .beltprice{font:400 14px/1.3 var(--mono);font-variant-numeric:tabular-nums;color:var(--ink)}
+  .beltslot .beltprice .bpc-cur{height:.78em}
+  .beltslot .beltprice .unpriced-tag{font:400 italic 12px/1 var(--serif);color:var(--mut)}
+  .beltslot .marg{top:0}
+  .beltslot.off{opacity:.55}
+  .beltslot.off .beltname{text-decoration:line-through;text-decoration-color:var(--hair-2)}
+  .beltslot.off .beltprice{text-decoration:line-through;text-decoration-color:var(--hair-2)}
+  .beltslot.empty{border-style:dashed;background:transparent}
+  .beltslot.empty .beltempty{margin:auto 0;text-align:center;font:400 italic 13px/1 var(--serif);color:var(--hair-2)}
+
+  /* ---------- gems: host-item groups + nested supports ---------- */
+  .gemwrap{padding:4px 0 2px}
+  .gemhost{margin-top:20px}
+  .gemhost:first-child{margin-top:8px}
+  .gemhost-head{display:flex;align-items:baseline;gap:10px;padding:0 0 7px;
+            border-bottom:1px solid var(--hair);margin-bottom:4px}
+  .gemhost-head .gh-slot{font:600 11px/1.3 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
+  .gemhost-head .gh-uniq{font:400 italic 12px/1 var(--serif);color:var(--ac)}
+  .gemgroup{padding:13px 0;border-bottom:1px solid var(--hair)}
+  .gemgroup:last-child{border-bottom:0}
+  .gemgroup .gemactive{display:flex;align-items:baseline;gap:12px}
+  .gemgroup .gemactive .marg{top:2px;flex:0 0 auto}
+  .gemgroup .ga-body{flex:1 1 auto;min-width:0}
+  .gemgroup .ga-name{font:500 16px/1.3 var(--serif);color:var(--ink);letter-spacing:-.005em}
+  .gemgroup .ga-name a{color:inherit;border:0} .gemgroup .ga-name a:hover{color:var(--ac)}
+  .gemgroup .ga-meta{margin-top:2px;font:400 12px/1.4 var(--sans);color:var(--mut)}
+  .gemgroup .ga-price{flex:0 0 auto;text-align:right;font:400 15px/1.4 var(--mono);
+            font-variant-numeric:tabular-nums;color:var(--ink);white-space:nowrap}
+  .gemgroup .ga-price .bpc-cur{height:.78em}
+  .gemgroup .ga-price .unpriced-tag{font:400 italic 13px/1 var(--serif);color:var(--mut)}
+  .gemgroup.off .ga-name{color:var(--mut);text-decoration:line-through;text-decoration-color:var(--hair-2)}
+  .gemgroup.off .ga-price{color:var(--mut);text-decoration:line-through;text-decoration-color:var(--hair-2)}
+  .gtag{display:inline-block;margin-left:8px;font:600 9px/1 var(--sans);letter-spacing:.12em;
+        text-transform:uppercase;color:var(--ac);border:1px solid var(--ac);border-radius:3px;
+        padding:2px 5px;vertical-align:1px}
+  .gemnest{margin:9px 0 1px 26px;border-left:1px solid var(--hair);padding-left:16px}
+  .gemnest-row{display:flex;align-items:baseline;gap:12px;padding:5px 0}
+  .gemnest-row .gn-name{font:400 13.5px/1.35 var(--sans);color:var(--ink)}
+  .gemnest-row .gn-meta{font:400 11.5px/1 var(--mono);color:var(--mut);white-space:nowrap}
+  .gemnest-row .gn-price{margin-left:auto;font:400 13px/1.3 var(--mono);font-variant-numeric:tabular-nums;
+            color:var(--ink);white-space:nowrap}
+  .gemnest-row .gn-price .bpc-cur{height:.72em}
+  .gemnest-row .gn-price .gdash{color:var(--hair-2)}
+  .gemnest-row.granted .gn-name{color:var(--mut);font-style:italic}
+  .gemnest-row.granted .gn-price{color:var(--mut)}
+
   @media (max-width:760px){
     .totallabel{display:none}
     .range .conf{margin-left:0;flex-basis:100%}
@@ -590,7 +670,15 @@
   function renderSections(){
     var groups=bpc.itemsByGroup(), s=bpc.state;
     var html=groups.map(function(g){
-      var rows=g.items.map(function(it){ return rowHTML(it); }).join("");
+      var body;
+      if(g.group==="flask"){          // 5-slot belt (filled in flask order, overflow shown)
+        body='<div class="belt" data-belt></div>';
+      } else if(g.group==="gem"){      // host-item groups with nested supports
+        body='<div class="gemwrap" data-gems></div>';
+      } else {
+        var rows=g.items.map(function(it){ return rowHTML(it); }).join("");
+        body='<table><tbody>'+rows+'</tbody></table>';
+      }
       return '<div class="sec" data-group="'+E(g.group)+'">'+
         '<div class="sec-head" data-group="'+E(g.group)+'">'+
           '<span class="chev">▾</span>'+
@@ -598,12 +686,108 @@
           '<span class="count">'+g.items.length+'</span>'+
           '<span class="grp-sub" data-grpsub="'+E(g.group)+'"></span>'+
         '</div>'+
-        '<div class="sec-body"><table><tbody>'+rows+'</tbody></table></div>'+
+        '<div class="sec-body">'+body+'</div>'+
       '</div>';
     }).join("");
     $("#sections").innerHTML=html;
     refreshAllRows();
+    renderFlaskBelt();
+    renderGemSection();
     refreshPanelHeight($("#brkPanel"));
+  }
+
+  /* ---------- FLASKS: 5-slot belt (flask order; overflow shown; no life/mana) ---------- */
+  function renderFlaskBelt(){
+    var wrap=$('[data-belt]'); if(!wrap) return;
+    var fl=bpc.state.items.filter(function(it){ return it.group==="flask"; });
+    var slots=Math.max(5, fl.length);   // never fewer than 5; grow for overflow builds
+    var h="";
+    for(var i=0;i<slots;i++){
+      var pos=String(i+1).padStart(2,"0"), it=fl[i];
+      if(!it){
+        h+='<div class="beltslot empty">'+
+             '<div class="belttop"><span class="beltnum">'+pos+'</span></div>'+
+             '<span class="beltempty">empty</span>'+
+           '</div>';
+        continue;
+      }
+      var k=String(it.index), p=bpc.state.priced[k], on=!!bpc.state.enabled[k];
+      var priced=!!(p&&p.chaos.median!=null), conf=p?p.confidence:"none";
+      var nameInner=(p&&p.trade_url)
+        ? '<a href="'+E(p.trade_url)+'" target="_blank" rel="noopener">'+E(it.name)+'</a>'
+        : E(it.name);
+      var priceHTML= priced ? bpc.priceHTML(p.chaos.median)
+        : (p ? '<span class="unpriced-tag">not priced</span>'
+             : '<span class="unpriced-tag">appraising…</span>');
+      h+='<div class="beltslot conf-'+conf+(on?'':' off')+(priced?'':' unpriced')+'" data-fk="'+E(k)+'">'+
+           '<div class="belttop">'+
+             '<span class="beltnum">'+pos+'</span>'+
+             '<input type="checkbox" class="marg" data-k="'+E(k)+'" aria-label="include in total"'+
+               (on?' checked':'')+(priced?'':' disabled')+'>'+
+           '</div>'+
+           '<div class="beltname">'+nameInner+'</div>'+
+           '<div class="beltmeta">'+E(it.category||"flask")+'</div>'+
+           '<div class="beltprice">'+priceHTML+'</div>'+
+         '</div>';
+    }
+    wrap.innerHTML=h;
+  }
+
+  /* ---------- GEMS: group under host item, nest supports under their active ---------- */
+  function renderGemSection(){
+    var wrap=$('[data-gems]'); if(!wrap) return;
+    var groups=bpc.gemGroups();
+    wrap.innerHTML=groups.map(function(g){
+      var rows=g.items.map(function(it){ return gemGroupHTML(it); }).join("");
+      return '<div class="gemhost">'+
+        '<div class="gemhost-head">'+
+          '<span class="gh-slot">'+E(g.header)+'</span>'+
+          (g.unique?'<span class="gh-uniq">unique</span>':'')+
+        '</div>'+
+        rows+
+      '</div>';
+    }).join("");
+  }
+  function gemGroupHTML(it){
+    var k=String(it.index), p=bpc.state.priced[k], on=!!bpc.state.enabled[k];
+    var bd=bpc.gemBreakdown(k);
+    var priced=!!(p&&p.chaos.median!=null), conf=p?p.confidence:"none";
+    var active=bd.gems[0]||{name:it.name,level:it.level,quality:it.quality,corrupted:it.corrupted};
+    var nested=bd.gems.slice(1);
+    var grantedBadge=it.granted?'<span class="gtag">granted</span>':'';
+    var nameInner=(p&&p.trade_url)
+      ? '<a href="'+E(p.trade_url)+'" target="_blank" rel="noopener">'+E(active.name)+'</a>'
+      : E(active.name);
+    var headPrice = it.granted ? '<span class="unpriced-tag">granted</span>'
+      : priced ? bpc.priceHTML(bd.total!=null?bd.total:p.chaos.median)
+      : (p ? '<span class="unpriced-tag">not priced</span>'
+           : '<span class="unpriced-tag">appraising…</span>');
+    var nestHTML=nested.map(function(gm){
+      var price = gm.granted ? '<span class="gdash">granted</span>'
+        : (gm.chaos!=null ? bpc.priceHTML(gm.chaos) : '<span class="gdash">—</span>');
+      return '<div class="gemnest-row'+(gm.granted?' granted':'')+'">'+
+        '<span class="gn-name">'+E(gm.name)+'</span>'+
+        '<span class="gn-meta">'+E(gemLQ(gm))+'</span>'+
+        '<span class="gn-price">'+price+'</span>'+
+      '</div>';
+    }).join("");
+    return '<div class="gemgroup conf-'+conf+(on?'':' off')+(priced?'':' unpriced')+'" data-k="'+E(k)+'">'+
+      '<div class="gemactive">'+
+        '<input type="checkbox" class="marg" data-k="'+E(k)+'" aria-label="include in total"'+
+          (on?' checked':'')+(priced?'':' disabled')+'>'+
+        '<div class="ga-body">'+
+          '<div class="ga-name">'+nameInner+grantedBadge+'</div>'+
+          '<div class="ga-meta">'+E(gemLQ(active))+(active.corrupted?' · corrupted':'')+'</div>'+
+        '</div>'+
+        '<div class="ga-price">'+headPrice+'</div>'+
+      '</div>'+
+      (nestHTML?'<div class="gemnest">'+nestHTML+'</div>':'')+
+    '</div>';
+  }
+  function gemLQ(gm){
+    var bits=[]; if(gm.level) bits.push("Lv "+gm.level);
+    if(gm.quality) bits.push(gm.quality+"%");
+    return bits.join(" / ");
   }
 
   function rowHTML(it){
@@ -686,11 +870,16 @@
 
   bpc.on("priced",function(d){
     (d.keys||[]).forEach(function(k){ refreshRow(k); });
+    renderFlaskBelt();
+    renderGemSection();
     refreshGroupSubs();
     refreshPanelHeight($("#brkPanel"));
   });
   bpc.on("enabled",function(){
     refreshAllRows();
+    renderFlaskBelt();
+    renderGemSection();
+    refreshPanelHeight($("#brkPanel"));
   });
 
   // include/exclude + edit-affixes (event delegation on the sections container)
@@ -837,11 +1026,20 @@
 
     function draw(){
       var hasPseudo=!!(r.pseudo&&r.pseudo.length);
+      // Autoscan is only meaningful when >1 rare remains to decide (spec §E guard).
+      var remain=(bpc.remainingRares?bpc.remainingRares().length:0);
+      var showBulk=(!info.single && remain>1);
       focus.innerHTML=
         '<div class="focus-inner">'+
           '<div class="step smallcaps">Pricing rare '+(info.index+1)+' of '+info.total+'</div>'+
           '<h2 id="focusTitle">'+E(r.name||"Rare item")+'</h2>'+
           '<div class="scope">'+E(r.scope||"")+(info.redo?' <span class="redo">· re-submit to replace</span>':'')+'</div>'+
+          (showBulk?
+            '<div class="pautoscan">'+
+              '<button class="autoscan" id="pSearchAll" type="button" '+
+                'title="price all '+remain+' remaining rares with default all-affix searches">'+
+                '<span class="bolt">⚡</span>Autoscan ('+remain+')</button>'+
+            '</div>':'')+
           (hasPseudo?
             '<div class="pseudo-switch"><label class="switch">'+
               '<input type="checkbox" id="pseu" '+(usePseudo?"checked":"")+'><span class="track"></span>'+
@@ -854,6 +1052,10 @@
             '<button class="tbtn primary" id="psearch">'+(info.redo?"Re-search this item":"Search this item")+'</button>'+
             '<button class="tbtn skip" id="pskip">Skip</button>'+
           '</div>'+
+          (showBulk?
+            '<div class="pbulk">'+
+              '<button class="pskipall" id="pSkipAll" type="button">skip all (don\'t price)</button>'+
+            '</div>':'')+
         '</div>';
 
       var pe=focus.querySelector("#pseu");
@@ -861,6 +1063,8 @@
       var pb=focus.querySelector("#pback"); if(pb) pb.addEventListener("click",function(){ bpc.backRare(); });
       focus.querySelector("#pskip").addEventListener("click",function(){ bpc.skipRare(info.key); });
       focus.querySelector("#psearch").addEventListener("click",submit);
+      var sa=focus.querySelector("#pSearchAll"); if(sa) sa.addEventListener("click",function(){ bpc.searchAllRares(); });
+      var ka=focus.querySelector("#pSkipAll");   if(ka) ka.addEventListener("click",function(){ bpc.skipAllRares(); });
 
       // focus the first usable field for keyboard flow
       var first=focus.querySelector(".afx .acb");

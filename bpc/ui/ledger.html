@@ -350,6 +350,83 @@
   .rcpt .rw{float:right;color:var(--ink-ghost);font-size:10px}
   .rcpt::before{content:"";position:absolute;left:0;top:-5px;height:5px;width:100%;background:var(--paper);
     -webkit-mask:linear-gradient(135deg,transparent 50%,#000 50%) 0 0/8px 8px repeat-x;mask:linear-gradient(135deg,transparent 50%,#000 50%) 0 0/8px 8px repeat-x}
+
+  /* ===== D-0006: flask belt — 5 generic slots, belt order, NO life/mana ===== */
+  .belt{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 2px}
+  .beltslot{
+    flex:1 1 0;min-width:64px;position:relative;
+    border:1px dashed var(--ink);border-radius:0;padding:6px 5px 5px;
+    background:repeating-linear-gradient(90deg,rgba(0,0,0,.02) 0 1px,transparent 1px 4px);
+    display:flex;flex-direction:column;align-items:center;gap:3px;min-height:76px;justify-content:flex-start;text-align:center;
+  }
+  .beltslot .bn{position:absolute;left:3px;top:2px;font-size:9px;color:var(--ink-ghost);letter-spacing:.05em}
+  .beltslot.empty{border-style:dotted;opacity:.6;justify-content:center;color:var(--ink-ghost);font-style:italic}
+  .beltslot.empty::after{content:"empty";font-size:9.5px;letter-spacing:.08em}
+  .beltslot.filled{cursor:pointer;animation:print .26s ease both}
+  .beltslot.filled:hover{background:#fbf8ef}
+  .beltslot .bico{width:26px;height:26px;object-fit:contain;margin-top:8px;mix-blend-mode:multiply}
+  .beltslot .bnm{font-size:9.5px;line-height:1.15;color:var(--ink);max-width:100%;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .beltslot .bpr{font-size:10px;font-variant-numeric:tabular-nums;margin-top:auto}
+  .beltslot.cf-low .bnm,.beltslot.cf-low .bpr,.beltslot.cf-none .bnm{color:var(--ink-faint)}
+  .beltslot.unpriced .bpr{color:var(--ink-ghost);font-style:italic}
+  .beltslot.void .bnm,.beltslot.void .bpr{color:var(--ink-ghost);text-decoration:line-through;text-decoration-color:var(--void)}
+  .beltslot .bstamp{right:50%;top:44%;transform:translate(50%,-50%) rotate(-12deg) scale(1);font-size:10px;padding:0 4px;animation:none}
+
+  /* ===== D-0006: gems grouped by host item, supports nested under their active ===== */
+  .gemhost{margin:6px 0 4px}
+  .ghhdr{display:flex;align-items:baseline;gap:5px;font-size:10.5px;letter-spacing:.03em;
+    color:var(--ink-faint);border-bottom:1px dotted var(--ink);padding-bottom:1px;margin-bottom:1px}
+  .ghhdr .ghslot{font-variant:small-caps;letter-spacing:.08em;color:var(--ink)}
+  .ghhdr .ghname{color:var(--ink);font-weight:700}
+  .ghhdr .ghsep{color:var(--ink-ghost)}
+  .ghhdr .ghuniq{color:var(--gold-deep);font-size:10px}
+  .gemrow{padding-left:2px}
+  .gtag{display:inline-block;font-size:8.5px;letter-spacing:.08em;color:var(--gold-deep);
+    border:1px dotted var(--gold-deep);border-radius:0;padding:0 3px;margin-left:6px;
+    vertical-align:1px;text-transform:uppercase;font-variant:normal;font-style:normal}
+  .subline.gemsub{padding-left:20px}
+  .gemsub .gsname{color:var(--ink-faint)}
+  .gemsub .galt{color:var(--gold-deep);font-size:9px;font-style:normal}
+  .gemsub .glq{color:var(--ink-ghost);font-size:9.5px}
+  .gemsub .gsub-pr{color:var(--ink-faint);font-size:10.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .gemsub.granted .gsname,.gemsub.granted .gsub-pr{color:var(--ink-ghost)}
+  .gemsub.granted .gsub-pr{text-decoration:line-through;text-decoration-color:var(--void)}
+
+  /* ===== D-0006: Autoscan button — glowing, top of the rare slip (gold accent) ===== */
+  .slip .pautoscan{margin:10px 0 6px}
+  .slip .autoscan{
+    --accent:var(--gold-deep);
+    width:100%;font:inherit;cursor:pointer;
+    font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+    padding:9px 8px;color:#4a3410;
+    background:linear-gradient(180deg,#f4d27a,var(--gold) 58%,#d8a83a);
+    border:1px solid var(--gold-deep);border-radius:0;
+    box-shadow:2px 2px 0 var(--gold-deep),
+               0 0 8px color-mix(in srgb, var(--accent) 55%, transparent),
+               0 0 18px color-mix(in srgb, var(--accent) 35%, transparent);
+    animation:autoscanPulse 1.8s ease-in-out infinite;
+  }
+  .slip .autoscan:hover{filter:brightness(1.06)}
+  .slip .autoscan:active{transform:translate(2px,2px);
+    box-shadow:0 0 0 var(--gold-deep),0 0 10px color-mix(in srgb, var(--accent) 50%, transparent)}
+  @keyframes autoscanPulse{
+    0%,100%{box-shadow:2px 2px 0 var(--gold-deep),
+                       0 0 6px  color-mix(in srgb, var(--accent) 45%, transparent),
+                       0 0 14px color-mix(in srgb, var(--accent) 25%, transparent)}
+    50%    {box-shadow:2px 2px 0 var(--gold-deep),
+                       0 0 12px color-mix(in srgb, var(--accent) 70%, transparent),
+                       0 0 26px color-mix(in srgb, var(--accent) 45%, transparent)}
+  }
+  @media (prefers-reduced-motion: reduce){ .slip .autoscan{animation:none} }
+  /* small non-glowing "skip all" kept below the picker */
+  .slip .pbulk{margin-top:11px;text-align:center}
+  .slip .pbulk .pa-skip{
+    font:inherit;font-size:10px;letter-spacing:.04em;color:var(--ink-faint);
+    background:none;border:1px dotted var(--ink-faint);border-radius:0;
+    padding:3px 12px;cursor:pointer;text-transform:none;
+  }
+  .slip .pbulk .pa-skip:hover{color:var(--ink);border-color:var(--ink)}
 </style></head>
 <body>
 
@@ -560,6 +637,107 @@ function lineHTML(it){
   return h;
 }
 
+/* ---------- D-0006 §C: flask belt (5 generic slots, belt order, NO life/mana) ---------- */
+function flaskBeltHTML(grp){
+  const s=bpc.state, flasks=grp.items;                 // engine preserves belt order
+  const anyOn = flasks.some(it=>s.enabled[String(it.index)]);
+  let h=`<div class="section" data-grp="flask">
+    <div class="cap"><span class="ttl">— BELT —</span><span class="fill"></span>
+      <button class="voidall" data-grp="flask" data-on="${anyOn?0:1}">${anyOn?'[void all]':'[ring all]'}</button>
+    </div>
+    <div class="belt">`;
+  const slots = Math.max(5, flasks.length);            // 5 minimum; overflow (6+) still rendered
+  for(let i=0;i<slots;i++){
+    const it=flasks[i];
+    if(!it){ h+=`<div class="beltslot empty"><span class="bn">${i+1}</span></div>`; continue; }
+    h+=beltSlotHTML(it,i);
+  }
+  h+=`</div></div>`;
+  return h;
+}
+function beltSlotHTML(it,i){
+  const k=String(it.index), s=bpc.state, p=s.priced[k], on=!!s.enabled[k];
+  const cls=['beltslot','filled'];
+  let pr, priceable=0;
+  if(!p){ pr='<span class="unpriced">…</span>'; cls.push('unpriced'); }
+  else {
+    if(p.chaos.median!=null){ pr=bpc.priceHTML(p.chaos.median); cls.push(confClass(p)); priceable=1; if(!on) cls.push('void'); }
+    else { pr='<span class="bpc-dash">n/c</span>'; cls.push('unpriced'); }
+  }
+  const icon = it.icon ? `<img class="bico" src="${E(it.icon)}" alt="" loading="lazy">` : '';
+  return `<div class="${cls.join(' ')}" data-k="${E(k)}" data-priceable="${priceable}">
+    ${(priceable&&!on)?'<span class="stamp bstamp">VOID</span>':''}
+    <span class="bn">${i+1}</span>
+    ${icon}
+    <span class="bnm">${E(it.name)}</span>
+    <span class="bpr">${pr}</span>
+  </div>`;
+}
+
+/* ---------- D-0006 §D: gems grouped by host item, supports nested under their active ---------- */
+function gemSectionHTML(grp){
+  const s=bpc.state, groups=bpc.gemGroups();
+  if(!groups.length) return '';
+  let anyOn=false;
+  groups.forEach(g=>g.items.forEach(it=>{ if(s.enabled[String(it.index)]) anyOn=true; }));
+  let h=`<div class="section" data-grp="gem">
+    <div class="cap"><span class="ttl">— GEMS —</span><span class="fill"></span>
+      <button class="voidall" data-grp="gem" data-on="${anyOn?0:1}">${anyOn?'[void all]':'[ring all]'}</button>
+    </div>`;
+  groups.forEach(g=>{
+    const hasHost = !!(g.slot || g.name);
+    const hdr = hasHost
+      ? `<span class="ghslot">${E(g.slot||'')}</span>${(g.slot&&g.name)?'<span class="ghsep"> — </span>':''}<span class="ghname">${E(g.name||'')}</span>${g.unique?'<span class="ghuniq" title="unique host">◆</span>':''}`
+      : `<span class="ghslot">${E(g.header||'Gems')}</span>`;
+    h+=`<div class="gemhost"><div class="ghhdr">${hdr}</div>`;
+    g.items.forEach(it=>{ h+=gemRowHTML(it); });
+    h+=`</div>`;
+  });
+  h+=`</div>`;
+  return h;
+}
+function gemRowHTML(it){
+  const k=String(it.index), s=bpc.state, p=s.priced[k], on=!!s.enabled[k];
+  const granted=!!it.granted;
+  const gtag = granted ? `<span class="gtag">granted</span>` : '';
+  // not yet priced — printing…
+  if(!p){
+    return `<div class="line gemrow printing" data-k="${E(k)}">
+      <div class="row"><span class="nm">${E(it.name)}${gtag}</span>
+      <span class="leader"></span><span class="pr unpriced">printing…</span></div></div>`;
+  }
+  const priced = p.chaos.median!=null;
+  const voided = priced && !on;
+  const cls=['line','gemrow',confClass(p)];
+  if(!priced) cls.push('unpriced');
+  if(voided) cls.push('void');
+  const priceCell = priced ? bpc.priceHTML(p.chaos.median)
+                           : `<span class="bpc-dash">${granted?'granted':'not priced'}</span>`;
+  let h=`<div class="${cls.join(' ')}" data-k="${E(k)}" data-priceable="${priced?1:0}">
+    ${voided?'<span class="stamp">VOID</span>':''}
+    <div class="row">
+      <span class="nm">${E(it.name)}${gtag}</span>
+      <span class="leader"></span>
+      <span class="pr">${priceCell}</span>
+    </div>`;
+  // nested linked/support gems — bd.gems[1:] matched to it.supports by INDEX (core.js does this)
+  const bd = bpc.gemBreakdown(k);
+  bd.gems.forEach((g,i)=>{
+    if(i===0) return;                                   // gems[0] is the active = the headline
+    const gp = g.chaos==null ? `<span class="bpc-dash">${g.granted?'granted':'—'}</span>` : bpc.priceHTML(g.chaos);
+    let lq='';
+    if(g.level!=null || g.quality){ lq=`<span class="glq"> L${g.level!=null?g.level:''}${g.quality?('/'+g.quality+'%'):''}</span>`; }
+    const alt = g.support ? '' : ' <span class="galt">(linked)</span>';   // a 2nd active nests too
+    const scls = g.granted ? 'subline gemsub granted' : 'subline gemsub';
+    h+=`<div class="${scls}"><span class="gsname">↳ ${E(g.name)}${alt}${lq}</span><span class="sfill"></span><span class="gsub-pr">${gp}</span></div>`;
+  });
+  if(p.note) h+=`<div class="subnote">${E(p.note)}</div>`;
+  const tl=(p.trade_url)?`<a class="tradelink" href="${E(p.trade_url)}" target="_blank" rel="noopener">trade ↗</a>`:'';
+  if(tl) h+=`<div class="subnote" style="font-style:normal">${tl}</div>`;
+  h+=`</div>`;
+  return h;
+}
+
 function render(){
   const s=bpc.state;
   if(!s.meta && !(s.items&&s.items.length)){
@@ -582,6 +760,8 @@ function render(){
 
   // grouped sections
   for(const grp of bpc.itemsByGroup()){
+    if(grp.group==='flask'){ h+=flaskBeltHTML(grp); continue; }   // D-0006: 5-slot belt
+    if(grp.group==='gem'){   h+=gemSectionHTML(grp); continue; }  // D-0006: host-grouped gems
     const anyOn = grp.items.some(it=>s.enabled[String(it.index)]);
     h+=`<div class="section" data-grp="${E(grp.group)}">
       <div class="cap"><span class="ttl">— ${E(grp.title.toUpperCase())} —</span><span class="fill"></span>
@@ -680,6 +860,9 @@ out.addEventListener('click',e=>{
   // void-all per group
   const va=e.target.closest('.voidall');
   if(va){ e.stopPropagation(); bpc.setGroupEnabled(va.dataset.grp, va.dataset.on==='1'); return; }
+  // void / un-void a flask belt slot (D-0006)
+  const bs=e.target.closest('.beltslot');
+  if(bs){ if(bs.dataset.priceable==='1'){ const k=bs.dataset.k; bpc.setEnabled(k,!bpc.state.enabled[k]); } return; }
   // void / un-void a single line
   const ln=e.target.closest('.line');
   if(ln && ln.dataset.priceable==='1'){
@@ -719,6 +902,7 @@ bpc.on('rare',info=>{
   if(!info){ wrap.classList.remove('open'); slip.innerHTML=''; return; }
 
   const r=info.rare;
+  const remain = bpc.remainingRares().length;        // D-0006: rares still to decide (incl. this one)
   let usePseudo = !!(r.pseudo && r.pseudo.length);   // default ON when pseudo present
 
   function affixRow(a){
@@ -750,6 +934,10 @@ bpc.on('rare',info=>{
      <h2>RARE ITEM SLIP</h2>
      <div class="scope">${E(r.name)} — ${E(r.scope||'')}${info.redo?' · re-submit to replace':''}</div>
      <div class="progress">ITEM ${info.index+1} OF ${info.total}</div>
+     ${(!info.single && remain>1)
+        ? `<div class="pautoscan"><button class="autoscan" id="pSearchAll" type="button"
+             title="ring up all ${remain} remaining rares with default all-affix searches">⚡ Autoscan (${remain})</button></div>`
+        : ''}
      ${(r.pseudo&&r.pseudo.length)
         ? `<div class="reslbl"><input type="checkbox" class="tick" id="pseu" ${usePseudo?'checked':''}><label for="pseu">[combine resist]</label></div>`
         : ''}
@@ -760,6 +948,9 @@ bpc.on('rare',info=>{
        <button id="pSearch" class="search" type="button">${info.redo?'Re-total':'Total this item'}</button>
        <button id="pSkip" type="button">No charge</button>
      </div>
+     ${(!info.single && remain>1)
+        ? `<div class="pbulk"><button class="pa-skip" id="pSkipAll" type="button">skip all (don't price)</button></div>`
+        : ''}
      <div class="slipbot"></div>`;
 
   wrap.classList.add('open');
@@ -769,6 +960,12 @@ bpc.on('rare',info=>{
 
   const pPrev=slip.querySelector('#pPrev');
   if(pPrev) pPrev.addEventListener('click',()=>bpc.backRare());
+
+  // D-0006 §E: Autoscan (price every remaining rare, default searches) + small skip-all
+  const sa=slip.querySelector('#pSearchAll');
+  if(sa) sa.addEventListener('click',()=>bpc.searchAllRares());
+  const ka=slip.querySelector('#pSkipAll');
+  if(ka) ka.addEventListener('click',()=>bpc.skipAllRares());
 
   slip.querySelector('#pSearch').addEventListener('click',()=>{
     const filters=[], equip=[];

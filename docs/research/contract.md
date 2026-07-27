@@ -167,3 +167,38 @@ needed for correctness; the badge is cosmetic.
    shape; drop the `rune` mods bucket.
 4. skins reading gem `extra`: `.uncut/.cut/.lineage` -> `.total_chaos/.gems[]`.
 5. (optional) surface `max_link`/`total_sockets` for a "6L" badge.
+
+---
+
+## 7. D-0006 additions (feedback round 1) - ADDITIVE only
+
+These fields were ADDED (no renames/removals) for owner feedback round 1. Full UI spec +
+real example payloads: `docs/feedback1-spec.md`. Contract-level summary:
+
+### 7a. Gem `PriceResult.extra` gained (merged into `priced[k]` by `web._result_dict`)
+- `granted` (bool) - the ACTIVE gem is item-provided (from the character JSON
+  `itemProvidedGems` / `isBuiltInSupport`), so it is EXCLUDED from `total_chaos`.
+- `host_slot` / `host_name` / `host_base` / `host_unique` / `host_inventory_id` - the gear
+  the skill group is socketed into (for grouping gem rows under a host-item header).
+  Empty for PoB imports (no `itemSlot`).
+- Each `gems[]` element gained `granted` (bool) and `note` (str), plus `support` is now the
+  gem's REAL support-ness (a group may hold >1 active). `chaos` is `null` iff granted.
+  Invariant: `total_chaos == sum(g.chaos for g in gems if g.chaos != null)`.
+
+### 7b. `Item` (`bpc/models.py`) gained (additive fields, defaults keep old behaviour)
+- `granted` (bool, default False), `host_slot`/`host_name`/`host_base`
+  (str, default ""), `host_unique` (bool, default False), `host_inventory_id` (str).
+- `Item.supports[]` elements now also carry `support` (bool) and `granted` (bool) alongside
+  the existing `{name, level, quality, corrupted, icon}`.
+
+### 7c. GRANTED tag source (root-cause fix)
+The engine now computes `Item.granted`. The web layer must set the gem skeleton row's
+`granted` from it: `row["granted"] = bool(it.granted)` (was inferred from
+`it.raw.inventoryId`, which is always `None` for PoE1 `skills[]` gems -> tagged everything).
+`core.js::itemGranted` already reads `it.granted`; no core.js change needed.
+
+### 7d. Result order = build order (flask belt order)
+`Pricer.price_build` now RETURNS results in the build's original order (belt order for
+flasks, `skills[]` order for gems, `items[]` order for gear) while still pricing in
+budget-priority order. The report/CLI display each group in source order; the web skeleton
+already iterated `items` in order, so this only makes the CLI report consistent. No UI change.

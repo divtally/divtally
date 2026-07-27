@@ -200,6 +200,83 @@
   .pk-foot button.primary{background:var(--ac); border-color:var(--ac); color:#04201c; font-weight:700}
   .pk-foot button.primary:hover{filter:brightness(1.08)}
   .pk-foot button.skip:hover{border-color:rgba(248,113,113,.45); color:var(--bad)}
+  /* ---------------- D-0006: flask belt ---------------- */
+  .belt{display:flex; flex-wrap:wrap; gap:8px; padding:12px 14px}
+  .belt-slot{position:relative; flex:1 1 118px; min-width:108px; max-width:190px; border:1px solid var(--hair); border-radius:10px; background:var(--surface2); padding:9px 10px 8px; display:flex; flex-direction:column; gap:5px; min-height:74px; transition:opacity .2s,border-color .15s}
+  .belt-slot.filled{border-color:rgba(56,189,248,.28)}
+  .belt-slot.filled:hover{border-color:rgba(56,189,248,.5)}
+  .belt-slot.filled.off{opacity:.4}
+  .belt-slot.empty{border-style:dashed; background:transparent; align-items:center; justify-content:center; color:var(--mut2)}
+  .belt-slot .bnum{position:absolute; top:5px; right:8px; font:10px/1 var(--mono); color:var(--mut2)}
+  .belt-slot .btop{display:flex; align-items:center; gap:7px; min-width:0; padding-right:12px}
+  .belt-slot .bic{width:22px; height:22px; object-fit:contain; flex:none; filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
+  .belt-slot .bname{font-size:11.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0}
+  .belt-slot a.bname{text-decoration:none}
+  .belt-slot a.bname:hover{color:var(--g-flask)}
+  .belt-slot .bfoot{display:flex; align-items:center; justify-content:space-between; gap:6px; margin-top:auto}
+  .belt-slot .bprice{font:11px/1.2 var(--mono); color:var(--fg); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .belt-slot .bprice .unp{color:var(--mut2); font-style:italic}
+  .belt-slot .binc{display:inline-flex; margin:0}
+  .belt-slot .binc input{accent-color:var(--g-flask); cursor:pointer; margin:0}
+  .belt-slot .belt-empty-label{font-size:10.5px; letter-spacing:.06em; text-transform:uppercase}
+  /* ---------------- D-0006: gem host-grouping ---------------- */
+  .ghost-grp{border-top:1px solid var(--hair2)}
+  .ghost-grp:first-child{border-top:none}
+  .ghost-head{display:flex; align-items:center; gap:8px; padding:9px 14px 6px; font-size:11px; color:var(--mut); background:rgba(255,255,255,.014)}
+  .ghost-head .hs{font-weight:600; color:var(--fg); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .ghost-head .huq{font-size:9px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--g-jewel); border:1px solid rgba(167,139,250,.5); border-radius:99px; padding:1px 6px; flex:none}
+  .ghost-head .hc{margin-left:auto; color:var(--mut2); flex:none}
+  .gem-active{display:grid; grid-template-columns:26px minmax(120px,1fr) auto; gap:12px; align-items:center; padding:8px 14px; border-bottom:1px solid var(--hair2); transition:opacity .2s}
+  .gem-active.off{opacity:.4}
+  .gem-active .cb input{accent-color:var(--g-gem); cursor:pointer; margin:0}
+  .gem-active .gnm{min-width:0}
+  .gem-active .gnm .gt{font-weight:600; font-size:12.5px; display:flex; align-items:center; gap:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-decoration:none}
+  .gem-active .gnm a.gt:hover{color:var(--g-gem)}
+  .gem-active .gnm .gmeta{color:var(--mut); font-size:10.5px; font-family:var(--mono); margin-top:1px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .gem-active .gp{text-align:right; font-family:var(--mono); font-size:13px; font-weight:600; white-space:nowrap}
+  .gem-active .gp .unp{color:var(--mut2); font-size:11px; font-style:italic; font-weight:400}
+  .badge.granted{color:var(--amber); border-color:rgba(251,191,36,.5)}
+  .gem-sups{padding:3px 14px 8px 40px; display:flex; flex-direction:column; gap:4px; border-bottom:1px solid var(--hair2); background:rgba(255,255,255,.01)}
+  .gem-sup{display:flex; align-items:center; gap:8px; font-size:11.5px; color:var(--mut)}
+  .gem-sup .gsic{width:16px; height:16px; object-fit:contain; flex:none; opacity:.9}
+  .gem-sup .gsn{color:var(--fg); font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0}
+  .gem-sup .gsmeta{font-family:var(--mono); font-size:10px; color:var(--mut2); flex:none}
+  .gem-sup .gsp{margin-left:auto; font-family:var(--mono); font-size:11px; color:var(--mut); white-space:nowrap; flex:none}
+  .gem-sup.granted .gsn{text-decoration:line-through; opacity:.65}
+  .gem-sup.granted .gsp{text-decoration:line-through; opacity:.6}
+  .gem-sup .gtag{font-size:9px; color:var(--amber); text-transform:uppercase; letter-spacing:.04em; font-weight:700; margin-left:auto; flex:none}
+  /* ---------------- D-0006: autoscan (glow adapts to teal accent) ---------------- */
+  .pk-autoscan{padding:12px 16px 2px}
+  .pk-autoscan .autoscan{
+    --accent:var(--ac);
+    width:100%; padding:10px 12px; border-radius:9px; cursor:pointer;
+    font:700 12.5px/1.2 var(--sans); letter-spacing:.04em;
+    background:linear-gradient(180deg,rgba(45,212,191,.17),rgba(45,212,191,.06));
+    border:1px solid var(--accent); color:var(--accent); position:relative;
+    box-shadow:0 0 0 1px var(--accent) inset,
+               0 0 8px  color-mix(in srgb, var(--accent) 55%, transparent),
+               0 0 18px color-mix(in srgb, var(--accent) 35%, transparent);
+    animation:autoscanPulse 1.8s ease-in-out infinite;
+    transition:filter .15s, transform .05s;
+  }
+  .pk-autoscan .autoscan:hover{filter:brightness(1.12)}
+  .pk-autoscan .autoscan:active{transform:translateY(1px)}
+  @keyframes autoscanPulse{
+    0%,100%{ box-shadow:0 0 0 1px var(--accent) inset,
+                        0 0 6px  color-mix(in srgb, var(--accent) 45%, transparent),
+                        0 0 14px color-mix(in srgb, var(--accent) 25%, transparent); }
+    50%    { box-shadow:0 0 0 1px var(--accent) inset,
+                        0 0 12px color-mix(in srgb, var(--accent) 70%, transparent),
+                        0 0 26px color-mix(in srgb, var(--accent) 45%, transparent); }
+  }
+  .pk-bulk{padding:8px 16px 12px; border-top:1px solid var(--hair2); background:var(--surface2)}
+  .pk-bulk .pa-skip.small{
+    width:100%; padding:6px 10px; border-radius:7px; cursor:pointer;
+    font-size:11px; color:var(--mut); background:transparent; border:1px solid var(--hair);
+    transition:color .15s, border-color .15s;
+  }
+  .pk-bulk .pa-skip.small:hover{color:var(--bad); border-color:rgba(248,113,113,.4)}
+  @media(prefers-reduced-motion:reduce){ .pk-autoscan .autoscan{animation:none} }
   /* loading / error */
   .progress{margin:0 2px 16px; padding:13px 15px; border:1px solid var(--hair); border-radius:10px; background:var(--surface); display:flex; align-items:center; gap:11px; color:var(--mut); font-size:12.5px}
   .spinner{width:14px; height:14px; border:2px solid var(--hair); border-top-color:var(--ac); border-radius:50%; animation:spin .8s linear infinite; flex:none}
@@ -500,6 +577,11 @@ function renderGroups(){
         <label class="chk gtog" title="Toggle whole group"><input type="checkbox" data-g="${grp.group}" ${anyOn&&allOn?"checked":""}></label>
       </div>`;
 
+    // D-0006: flasks render as a 5-slot belt (flask order, overflow shown); gems group by
+    // host item with supports nested under their active. Other groups keep dumbbell rows.
+    if(grp.group==="flask"){ h+=beltHTML(grp.items); h+=`</div>`; return; }
+    if(grp.group==="gem"){ h+=gemGroupsHTML(); h+=`</div>`; return; }
+
     // rows in chosen sort order, scoped to this group
     let rowsForGrp=grp.items.map(it=>{
       const k=String(it.index), p=s.priced[k];
@@ -526,6 +608,97 @@ function renderGroups(){
     h+=`</div>`;
   });
   $("#groups").innerHTML=h;
+}
+
+/* ---- D-0006: FLASK BELT — 5 generic slots filled in flask order, overflow shown,
+   no life/mana name classification (a slot is just belt position N) ---- */
+function beltHTML(items){
+  const s=bpc.state;
+  const slots=[];
+  items.forEach((it,i)=>{
+    const k=String(it.index), p=s.priced[k];
+    const on=!!s.enabled[k];
+    const priced=p&&p.chaos.median!=null;
+    const ic=it.icon?`<img class="bic" src="${E(it.icon)}" alt="">`:"";
+    const nm=(priced&&p.trade_url)
+      ? `<a class="bname" href="${E(p.trade_url)}" target="_blank" rel="noopener" title="${E(it.name)}">${E(it.name)}</a>`
+      : `<span class="bname" title="${E(it.name)}">${E(it.name)}</span>`;
+    const priceCell=priced
+      ? `<span class="bprice">${bpc.priceHTML(p.chaos.median*(it.count||1))}</span>`
+      : `<span class="bprice"><span class="unp">not priced</span></span>`;
+    const inc=priced
+      ? `<label class="binc"><input type="checkbox" class="inc" data-k="${E(k)}" ${on?"checked":""}></label>`
+      : "";
+    slots.push(`<div class="belt-slot filled ${on?"":"off"}" data-k="${E(k)}">
+      <span class="bnum">${i+1}</span>
+      <div class="btop">${ic}${nm}</div>
+      <div class="bfoot">${priceCell}${inc}</div>
+    </div>`);
+  });
+  // pad up to the 5-slot belt with empty placeholders (overflow slots 6+ already rendered above)
+  for(let i=items.length;i<5;i++){
+    slots.push(`<div class="belt-slot empty"><span class="bnum">${i+1}</span><span class="belt-empty-label">empty</span></div>`);
+  }
+  return `<div class="belt">${slots.join("")}</div>`;
+}
+
+/* ---- D-0006: GEM SECTION — group under host item; nest supports under their active ---- */
+function gemGroupsHTML(){
+  const groups=bpc.gemGroups();
+  if(!groups.length) return "";
+  let h="";
+  groups.forEach(g=>{
+    h+=`<div class="ghost-grp"><div class="ghost-head">
+      <span class="hs">${E(g.header)}</span>
+      ${g.unique?`<span class="huq">unique</span>`:""}
+      <span class="hc">${g.items.length} skill${g.items.length>1?"s":""}</span>
+    </div>`;
+    g.items.forEach(it=>{ h+=gemRowHTML(it); });
+    h+=`</div>`;
+  });
+  return h;
+}
+function gemRowHTML(it){
+  const s=bpc.state, k=String(it.index), p=s.priced[k];
+  const on=!!s.enabled[k];
+  const bd=bpc.gemBreakdown(k);
+  const active=bd.gems[0]||{name:it.name,level:it.level,quality:it.quality,corrupted:it.corrupted,granted:!!it.granted};
+  const sups=bd.gems.slice(1);
+  const granted=!!it.granted;                 // GRANTED tag reads it.granted ONLY (spec §B.2)
+  const priced=p&&p.chaos.median!=null;
+  const tu=(p&&p.trade_url)||active.trade_url||"";
+  const gbadge=granted?'<span class="badge granted">granted</span>':"";
+  const nm=tu
+    ? `<a class="gt" href="${E(tu)}" target="_blank" rel="noopener">${E(active.name)}${gbadge}</a>`
+    : `<span class="gt">${E(active.name)}${gbadge}</span>`;
+  const meta=`L${active.level!=null?active.level:"?"}${active.quality?" · "+active.quality+"%":""}${active.corrupted?" · corr":""}${sups.length?" · "+sups.length+" sup":""}`;
+  const priceCell=granted
+    ? `<span class="unp">granted — not counted</span>`
+    : (bd.total!=null?bpc.priceHTML(bd.total)
+        :(priced?bpc.priceHTML(p.chaos.median):`<span class="unp">not priced</span>`));
+  const inc=priced
+    ? `<span class="cb"><input type="checkbox" class="inc" data-k="${E(k)}" ${on?"checked":""}></span>`
+    : `<span class="cb"></span>`;
+  let h=`<div class="gem-active ${on?"":"off"}" data-k="${E(k)}">
+    ${inc}
+    <span class="gnm">${nm}<div class="gmeta">${E(meta)}</div></span>
+    <span class="gp">${priceCell}</span>
+  </div>`;
+  if(sups.length){
+    h+=`<div class="gem-sups">`;
+    sups.forEach(sg=>{
+      const sgr=!!sg.granted;
+      const sic=sg.icon?`<img class="gsic" src="${E(sg.icon)}" alt="">`:"";
+      const smeta=`L${sg.level!=null?sg.level:"?"}${sg.quality?"/"+sg.quality:""}`;
+      const sp=sgr?`<span class="gtag">granted</span>`
+                  :`<span class="gsp">${sg.chaos!=null?bpc.priceHTML(sg.chaos):"—"}</span>`;
+      h+=`<div class="gem-sup ${sgr?"granted":""}">
+        ${sic}<span class="gsn">${E(sg.name)}</span><span class="gsmeta">${E(smeta)}</span>${sp}
+      </div>`;
+    });
+    h+=`</div>`;
+  }
+  return h;
 }
 
 function rowHTML(o,axisMax,col){
@@ -870,6 +1043,9 @@ bpc.on("rare",info=>{
 
 function drawPicker(box,info){
   const r=info.rare;
+  // D-0006: bulk actions only when walking >1 remaining rare (never for a single "edit affixes")
+  const remain=bpc.remainingRares().length;
+  const showBulk=!info.single && remain>1;
   let usePseudo=!!(r.pseudo&&r.pseudo.length);
   let query="";
 
@@ -919,13 +1095,19 @@ function drawPicker(box,info){
       <div class="pk-scope">${E(r.scope||"")}${info.redo?" · re-submit to replace":""}</div>
       ${(r.pseudo&&r.pseudo.length)?`<label class="pk-pseudo"><input type="checkbox" id="pseu" ${usePseudo?"checked":""}> Combine resistances (pseudo-total) <span class="ph">recommended</span></label>`:""}
     </div>
+    ${showBulk?`<div class="pk-autoscan">
+      <button class="autoscan" id="pSearchAll" type="button" title="price all ${remain} remaining rares with default all-affix searches">⚡ Autoscan (${remain})</button>
+    </div>`:""}
     <div class="pk-search"><input id="afxq" placeholder="filter affixes…" autocomplete="off"></div>
     <div class="pk-list" id="afxlist">${listHTML()}</div>
     <div class="pk-foot">
       ${info.index>0?`<button class="ghost" id="pkback">← Back</button>`:""}
       <button class="primary" id="pksearch">${info.redo?"Re-search":"Search this item"}</button>
       <button class="skip" id="pkskip">Skip</button>
-    </div>`;
+    </div>
+    ${showBulk?`<div class="pk-bulk">
+      <button class="pa-skip small" id="pSkipAll" type="button">skip all (don't price)</button>
+    </div>`:""}`;
 
   const pe=box.querySelector("#pseu");
   if(pe) pe.onchange=()=>{ usePseudo=pe.checked; box.querySelector("#afxlist").innerHTML=listHTML(); applyQuery(); };
@@ -937,6 +1119,9 @@ function drawPicker(box,info){
       d.style.display=(!query||t.indexOf(query)>=0)?"":"none";
     });
   }
+  // D-0006 bulk actions (ids kept so wiring stays stable): Autoscan = search-all-default; skip-all
+  const sa=box.querySelector("#pSearchAll"); if(sa) sa.onclick=()=>bpc.searchAllRares();
+  const ka=box.querySelector("#pSkipAll");   if(ka) ka.onclick=()=>bpc.skipAllRares();
   const pb=box.querySelector("#pkback"); if(pb) pb.onclick=()=>bpc.backRare();
   box.querySelector("#pksearch").onclick=()=>{
     const filters=[],equip=[];

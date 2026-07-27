@@ -307,12 +307,21 @@ def _run_job(job_id, url, league, refresh, advanced, cache_key="", status="onlin
                 row["corrupted"] = it.corrupted
                 row["sockets"] = len(it.supports)   # PoE1 gems have no sockets; carry support count
                 row["supports"] = it.supports
-                # Skills you BOUGHT live in the gem panel (inventoryId "SkillSlots"); skills
-                # granted by gear/passives/weapon-defaults sit elsewhere (DefaultAttackSkills,
-                # AscendancySkills, or no inventoryId) -- those aren't bought, so default OFF.
-                # (inventoryId is reliable; the blank-gem icon is just missing art and mis-fires.)
-                _inv = str((it.raw or {}).get("inventoryId") or "")
-                row["granted"] = not _inv.startswith("SkillSlot")
+                # GRANTED (feedback1-spec.md B.1): the engine now computes this from the character
+                # JSON (itemProvidedGems / isBuiltInSupport; poeninja._gem_is_granted), so read the
+                # engine value directly. The old PoE2-era heuristic
+                # `not inventoryId.startswith("SkillSlot")` was WRONG for PoE1 -- gems have
+                # inventoryId == None, so it flagged EVERY gem granted (the owner's reported bug).
+                # Deleted here, not left as a dead fallback (CLAUDE.md RULE 6).
+                row["granted"] = bool(it.granted)
+                # Host-item info (spec D.1, additive): lets skins group gems under their host BEFORE
+                # the price lands. core.js gemHost() reads priced-first then falls back to these
+                # skeleton fields. All five are guaranteed on the Item (models.py defaults).
+                row["host_slot"] = it.host_slot
+                row["host_name"] = it.host_name
+                row["host_base"] = it.host_base
+                row["host_unique"] = it.host_unique
+                row["host_inventory_id"] = it.host_inventory_id
             else:                                   # affixes for the hover tooltip
                 mods = {"implicit": [util.strip_rich(m).strip() for m in (it.implicit_mods or [])],
                         "explicit": [util.strip_rich(m).strip() for m in (it.explicit_mods or [])]}
@@ -692,6 +701,59 @@ PAGE = r"""<!doctype html>
   .pqueue{color:var(--mut);font-size:12px;margin-left:auto}
   .ptoggle{display:block;color:var(--amber);font-size:13px;margin:2px 0 12px;cursor:pointer}
   .ptoggle input{vertical-align:-2px;margin-right:6px}
+  /* --- D-0006 flask belt (5 generic slots in flask order; no life/mana classification) --- */
+  .belt{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 6px}
+  .beltslot{flex:1 1 150px;min-width:140px;background:var(--panel);border:1px solid var(--line);
+    border-radius:9px;padding:9px 11px;transition:opacity .12s,filter .12s}
+  .beltslot .belthd{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px}
+  .beltslot .beltpos{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+  .beltslot .iname{font-weight:600;font-size:13px;line-height:1.3}
+  .beltslot .beltnums{font-variant-numeric:tabular-nums;font-size:13px;margin-top:5px}
+  .beltslot .c-conf{margin-top:4px}
+  .beltslot .note{color:var(--mut);font-size:11px;margin-top:3px}
+  .beltslot.on{box-shadow:inset 3px 0 0 var(--acc)}
+  .beltslot.off{opacity:.4;filter:grayscale(1)}
+  .beltslot.off .beltnums{text-decoration:line-through}
+  .beltslot.unpriced input{opacity:.35}
+  .beltslot.empty{opacity:.5;display:flex;flex-direction:column;justify-content:center;
+    align-items:center;color:#5b606b;border-style:dashed;min-height:66px}
+  .beltslot.empty .beltempty{font-size:12px;margin-top:4px}
+  /* --- D-0006 gems grouped by host item; supports nested under their active --- */
+  .gemgroup{margin:6px 0 14px}
+  .gemhdr{font-size:13px;color:var(--fg);font-weight:600;margin:8px 0 2px;padding:5px 9px;
+    background:#191c22;border:1px solid var(--line);border-radius:7px}
+  .gemhdr .uniqtag{color:var(--acc);font-size:11px;font-weight:500;margin-left:6px;
+    text-transform:uppercase;letter-spacing:.03em}
+  .gmeta{color:var(--mut);font-size:11px;font-weight:400}
+  .sups{margin-top:4px}
+  .sups .sup{color:var(--mut);font-size:12px;padding:1px 0}
+  .sups .sup .supprice{font-variant-numeric:tabular-nums;color:var(--fg)}
+  .sups .sup.sgr{opacity:.6}
+  .sups .sup.sgr .supprice{text-decoration:line-through}
+  .badge-granted{font-size:10px;padding:1px 6px;border-radius:9px;background:#2a2016;
+    color:var(--amber);text-transform:uppercase;letter-spacing:.03em;margin-left:4px}
+  tr.gemrow.off .supprice{text-decoration:line-through}
+  /* --- D-0006 Autoscan (glowing, top of picker) + small skip-all (below) --- */
+  .pautoscan{margin:0 0 12px}
+  button.autoscan{display:block;width:100%;background:transparent;color:var(--acc);
+    border:1px solid var(--acc);font-weight:700;letter-spacing:.04em;padding:11px 18px;
+    box-shadow:0 0 0 1px var(--acc) inset,
+               0 0 8px  color-mix(in srgb,var(--acc) 55%,transparent),
+               0 0 18px color-mix(in srgb,var(--acc) 35%,transparent);
+    animation:autoscanPulse 1.8s ease-in-out infinite}
+  button.autoscan:hover{filter:brightness(1.12)}
+  @keyframes autoscanPulse{
+    0%,100%{box-shadow:0 0 0 1px var(--acc) inset,
+                       0 0 6px  color-mix(in srgb,var(--acc) 45%,transparent),
+                       0 0 14px color-mix(in srgb,var(--acc) 25%,transparent)}
+    50%    {box-shadow:0 0 0 1px var(--acc) inset,
+                       0 0 12px color-mix(in srgb,var(--acc) 70%,transparent),
+                       0 0 26px color-mix(in srgb,var(--acc) 45%,transparent)}}
+  @media (prefers-reduced-motion:reduce){button.autoscan{animation:none}}
+  .pbulk{margin-top:12px}
+  button.skipall{background:transparent;color:var(--mut);border:1px solid var(--line);
+    font-size:12px;font-weight:500;padding:6px 12px}
+  button.skipall:hover{color:var(--fg);border-color:#4a5468}
 </style></head>
 <body><div class="wrap">
   <h1>PoE1 Build Price Checker</h1>
@@ -731,6 +793,7 @@ let polling=null, JOB=null, jobId=null, advanced=false;
 let lastSource=null;     // the current build's source ({url} or {cache_key}) so control changes can re-run it
 let rendered=false, enabled={}, filled={}, rareOrder=[], curRare=0, picking=false;
 let curRareKey=null, usePseudo=true, decided=new Set();
+let gemKeys=new Set(), gemDefaulted=new Set(), gemSig='';   // D-0006 gem grouping state
 let RECENT=[], showAllRecent=false;
 function setBusy(b){ $('#go').disabled=b; }
 function pnum(s){ s=(s||'').trim(); if(s==='') return null; const n=Number(s); return isNaN(n)?null:n; }
@@ -759,6 +822,7 @@ async function runJob(extra){
   $('#out').innerHTML=''; $('#picker').innerHTML=''; $('#status').textContent='';
   JOB=null; rendered=false; enabled={}; filled={}; rareOrder=[]; curRare=0;
   picking=false; curRareKey=null; decided=new Set();
+  gemKeys=new Set(); gemDefaulted=new Set(); gemSig='';
   advanced=$('#advanced').checked;
   setBusy(true);
   $('#status').innerHTML='<span class="spin"></span>starting...';
@@ -817,7 +881,7 @@ function poll(){
     JOB=await r.json();
     if(JOB.state==='error'){ clearInterval(polling); fail(JOB.error||'error'); return; }
     if(JOB.items && JOB.items.length && !rendered){ renderSkeleton(); rendered=true; }
-    if(rendered){ fillPriced(); recompute(); if(advanced) maybePresentRare(); }
+    if(rendered){ fillPriced(); renderGems(); recompute(); if(advanced) maybePresentRare(); }
     const last=(JOB.progress&&JOB.progress.length)?JOB.progress[JOB.progress.length-1]:'working...';
     if(JOB.state==='done' && !picking){
       clearInterval(polling); setBusy(false);
@@ -848,11 +912,14 @@ function metaHead(){
 }
 function renderSkeleton(){
   rareOrder=JOB.items.filter(it=>it.category==='rare').map(it=>String(it.index));
+  gemKeys=new Set(JOB.items.filter(it=>it.group==='gem').map(it=>String(it.index)));
   let h=metaHead();
   for(const [g,title] of GROUPS){
     const rows=JOB.items.filter(it=>it.group===g);
     if(!rows.length) continue;
     h+='<h3>'+esc(title)+'<label class="gtog"><input type="checkbox" class="gall" data-g="'+g+'" checked> all</label></h3>';
+    if(g==='flask'){ h+=beltHTML(rows); continue; }             // D-0006 §C: 5-slot belt
+    if(g==='gem'){ h+='<div id="gemsec"></div>'; continue; }    // D-0006 §D: grouped, filled by renderGems()
     h+='<table><thead><tr><th class="cb"></th><th>Item</th><th class="num">min</th>'+
        '<th class="num">median</th><th class="num">high</th><th>conf</th></tr></thead><tbody>';
     for(const it of rows){
@@ -874,13 +941,108 @@ function renderSkeleton(){
      '<div id="tinc"></div></div>';
   $('#out').innerHTML=h;
 }
+// D-0006 §C: render the flask group as a 5-slot belt in flask order (overflow shown, never
+// dropped; no life/mana classification -- a slot is just "belt position N"). Slots carry the
+// same c-min/c-med/c-high/c-conf/note/iname/input.row hooks fillPriced() fills in place.
+function beltHTML(rows){
+  const n=Math.max(5,rows.length);
+  let h='<div class="belt">';
+  for(let i=0;i<n;i++){
+    const it=rows[i];
+    if(!it){ h+='<div class="beltslot empty"><div class="beltpos">slot '+(i+1)+'</div>'+
+       '<div class="beltempty">empty</div></div>'; continue; }
+    const k=String(it.index), cnt=it.count>1? ' &times;'+it.count : '';
+    h+='<div class="beltslot pending" data-k="'+esc(k)+'">'+
+       '<div class="belthd"><span class="beltpos">slot '+(i+1)+'</span>'+
+         '<input type="checkbox" class="row" data-k="'+esc(k)+'" disabled></div>'+
+       '<span class="iname">'+esc(it.name)+'</span>'+cnt+
+       '<div class="beltnums"><span class="c-min">&hellip;</span> / '+
+         '<span class="c-med">&hellip;</span> / <span class="c-high">&hellip;</span></div>'+
+       '<div class="c-conf"></div><div class="note"></div></div>';
+  }
+  return h+'</div>';
+}
+// D-0006 §D: render the gem section grouped by HOST ITEM, supports nested under their active.
+// Data-driven from JOB.items(gem)+JOB.priced; rebuilt only when a gem signature changes.
+// Grouping uses the priced entry's host_* (authoritative); before a price lands it falls back
+// to an ungrouped "Gems" bucket -- rows are never dropped.
+function renderGems(){
+  const host=$('#gemsec'); if(!host) return;
+  const gemItems=JOB.items.filter(it=>it.group==='gem'); if(!gemItems.length) return;
+  // default a gem's include-state the first time its price lands: ON iff priced & not granted.
+  gemItems.forEach(it=>{ const k=String(it.index), p=JOB.priced[k];
+    if(p && p.chaos.median!=null && !gemDefaulted.has(k)){ gemDefaulted.add(k); enabled[k]=!it.granted; }});
+  const sig=gemItems.map(it=>{ const k=String(it.index), p=JOB.priced[k];
+    return k+':'+(p? (p.total_chaos+'|'+p.confidence+'|'+(p.gems?p.gems.length:0)+'|'+(p.host_inventory_id||'')+'|'+p.trade_url) : '-')+
+      ':'+(enabled[k]?1:0)+':'+(it.granted?1:0); }).join(',');
+  if(sig===gemSig) return; gemSig=sig;
+  const groups=[], byKey={};
+  gemItems.forEach(it=>{ const k=String(it.index), p=JOB.priced[k]||{};
+    const gk=(p.host_inventory_id||it.host_inventory_id||'');
+    let grp=byKey[gk];
+    if(!grp){ grp={key:gk, slot:(p.host_slot||it.host_slot||''), name:(p.host_name||it.host_name||''),
+        unique:!!(p.host_unique||it.host_unique), items:[]}; byKey[gk]=grp; groups.push(grp); }
+    grp.items.push(it);
+  });
+  let h='';
+  for(const grp of groups){
+    const header = grp.slot&&grp.name ? esc(grp.slot)+' &mdash; '+esc(grp.name)
+      : (grp.slot? esc(grp.slot) : (grp.name? esc(grp.name) : 'Gems'));
+    h+='<div class="gemgroup"><div class="gemhdr">'+header+
+       (grp.unique?' <span class="uniqtag">unique</span>':'')+'</div>'+
+       '<table><thead><tr><th class="cb"></th><th>Skill</th>'+
+       '<th class="num">total</th><th>conf</th></tr></thead><tbody>';
+    for(const it of grp.items) h+=gemRowHTML(it);
+    h+='</tbody></table></div>';
+  }
+  host.innerHTML=h;
+}
+function gemRowHTML(it){
+  const k=String(it.index), p=JOB.priced[k], div=divr();
+  const priced = !!(p && p.chaos.median!=null);
+  const granted = !!it.granted;
+  const active = (p && p.gems && p.gems.length) ? p.gems[0] : null;
+  const cls=['gemrow']; if(granted) cls.push('granted');
+  if(!priced && !granted) cls.push('unpriced');
+  cls.push(enabled[k]? 'on':'off');
+  const lv=(active? active.level : it.level), q=(active? active.quality : it.quality);
+  let nm=esc(it.name)+' <span class="gmeta">Lv '+lv+'/'+q+'</span>';
+  if(active && active.trade_url) nm='<a href="'+esc(active.trade_url)+'" target="_blank" rel="noopener">'+nm+'</a>';
+  if(granted) nm+=' <span class="badge-granted">granted</span>';
+  // nested linked gems: prefer the priced gems[1:] (per-gem price); fall back to skeleton supports.
+  const nested = (p && p.gems && p.gems.length>1) ? p.gems.slice(1)
+    : (it.supports||[]).map(s=>({name:s.name, level:s.level, quality:s.quality,
+        chaos:null, granted:!!s.granted, support:s.support!==false}));
+  let sup='';
+  if(nested.length){
+    sup='<div class="sups">';
+    for(const g of nested){
+      const gc = (g.chaos!=null)? fmt(g.chaos,div) : '&mdash;';
+      const sc=['sup']; if(g.granted) sc.push('sgr');
+      sup+='<div class="'+sc.join(' ')+'">'+(g.support===false?'+ ':'&#8627; ')+esc(g.name)+
+        ' <span class="gmeta">Lv '+g.level+'/'+g.quality+'</span> '+
+        '<span class="supprice">'+gc+'</span>'+
+        (g.granted?' <span class="badge-granted">granted</span>':'')+'</div>';
+    }
+    sup+='</div>';
+  }
+  const note = (p && p.note)? '<div class="note">'+esc(p.note)+'</div>' : '';
+  const total = priced ? fmt(p.chaos.median,div) : (granted? '&mdash;' : '&hellip;');
+  const conf  = p? '<span class="badge '+esc(p.confidence)+'">'+esc(p.confidence)+'</span>' : '';
+  return '<tr data-k="'+esc(k)+'" class="'+cls.join(' ')+'">'+
+    '<td class="cb"><input type="checkbox" class="row" data-k="'+esc(k)+'"'+
+      (priced?'':' disabled')+(enabled[k]?' checked':'')+'></td>'+
+    '<td>'+nm+sup+note+'</td>'+
+    '<td class="num">'+total+'</td><td>'+conf+'</td></tr>';
+}
 function fillPriced(){
   const div=divr();
   for(const k in JOB.priced){
+    if(gemKeys.has(k)) continue;                  // gems are rendered by renderGems() (D-0006 §D)
     const p=JOB.priced[k], priced=p.chaos.median!=null;
     const sig=p.method+'|'+p.chaos.min+'|'+p.chaos.median+'|'+p.chaos.high+'|'+p.note+'|'+p.trade_url;
     if(filled[k]===sig) continue;                 // re-render when the price changes (re-search)
-    const row=document.querySelector('tr[data-k="'+cssesc(k)+'"]'); if(!row) continue;
+    const row=document.querySelector('[data-k="'+cssesc(k)+'"]'); if(!row) continue;
     filled[k]=sig;
     row.querySelector('.c-min').innerHTML=fmt(p.chaos.min,div);
     row.querySelector('.c-med').innerHTML=fmt(p.chaos.median,div);
@@ -898,9 +1060,9 @@ function fillPriced(){
     else { row.classList.add('unpriced'); }
   }
   if(advanced) rareOrder.forEach(k=>{
-    const row=document.querySelector('tr[data-k="'+cssesc(k)+'"]');
+    const row=document.querySelector('[data-k="'+cssesc(k)+'"]');
     if(row && !filled[k] && JOB.rares[k] && JOB.rares[k].status==='awaiting'){
-      row.classList.add('await'); row.querySelector('.c-med').textContent='awaiting input';
+      row.classList.add('await'); const med=row.querySelector('.c-med'); if(med) med.textContent='awaiting input';
     }
   });
 }
@@ -911,7 +1073,7 @@ function recompute(){
     const k=String(it.index), p=JOB.priced[k];
     if(!p || p.chaos.median==null) continue;
     tot++;
-    const row=document.querySelector('tr[data-k="'+cssesc(k)+'"]');
+    const row=document.querySelector('[data-k="'+cssesc(k)+'"]');
     if(enabled[k]){
       inc++; const c=it.count||1;
       if(p.chaos.min!=null) mn+=p.chaos.min*c;
@@ -983,9 +1145,15 @@ function affixRow(a){
 function renderPicker(){
   const k=curRareKey, rare=JOB.rares[k];
   const redo = decided.has(k);
+  const remain = rareOrder.filter(x=>!decided.has(x)).length;   // D-0006 §E: rares still to decide
   let h='<div class="pcard"><div class="ptitle">Rare '+(curRare+1)+' of '+rareOrder.length+': '+esc(rare.name)+'</div>'+
     '<div class="psub">Tick the affixes a comparable item must have; set min/max (blank = any). Scope: '+esc(rare.scope)+
     (redo? ' <b>(already submitted - re-submit to replace it)</b>' : '')+'</div>';
+  // D-0006 §E: glowing "Autoscan" at the TOP -- prices every remaining rare with its default
+  // all-affix search (the former "Search all N"). Only shown when >1 rare still needs a decision.
+  if(remain>1) h+='<div class="pautoscan"><button class="autoscan" id="pSearchAll" type="button" '+
+    'title="price all '+remain+' remaining rares with default all-affix searches">'+
+    '⚡ Autoscan ('+remain+')</button></div>';
   if(rare.pseudo && rare.pseudo.length){
     h+='<label class="ptoggle"><input type="checkbox" class="pseudotgl" '+(usePseudo?'checked':'')+'> '+
        'Combine resistances into a pseudo total (search the item\'s total resistance instead of each one)</label>';
@@ -998,7 +1166,11 @@ function renderPicker(){
      (curRare>0? '<button class="pback skip" type="button">&larr; Back</button>' : '')+
      '<button class="psubmit" type="button">'+(redo? 'Re-search this item' : 'Search this item')+'</button>'+
      '<button class="pskip skip" type="button">Skip (don\'t price)</button>'+
-     '<span class="pqueue">Rare '+(curRare+1)+' of '+rareOrder.length+'</span></div></div>';
+     '<span class="pqueue">Rare '+(curRare+1)+' of '+rareOrder.length+'</span></div>';
+  // D-0006 §E: small, non-glowing "skip all (don't price)" kept below the per-item buttons.
+  if(remain>1) h+='<div class="pbulk"><button class="skipall" id="pSkipAll" type="button">'+
+    'skip all (don\'t price)</button></div>';
+  h+='</div>';
   $('#picker').innerHTML=h;
 }
 async function submitRare(skip){
@@ -1021,13 +1193,56 @@ async function submitRare(skip){
     body={filters:sels, equip:equips};
   }
   decided.add(k); picking=false; $('#picker').innerHTML='';
-  try{ await fetch('/api/rare?id='+jobId+'&index='+encodeURIComponent(k),
-    {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); }catch(e){}
+  await postRare(k, body);
   if(JOB) maybePresentRare();        // advance to the next rare still needing input
+}
+function postRare(k, body){
+  return fetch('/api/rare?id='+jobId+'&index='+encodeURIComponent(k),
+    {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).catch(()=>{});
+}
+// D-0006 §E: the default all-affix search for one rare, built WITHOUT the DOM (mirrors what
+// "Search this item" submits with no edits). Negated ('reduced') mods carry a NEGATIVE value on
+// the opposite-polarity stat -> filter on MAX, not MIN. `prefer` (backend) marks default-checked
+// affixes; fall back to `searchable` for older payloads.
+function defaultRarePayload(k){
+  const r=JOB.rares[k]; if(!r) return {filters:[], equip:[]};
+  const usePs=!!(r.pseudo && r.pseudo.length);
+  const filters=[], equip=[];
+  const want=a=>a.prefer!==undefined? !!a.prefer : !!a.searchable;
+  const statF=a=>(a.negated||(a.value!=null&&a.value<0))
+    ? {stat_id:a.stat_id, min:null, max:a.value}
+    : {stat_id:a.stat_id, min:a.value, max:null};
+  (r.affixes||[]).forEach(a=>{
+    if(!a.searchable || !want(a)) return;
+    if(usePs && a.resist) return;                       // covered by the pseudo total
+    if(a.kind==='equip') equip.push({key:a.key, min:a.value, max:null});
+    else filters.push(statF(a));
+  });
+  if(usePs) (r.pseudo||[]).forEach(p=>{ if(p.searchable && want(p)) filters.push(statF(p)); });
+  return {filters:filters, equip:equip};
+}
+// D-0006 §E: Autoscan -- price every remaining rare with its default all-affix search.
+async function searchAllRares(){
+  picking=false; curRareKey=null; $('#picker').innerHTML='';
+  const rem=rareOrder.filter(x=>!decided.has(x));
+  for(const k of rem){
+    decided.add(k);
+    await postRare(k, JOB.rares[k]? defaultRarePayload(k) : {skip:true});
+  }
+  if(JOB) maybePresentRare();
+}
+// D-0006 §E: skip all -- decide every remaining rare as "don't price".
+async function skipAllRares(){
+  picking=false; curRareKey=null; $('#picker').innerHTML='';
+  const rem=rareOrder.filter(x=>!decided.has(x));
+  for(const k of rem){ decided.add(k); await postRare(k, {skip:true}); }
+  if(JOB) maybePresentRare();
 }
 
 document.addEventListener('click',e=>{
   const t=e.target; if(!t.classList) return;
+  if(t.id==='pSearchAll'){ searchAllRares(); return; }   // D-0006 §E: Autoscan (top of picker)
+  if(t.id==='pSkipAll'){ skipAllRares(); return; }       // D-0006 §E: skip all (below picker)
   if(t.classList.contains('pback')){ backRare(); return; }
   if(t.classList.contains('psubmit')){ submitRare(false); return; }
   if(t.classList.contains('pskip')){ submitRare(true); return; }
