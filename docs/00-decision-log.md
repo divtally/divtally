@@ -204,3 +204,18 @@ CARVE-OUT (flagged to owner): the how-it-works ENDPOINTS TABLE keeps literal API
 is a technical transparency disclosure, not marketing; strip on owner request. Public git
 identity: repo-local user = DivTally <divtally@gmail.com>, full history rewritten to it
 pre-publish (personal email never ships in public metadata).
+
+## D-0012 - Autoscan bridge timeout bug (found by owner's live test; fixed 2026-07-27)
+Owner's first real Autoscan (17 rares, extension installed) produced zero prices. Root cause:
+core.js sent ALL rares as ONE bridge message with a fixed 45s reply timeout, while the extension
+correctly prices serially under its conservative rate limiter (~2-4 min for 17 items) - the page
+dropped the pending handler long before the (successful) reply arrived, so no rows filled and no
+cache upload happened. Hypotheses REFUTED on the way: GGG does NOT reject chrome-extension
+Origins (live-tested 200); page->extension payload shape and priceQuery arg order are correct.
+Four questions: **instance** - chunked sequential sends (3 rares/message), per-chunk timeout
+30s+30s/item, progressive row fill, per-chunk cache POST, failed chunk never blocks the rest;
+**class** - the single-item path shares the same chunk code; no other multi-item bridge waits
+exist; **guard** - comment at the call site names this bug; **invariant** - a page must never
+await one multi-minute MV3 message reply; batch work is chunked so every reply lands well inside
+its own timeout. Extension/zips UNCHANGED (bug was page-side only). Redeployed to Pages.
+Validates the owner's test-before-store-submission call (D-0008 sequence change).

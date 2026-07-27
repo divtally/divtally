@@ -671,18 +671,20 @@
       var lg = (state.meta && state.meta.league) || "";
       (byLeague[lg] = byLeague[lg] || []).push({ key: r.key, query: q });
     });
-    var leagues = Object.keys(byLeague);
-    return Promise.all(leagues.map(function (lg) {
-      return new Promise(function (resolve) {
-        var id = bridgeSend("price", { league: lg, queries: byLeague[lg] });
-        pending[id] = function (resp) { resolve({ league: lg, resp: resp }); };
-        // safety timeout so a dropped reply never hangs the UI
-        setTimeout(function () { if (pending[id]) { delete pending[id]; resolve({ league: lg, resp: { error: "timed out" } }); } }, 45000);
-      });
-    })).then(function (batches) {
+    // Send in SMALL chunks, sequentially. The extension prices serially under its own
+    // conservative rate limiter, so a 17-item batch legitimately takes minutes — one big
+    // message with a fixed 45s reply timeout dropped the whole answer (the launch-day bug).
+    // Chunks keep every reply well inside its own timeout and rows fill progressively.
+    var CHUNK = 3;
+    var chunks = [];
+    Object.keys(byLeague).forEach(function (lg) {
+      for (var i = 0; i < byLeague[lg].length; i += CHUNK)
+        chunks.push({ league: lg, queries: byLeague[lg].slice(i, i + CHUNK) });
+    });
+    var cachedCount = 0;
+    function foldBatch(b) {
       var toCache = [];
-      batches.forEach(function (b) {
-        if (!b.resp || b.resp.error) return;
+      if (b.resp && !b.resp.error) {
         (b.resp.results || []).forEach(function (res) {
           var key = String(res.key);
           var it = state.items.find(function (x) { return String(x.index) === key; });
@@ -717,10 +719,22 @@
             note: "", trade_url: (state.priced[key] && state.priced[key].trade_url) || it.trade_url || ""
           } });
         });
-      });
-      if (toCache.length) cachePost(toCache);
-      return { ok: true, cached: toCache.length };
-    });
+      }
+      if (toCache.length) { cachedCount += toCache.length; cachePost(toCache); }
+    }
+    var idx = 0;
+    function nextChunk() {
+      if (idx >= chunks.length) return Promise.resolve({ ok: true, cached: cachedCount });
+      var c = chunks[idx++];
+      return new Promise(function (resolve) {
+        var id = bridgeSend("price", { league: c.league, queries: c.queries });
+        // sized to THIS chunk's worst-case limiter pacing, not the whole scan
+        var ms = 30000 + 30000 * c.queries.length;
+        pending[id] = function (resp) { resolve({ league: c.league, resp: resp }); };
+        setTimeout(function () { if (pending[id]) { delete pending[id]; resolve({ league: c.league, resp: { error: "timed out" } }); } }, ms);
+      }).then(function (b) { foldBatch(b); return nextChunk(); });   // a failed chunk never blocks the rest
+    }
+    return nextChunk();
   }
   function autoscan() { return priceRowsViaExtension(manualRows().filter(function (r) { return !r.priced; })); }
   function priceViaExtension(key) {
