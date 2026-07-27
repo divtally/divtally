@@ -3,7 +3,7 @@
 Ready-to-paste listing text for the Chrome Web Store, Microsoft Edge Add-ons, and Firefox AMO.
 One identity everywhere (name / icon / publisher / linked domain) per the B-001 trust checklist.
 The site URL is already set to `https://divtally.com`; the only remaining placeholder is
-`<REPO-URL-PLACEHOLDER>` (the source repo is not published yet) — fill it before submitting.
+`https://github.com/divtally/divtally` (the source repo is not published yet) — fill it before submitting.
 Not affiliated with Grinding Gear Games.
 
 Artifacts to upload: `public/dist/trade-bridge-chrome-edge-1.0.0.zip` (Chrome + Edge),
@@ -57,7 +57,7 @@ WHAT IT NEVER DOES
   source is public.
 
 OPEN SOURCE
-Full source (unminified): <REPO-URL-PLACEHOLDER>
+Full source (unminified): https://github.com/divtally/divtally
 How it works / privacy / rate-limit ethics: https://divtally.com/how-it-works
 
 NOT AFFILIATED
@@ -139,5 +139,5 @@ This extension itself uploads nothing; it only returns results to the page.
 ## Submission sequence note (B-001)
 Store review queues take days — submit early in the launch sequence, BEFORE (or in parallel with)
 the site go-live, so approval lands when the site is ready. The site URL (`https://divtally.com`)
-and the manifest content-script domains are already baked in; just fill the `<REPO-URL-PLACEHOLDER>`
+and the manifest content-script domains are already baked in; just fill the `https://github.com/divtally/divtally`
 (the source repo is not published yet), re-run `build_zips.py`, then upload.

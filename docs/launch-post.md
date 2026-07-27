@@ -5,7 +5,7 @@ the trust pitch — lead with it. Fill the `<PLACEHOLDER>`s (they mirror `config
 each venue (forum / Reddit / Discord), and post. Same story as the `/how-it-works` page.
 
 The site is `https://divtally.com`. Remaining placeholders to fill:
-- `<REPO-URL>` — your public, unminified source repo
+- `https://github.com/divtally/divtally` — your public, unminified source repo
 - `<CHROME-URL>` / `<EDGE-URL>` / `<FIREFOX-URL>` — store listings once approved
 
 ---
@@ -90,7 +90,7 @@ ACCURACY / HONESTY CAVEATS
   - Prices move constantly; treat everything as a snapshot.
 
 OPEN SOURCE + TRANSPARENCY
-  - Full source (site, function, worker, extension — all unminified): <REPO-URL>
+  - Full source (site, function, worker, extension — all unminified): https://github.com/divtally/divtally
   - How it works / privacy / rate-limit ethics / cache opt-out: https://divtally.com/how-it-works
 
 Feedback, bugs, and "it mispriced X" reports very welcome.

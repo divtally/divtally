@@ -32,7 +32,7 @@ window.BPC_CONFIG = {
     firefox: "REPLACE_ME_FIREFOX_AMO_URL"    // Firefox AMO listing
   },
 
-  REPO_URL: "REPLACE_ME_REPO_URL",           // e.g. https://github.com/you/buildpricechecker-poe1
+  REPO_URL: "https://github.com/divtally/divtally",           // e.g. https://github.com/you/buildpricechecker-poe1
 
   /* Optional. Leave as-is unless you know you need them. */
   DEFAULT_LEAGUE: "",                         // "" = use each build's own league; or pin e.g. "Standard"

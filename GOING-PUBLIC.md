@@ -220,7 +220,7 @@ STORE_URLS: {
   edge:    "https://microsoftedge.microsoft.com/addons/detail/<id>",
   firefox: "https://addons.mozilla.org/firefox/addon/<slug>/"
 },
-REPO_URL: "https://github.com/<you>/buildpricechecker-poe1"
+REPO_URL: "https://github.com/divtally/divtally"
 ```
 Store URLs can stay as placeholders until the stores approve (Phase 1) — just redeploy the site
 again when they land. Then push the update:
