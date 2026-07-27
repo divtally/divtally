@@ -89,7 +89,8 @@ even if the poe.ninja profile has since been deleted. **Loading a build shows it
 last-saved prices instantly and does no trade searching**; a build's full priced result is
 remembered between sessions. To refresh prices, use **Search all again** (re-runs every
 search) — changing the league/listing-status also re-searches, since those change the
-results. The CLI equivalent is `recover.py` (see below).
+results. The CLI equivalent is `recover.py` — it reloads a cached build snapshot from the
+command line, even if the poe.ninja profile is gone.
 
 **Include/exclude items:** every row has a checkbox (plus an "all" toggle per section).
 Untick an item to drop it from the totals — the min/median/high recompute instantly and
@@ -101,9 +102,11 @@ time. For each rare you see its affixes — tick the ones a comparable item must
 min/max per affix — then "Search this item" and you're immediately shown the next rare. The
 uniques and gems price in the background the whole time, so the table keeps filling while
 you choose; each rare you submit is queued and priced without breaking the flow. **Skip
-(don't price)** leaves that rare out entirely (no search). Leave the box unchecked and rares
-are priced automatically, requiring **all** of the item's affixes to be present (extras
-allowed).
+(don't price)** leaves that rare out entirely (no search). At the top of the picker, the
+glowing **Autoscan (N)** button prices every remaining rare immediately with the default
+all-affix search, and a small **skip all (don't price)** below it drops them all instead.
+Leave the box unchecked and rares are priced automatically, requiring **all** of the item's
+affixes to be present (extras allowed).
 
 Every rare row also has an **edit affixes** button (advanced mode). Click it any time —
 even after the build has finished pricing — to re-open that rare's affix picker, change the
@@ -230,7 +233,9 @@ bpc/
   trade.py      trade client (pathofexile.com/api/trade): rate limiter, search/fetch/exchange, caches
   statmap.py    map item mod text -> trade stat-filter ids (for rares)
   pricing.py    per-item query building + distribution -> min/median/high (+ gem/link pricing)
+  pob.py        Path of Building import-code / paste-link parsing
   currency.py   exchange-rate lookups + Chaos/Divine formatting
+  util.py       mod-text and misc shared helpers
   report.py     terminal table + JSON rendering
   models.py     dataclasses (Item / PriceResult / BuildEstimate)
   cache.py      tiny JSON disk cache with TTL

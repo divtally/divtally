@@ -137,3 +137,19 @@ around it. Effects: local web UI lands directly on the stash skin at `/` (picker
 to `/gallery`; `/v/<id>` and `/classic` unchanged); the public site (B-001) ships stash as the
 face; new UI features land stash-FIRST and other skins are best-effort maintenance, no longer
 feature-parity targets (supersedes the all-skins fan-out default of D-0006's round).
+
+## D-0008 - GO PUBLIC greenlit; cleanup first (Locked, 2026-07-26)
+Owner greenlit B-001 (public launch, full plan in docs/backlog.md): manual whisper-paste path +
+Trade Bridge extension pushed via the trust checklist, zero-cost stack (CF Pages + free-tier
+function + Workers KV), stash as the face (D-0007). Sequence he set: (1) dead-code cleanup pass
+(scope: bpc/*.py, web.py, core.js, root files; alternate skins stay per D-0007 - only obvious
+residue there), then (2) build the public deliverables (static site public-mode, api/build
+function, KV cache worker, owner-PC seeding job, extension store packaging), with (3) a
+step-by-step owner guide (GOING-PUBLIC.md) for every manual step (accounts, deploys, store
+submissions, domain, scheduled seeding) - the PoE2 setup-docx pattern, updated for PoE1.
+**Cleanup outcome (2026-07-26):** repo already clean - finders + main-agent referee: kept
+`_reference.html` (documentary worked-example for skin builders) and the core.js unused exports
+(deliberate API surface, public build consumes some); fixed 3 README drift items (recover.py
+dangling cross-ref, Autoscan missing from advanced-search section, pob.py/util.py missing from
+layout). Note: the workflow's two prove-agents died on a structured-output cap - verdicts were
+re-derived by the main agent, not taken from the workflow's misleading "all refuted" return.
