@@ -679,14 +679,14 @@
     background:var(--inner); border:1px solid var(--bz1); border-radius:3px; padding:5px 4px;}
   .countbar .countmin:focus{outline:none; border-color:var(--bz3); box-shadow:0 0 0 1px rgba(200,170,110,.3);}
   /* per-row "move to group" select in the edit-groups editor */
-  .afx .grpmove{display:block; margin-top:4px; font-family:var(--serif); font-size:11px; padding:2px 5px; color:var(--bz3);}
+  .afx .grpmove{display:inline-block; margin-top:5px; font-family:var(--serif); font-size:13px; padding:4px 8px; color:var(--bz3);}
   /* drag-and-drop affixes between groups */
   .afx.draggable-row .atext{cursor:grab;}
   .afx.draggable-row.dragging{opacity:.45;}
   .grpbox.dragover{outline:2px dashed var(--bz3); outline-offset:-3px; background:rgba(200,170,110,.07);}
   .grpempty{padding:10px 8px; font-size:12px; color:var(--mut); font-style:italic; text-align:center; border:1px dashed transparent;}
-  .paddgrp{margin:8px 0 2px;}
-  .paddgrp .addgrp{width:100%; justify-content:center; text-align:center; color:var(--bz3); border-style:dashed; font-size:12px;}
+  .paddgrp{margin:10px 0 2px; display:flex; justify-content:center;}
+  .paddgrp .addgrp{justify-content:center; text-align:center; color:var(--bz3); border-style:dashed; font-size:15px; padding:9px 34px;}
   .unsrch{margin-top:8px;}
   .ptrade{margin-top:12px;}
   .ptrade .viewtrade{width:100%; justify-content:center; text-align:center; color:var(--bz3); border-color:var(--bz2); font-size:13px;}
@@ -803,13 +803,13 @@
   .manual-head .mh-space{flex:1 1 20px;}
   .manual-body{padding:8px 14px 14px;}
   .manual-actions{display:flex; gap:10px; flex-wrap:wrap; align-items:center; padding:6px 2px 12px;}
-  .mrow{display:grid; grid-template-columns:34px minmax(0,1.4fr) auto; gap:12px; align-items:center;
+  .mrow{display:grid; grid-template-columns:34px minmax(150px,1.4fr) minmax(0,auto); gap:12px; align-items:center;
     padding:10px 6px; border-top:1px solid rgba(122,106,79,.2);}
   .mrow:first-child{border-top:0;}
   .mrow.done{opacity:.72;}
   .mrow .mr-ico{width:32px; height:32px; object-fit:contain; filter:drop-shadow(0 1px 2px rgba(0,0,0,.6));}
   .mrow .mr-ico.ph{display:grid; place-items:center; color:rgba(200,170,110,.35); font-size:16px; border:1px solid var(--bz1); border-radius:4px;}
-  .mrow .mr-name{font-family:var(--display); font-size:15px; color:var(--fg); letter-spacing:.01em; line-height:1.2; min-width:0; overflow-wrap:anywhere;}
+  .mrow .mr-name{font-family:var(--display); font-size:15px; color:var(--fg); letter-spacing:.01em; line-height:1.2; min-width:0; overflow-wrap:break-word;}
   .mrow.r-rare .mr-name{color:var(--rare);} .mrow.r-magic .mr-name{color:var(--magic);} .mrow.r-unique .mr-name{color:var(--unique);}
   .mrow .mr-slot{display:block; font-family:var(--mono); font-size:10px; letter-spacing:.05em; text-transform:uppercase; color:var(--mut); margin-top:2px;}
   .mrow .mr-right{display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;}
@@ -905,7 +905,7 @@
   <div class="topnav">
     <a class="brandmark" href="/" style="text-decoration:none;color:var(--bz3)">DivTally</a>
     <span class="navspace"></span>
-    <span class="bridge-badge" id="bridgeBadge" title="Install the DivTally browser extension to price rares hands-free from your own IP."><span class="dot"></span><span id="bridgeText">no extension</span></span>
+    <span class="bridge-badge" id="bridgeBadge" title="Install the DivTally browser extension to price rares hands-free."><span class="dot"></span><span id="bridgeText">no extension</span></span>
     <a class="navlink" href="/how-it-works.html">How it works</a>
   </div>
 
@@ -987,7 +987,7 @@
         <span class="mh-sub" id="manualSub"></span>
         <span class="mh-space"></span>
         <label class="chk auto-auto" id="autoAutoWrap" hidden title="When the DivTally browser extension is active, price a freshly-loaded build's rares automatically (once per build) — no button press."><input type="checkbox" id="autoAuto"> auto-scan on load</label>
-        <button class="stone-btn autoscan" id="autoscanBtn" type="button" hidden title="Price every rare below hands-free via the DivTally browser extension (runs on your own IP)">&#9889; Autoscan</button>
+        <button class="stone-btn autoscan" id="autoscanBtn" type="button" hidden title="Price every rare below hands-free via the DivTally browser extension">&#9889; Autoscan</button>
       </div>
       <div class="manual-body">
         <div class="manual-actions" id="manualIntro"></div>
@@ -1003,7 +1003,7 @@
         <span class="uh-title">Price rares hands-free</span>
         <span class="uh-tag">optional</span>
       </div>
-      <p class="uh-lead">The DivTally browser extension prices your rares automatically &mdash; it runs the same trade searches from <b>your</b> browser and IP, so nothing here ever has to talk to the trade site. The site is fully usable without it; this just saves you the copy-paste.</p>
+      <p class="uh-lead">The DivTally browser extension prices your rares automatically &mdash; it runs the same trade searches right from <b>your</b> browser, so nothing here ever has to talk to the trade site. The site is fully usable without it; this just saves you the copy-paste. <a href="/how-it-works.html">How it works &rarr;</a></p>
       <div class="cols">
         <div class="does">
           <h5>What it does</h5>
@@ -1850,7 +1850,7 @@ function svUnsearchHTML(a){
 }
 function renderSurveyBody(){
   const rare=PKM.rare;
-  let h=`<div class="phint">Tag how much each mod matters — the search builds itself. <button class="svlink" data-pk="togroups" type="button">edit groups →</button></div>`;
+  let h=`<div class="phint">Tag how much each mod matters — the search builds itself. <button class="svlink" data-pk="togroups" type="button">count groups →</button></div>`;
   h+=`<div class="pklegend"><span class="lg-req"><span class="lgi">&#9670;</span><b>required</b> — a match must have it</span><span class="lg-nice"><span class="lgi">&#9671;</span><b>nice-to-have</b> — “match at least N” below</span><span class="lg-not"><span class="lgi">&#10005;</span><b>not needed</b> — left out</span></div>`;
   if(rare.pseudo && rare.pseudo.length)
     h+=`<div class="pseudo-switch ${PKM.usePseudo?'on':''}" data-pk="pseudo" role="button" tabindex="0" title="Search the item's TOTAL resistance instead of each individual resistance — how the trade site groups them"><span class="sw"></span> Combine resistances into a pseudo total</div>`;
@@ -1884,7 +1884,7 @@ function collectGroupRows(gi){
 }
 function grpAffixRowHTML(a,i,kind,gi,isEquip){
   const mm=PKM.minmax[kind][i]||{}, ticked=PKM.ticked[kind][i]!==false;
-  const move = isEquip ? '' : `<select class="grpmove" title="move this mod to another group">`+PKM.groups.map((g,x)=>`<option value="${x}" ${x===gi?'selected':''}>Grp ${x+1}</option>`).join('')+`</select>`;
+  const move = isEquip ? '' : `<select class="stone-sel grpmove" title="move this mod to another group">`+PKM.groups.map((g,x)=>`<option value="${x}" ${x===gi?'selected':''}>Grp ${x+1}</option>`).join('')+`</select>`;
   const minInp=`<input class="mm amin" value="${mm.min!=null?E(String(mm.min)):''}" inputmode="numeric" placeholder="any">`;
   const maxInp= isEquip ? `<div class="mmx"></div>` : `<input class="mm amax" value="${mm.max!=null?E(String(mm.max)):''}" inputmode="numeric" placeholder="any">`;
   return `<div class="afx r4" data-i="${i}" data-kind="${kind}">`+
@@ -2008,7 +2008,7 @@ function cardTradeUrl(k){ const p=bpc.state.priced[String(k)]; return (p && p.tr
 /* ---------- the extension bridge badge + calm upgrade card ---------- */
 bpc.on('bridge',b=>{
   const badge=$('#bridgeBadge'), txt=$('#bridgeText');
-  if(b.active){ badge.classList.add('on'); txt.textContent='extension active'+(b.version?(' · v'+b.version):''); badge.title='DivTally browser extension detected — rares can be priced hands-free from your own IP.'; }
+  if(b.active){ badge.classList.add('on'); txt.textContent='extension active'+(b.version?(' · v'+b.version):''); badge.title='DivTally browser extension detected — rares can be priced hands-free.'; }
   else { badge.classList.remove('on'); txt.textContent='no extension'; }
   renderManual();          // autoscan / per-row auto buttons + upgrade card + auto-scan-on-load depend on this
 });
@@ -2154,9 +2154,9 @@ function renderManual(rows){
   const intro=$('#manualIntro');
   if(unpriced){
     intro.innerHTML = scanning
-      ? `<span class="mh-sub">Scanning your rares from your own IP — each row fills in as it resolves.</span>`
+      ? `<span class="mh-sub">Scanning your rares — each row fills in as it resolves.</span>`
       : (bpc.state.bridge.active
-        ? `<span class="mh-sub">Extension detected — hit <b>Autoscan</b> to price them all from your own IP, or price rows one at a time below.</span>`
+        ? `<span class="mh-sub">Extension detected — hit <b>Autoscan</b> to price them all, or price rows one at a time below.</span>`
         : `<span class="mh-sub">Click <b>open search</b>, copy a listing's buyout in-game (its whisper), and paste it below — or just type <code>35c</code> / <code>2 div</code>. Prices fold into your total.</span>`);
   } else intro.innerHTML='';
   $('#manualRows').innerHTML = rows.map(manualRowHTML).join('');
