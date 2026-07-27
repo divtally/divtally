@@ -691,18 +691,19 @@
   .ptrade{margin-top:12px;}
   .ptrade .viewtrade{width:100%; justify-content:center; text-align:center; color:var(--bz3); border-color:var(--bz2); font-size:13px;}
   .ptrade .viewtrade:hover{color:var(--bz-hi); border-color:var(--bz3);}
-  .pbtns{display:flex; gap:9px; margin-top:10px;}
-  .pbtns .stone-btn{flex:1; text-align:center; justify-content:center;}
-  .pbtns .stone-btn.search{background:linear-gradient(180deg,var(--bz3),var(--bz1)); color:#160f08; font-family:var(--display); letter-spacing:.04em; border-color:var(--bz-hi);}
+  .pbtns{display:flex; gap:9px; margin-top:10px; align-items:center;}
+  .pbtns .stone-btn{text-align:center; justify-content:center; padding:9px 22px;}
+  .pbtns .stone-btn.search{margin-left:auto; background:linear-gradient(180deg,var(--bz3),var(--bz1)); color:#160f08; font-family:var(--display); letter-spacing:.04em; border-color:var(--bz-hi);}
   .pbtns .stone-btn.skip{color:var(--bad); border-color:rgba(208,107,94,.4);}
-  .pbulk{display:flex; gap:9px; margin-top:9px; padding-top:9px; border-top:1px dashed var(--bz1);}
-  .pbulk .stone-btn{flex:1; text-align:center; justify-content:center; font-size:12px; padding:7px 10px;}
+  .pbulk{display:flex; gap:9px; margin-top:9px; padding-top:9px; border-top:1px dashed var(--bz1); justify-content:center;}
+  .pbulk .stone-btn{flex:0 0 auto; text-align:center; justify-content:center; font-size:12px; padding:7px 24px;}
   .pbulk .pa-skip{color:var(--parch);}
   .pbulk .pa-skip.small{font-size:11px; padding:6px 10px; opacity:.85;}
   .pbulk .pa-skip.small:hover{opacity:1; color:var(--fg);}
   /* Autoscan — prominent glowing bulk action at the TOP of the picker (D-0006 §E), glow tuned to
      this skin's bronze accent (--bz3) instead of a generic hue so it reads as part of the theme. */
-  .pautoscan{margin:0 0 12px; padding-bottom:11px; border-bottom:1px dashed var(--bz1);}
+  .pautoscan{margin:0 0 12px; padding-bottom:11px; border-bottom:1px dashed var(--bz1); display:flex; justify-content:center;}
+  .pautoscan .stone-btn.autoscan{width:auto; min-width:46%; padding-left:26px; padding-right:26px;}
   .stone-btn.autoscan{
     --accent: var(--bz-hi);            /* the skin's brightest accent (gold highlight) */
     display:flex; width:100%; justify-content:center; align-items:center; gap:7px;
@@ -1800,8 +1801,8 @@ function pkHeader(step, links){
 function pkFooter(inQueue,pos,remain,already){
   let h=`<div class="pbtns">`;
   if(inQueue && pos>0) h+=`<button class="stone-btn skip" data-pk="back" type="button">&larr; Back</button>`;
-  h+=`<button class="stone-btn search" data-pk="search" type="button">${already?'Re-search this item':'Search this item'}</button>`;
   h+=`<button class="stone-btn skip" data-pk="skip" type="button">Skip${inQueue?" (don't price)":''}</button>`;
+  h+=`<button class="stone-btn search" data-pk="search" type="button">${already?'Re-search this item':'Search this item'}</button>`;
   h+=`</div>`;
   if(inQueue && remain>1) h+=`<div class="pbulk"><button class="stone-btn pa-skip small" data-pk="skipall" type="button">skip all (don't price)</button></div>`;
   return h;
