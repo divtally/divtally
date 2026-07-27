@@ -205,6 +205,28 @@ is a technical transparency disclosure, not marketing; strip on owner request. P
 identity: repo-local user = DivTally <divtally@gmail.com>, full history rewritten to it
 pre-publish (personal email never ships in public metadata).
 
+## D-0014 - Rare default query relaxed to count(n-1 of n); affix picker to return (2026-07-27)
+Owner diagnosed the "no buyout" plague correctly: the AND-all-affixes default (inherited from the
+local CLI default) over-constrains - exact combos match a handful of unpriced dump-tab listings.
+LIVE-verified on PoE1 (count groups were previously untested here): the same rare 4 matches/0
+buyouts strict -> 139 at count>=2 -> deployed default count>=n-1: 33 matches, fetched listings
+priced. Shipped in public/api querybuild (n>=3 -> count n-1; n<=2 unchanged); browser trade_url
+carries the same relaxed query (consistency). Tuning value n-1 is [INFERRED] (one build's
+evidence) - revisit with real usage. Caveat recorded: relaxed matches bias LOW (cheapest of a
+looser superset); acceptable for ballpark rare pricing per the README's own framing. NEXT
+(Proposed): port the local app's per-rare AFFIX PICKER (choose affixes + min/max, pseudo-resist
+folding) to the public site as advanced mode driving the extension - restores the control the
+owner remembers from the local app.
+
+## D-0013 - Extension named "DivTally Browser Extension"; how-it-works UX copy (Locked, 2026-07-27)
+Owner: retire the "Trade Bridge" sub-brand - the extension is "the DivTally browser extension",
+and that is its store name. Sweep: manifest name -> "DivTally Browser Extension", store-listing
+title/copy, zip filenames, site strings ("bridge active" -> "extension active"), launch post,
+guide. Also owner-approved: the how-it-works ONE RULE box is replaced by a concise HOW TO USE IT
+bullet list (his copy direction: to-the-point, grammar-sacrificed) + ONE short line keeping the
+rares-price-on-your-machine trust point, full story below. Applied post-workflow (site/ext files
+owned by the scan-status agents at decision time).
+
 ## D-0012 - Autoscan bridge timeout bug (found by owner's live test; fixed 2026-07-27)
 Owner's first real Autoscan (17 rares, extension installed) produced zero prices. Root cause:
 core.js sent ALL rares as ONE bridge message with a fixed 45s reply timeout, while the extension

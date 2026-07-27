@@ -1,4 +1,4 @@
-# Store listing copy — DivTally: Trade Bridge
+# Store listing copy — DivTally Browser Extension
 
 Ready-to-paste listing text for the Chrome Web Store, Microsoft Edge Add-ons, and Firefox AMO.
 One identity everywhere (name / icon / publisher / linked domain) per the B-001 trust checklist.
@@ -14,7 +14,7 @@ registration; Edge free; Firefox AMO free.
 
 ## Title (all stores)
 ```
-DivTally - Trade Bridge
+DivTally Browser Extension
 ```
 
 ## Short summary / subtitle (≤132 chars — Chrome "summary", Edge "short description", AMO summary)

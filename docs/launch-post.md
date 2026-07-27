@@ -56,9 +56,10 @@ The website itself NEVER receives price data from Grinding Gear Games' servers. 
 you see arrived via a human paste, the community cache (seeded by a real machine), or the extension
 running on a real user's IP. The server reads public economy data and builds trade links — nothing more.
 
-THE OPTIONAL EXTENSION — "Trade Bridge"
+THE OPTIONAL DIVTALLY BROWSER EXTENSION
 
-If you want in-page live rare pricing without clicking each link, install the companion extension.
+If you want in-page live rare pricing without clicking each link, install the DivTally browser
+extension.
 It's deliberately minimal and transparent:
   - Runs ONLY on this one website + the trade API path — nothing else.
   - Works completely logged out (credentials omitted): per-IP limits, zero account risk.
