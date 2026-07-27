@@ -205,7 +205,18 @@ is a technical transparency disclosure, not marketing; strip on owner request. P
 identity: repo-local user = DivTally <divtally@gmail.com>, full history rewritten to it
 pre-publish (personal email never ships in public metadata).
 
-## D-0014 - Rare default query relaxed to count(n-1 of n); affix picker to return (2026-07-27)
+## D-0015 - NO implicit affix exclusion; the picker is the mechanism (Locked, 2026-07-27)
+Owner veto, his words: "if the user doesn't manually exclude an affix we should not be doing that
+for them." D-0014's auto-relax REVERTED same day (deployed): the default query requires ALL of an
+item's affixes again - honest exactly-this-good searches, even when that means no matches. Affix
+selection is exclusively USER-driven via the per-rare AFFIX PICKER (next build round): prompted
+per rare like the local app (checkboxes prefilled ALL-ticked, min/max, pseudo-resist fold as a
+visible user toggle), driving the extension search or the trade link. Autoscan stays strict-all.
+Lesson re-learned (feedback_ask_user_first / match-shop-patterns): he asked for his picker back;
+I built an auto-relaxer instead - the owner's stated mechanism IS the spec, not the goal I infer
+behind it.
+
+## D-0014 - Rare default query relaxed to count(n-1 of n) - SUPERSEDED by D-0015 (2026-07-27)
 Owner diagnosed the "no buyout" plague correctly: the AND-all-affixes default (inherited from the
 local CLI default) over-constrains - exact combos match a handful of unpriced dump-tab listings.
 LIVE-verified on PoE1 (count groups were previously untested here): the same rare 4 matches/0

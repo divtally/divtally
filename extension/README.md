@@ -9,7 +9,7 @@ user's own per-IP rate budget. Ported 1:1 from the app's Python trade client
 limiter state **persisted** so an MV3 service-worker restart can't burst past GGG's cap.
 
 ## Files
-- `manifest.json` — **store** MV3 manifest (v1.0.0). Minimal by design: `storage` only,
+- `manifest.json` — **store** MV3 manifest (v1.1.0). Minimal by design: `storage` only,
   `host_permissions` = **exactly** `https://www.pathofexile.com/api/trade/*`, and the DivTally
   production content-script matches already baked in (`https://divtally.com/*`,
   `https://www.divtally.com/*`, `https://divtally.pages.dev/*`). No localhost, no wildcard hosts,
@@ -70,7 +70,28 @@ window.postMessage({ source:"bpc-page", type:"price", reqId, league,
 ```
 `query` is the trade **query** object (status/type/name/stats/filters) — exactly the inner
 object the site already builds for its clickable `?q=` links. The extension returns, per item,
-`{ key, amount, currency, total }` (cheapest online listing) or `{ key, error }`.
+`{ key, amount, currency, total }` (cheapest online listing) or `{ key, error }` — each result
+also carries `debug: { searchStatus, fetchStatus, fetched, nulls }` (v1.1) so a failing row is
+self-describing.
+
+### Live scan status (protocol v1.1, additive)
+When the page's `price` request carries `protocolVersion >= 1.1` (and comes from a tab, not the
+popup), the service worker streams **per-item progress** to that tab, which `content.js` relays to
+the page as `{ source:"bpc-ext", type:"price-progress", reqId, key, stage, detail }`:
+
+| `stage` | `detail` | meaning |
+|---------|----------|---------|
+| `queued` | `{}` | item accepted, waiting its turn (all items emit this up front) |
+| `searching` | `{}` | about to POST the trade search |
+| `waiting` | `{ waitMs }` | the rate limiter (or a 429 back-off) is pausing this long |
+| `fetching` | `{}` | about to GET the listing details |
+| `done` | `{ total, amount, currency }` | priced from the cheapest buyout listing |
+| `nobuyout` | `{ total, fetched, nulls }` | listings exist but none had a buyout price |
+| `error` | `{ message, status }` | this item failed (`status` = HTTP status, or `null`) |
+
+A pre-1.1 page simply never sends `protocolVersion`, gets no progress, and works exactly as
+before. A page that receives an unknown `price-progress` type ignores it. Full spec:
+`docs/notes-scan-status-ext.md`.
 
 ## Adding origins
 For **local/staging** work, edit `manifest.dev.json` → `content_scripts[0].matches`, then reload.
@@ -80,7 +101,7 @@ public origin ever changes, edit them there and rebuild the store zips.
 
 ## Build the store zips
 `python public/dist/build_zips.py` produces two **unminified** artifacts in `public/dist/`:
-`trade-bridge-chrome-edge-1.0.0.zip` and `trade-bridge-firefox-1.0.0.zip`. It reads
+`trade-bridge-chrome-edge-1.1.0.zip` and `trade-bridge-firefox-1.1.0.zip`. It reads
 `manifest.json` (the version drives the filenames), copies every source file verbatim, and
 specialises only the manifest per target (Chrome: `service_worker` only; Firefox: adds the
 `background.scripts` fallback + keeps `gecko.id`). It excludes `manifest.dev.json` and

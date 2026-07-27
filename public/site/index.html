@@ -791,6 +791,39 @@
   @keyframes mFlash{0%{background:rgba(200,170,110,.18);}100%{background:transparent;}}
   .manual-empty{padding:14px 6px; color:var(--mut); font-style:italic; font-size:14px;}
 
+  /* ---- live scan status: per-row chips + the Autoscan progress bar (v1.1) ---- */
+  /* the small "auto-scan on load" toggle that sits beside the Autoscan button */
+  .chk.auto-auto{font-size:12px; color:var(--parch); letter-spacing:.02em;}
+  .chk.auto-auto:empty{display:none;}
+  /* a row's live status chip. Replaces that row's manual controls while it is being scanned;
+     for a terminal FAILURE it sits alongside the controls (so the visitor can still paste). */
+  .mr-scanchip{display:inline-flex; align-items:center; gap:6px; font-family:var(--mono); font-size:11px;
+    letter-spacing:.02em; padding:4px 9px; border-radius:4px; border:1px solid var(--bz1);
+    background:var(--inner); color:var(--parch); white-space:nowrap; max-width:100%;}
+  .mr-right [data-chip]:empty{display:none;}          /* no stray flex gap when idle */
+  .mr-scanchip.run{color:var(--bz-hi); border-color:var(--bz2);}
+  .mr-scanchip.q{color:var(--mut);}
+  .mr-scanchip.wait{color:var(--warn); border-color:rgba(217,164,65,.4);}
+  .mr-scanchip.warn{color:var(--warn); border-color:rgba(224,138,43,.45); overflow:hidden; text-overflow:ellipsis;}
+  .mr-scanchip.err{color:var(--bad); border-color:rgba(208,107,94,.45); overflow:hidden; text-overflow:ellipsis;}
+  .mr-scanchip.done{color:var(--ok); border-color:rgba(105,200,135,.4);}
+  .mr-scanchip.run::before, .mr-scanchip.wait::before{
+    content:""; width:9px; height:9px; border-radius:50%; flex:0 0 auto; opacity:.9;
+    border:2px solid currentColor; border-right-color:transparent; animation:scanSpin .8s linear infinite;}
+  @keyframes scanSpin{to{transform:rotate(360deg);}}
+  /* while a row is actively scanning, its own controls (open/input/apply/auto) give way to the chip */
+  .mrow.scanning .mr-right > :not([data-chip]){display:none;}
+  .mrow.scanfail .mr-right{gap:8px;}
+  /* the big Autoscan button turns into a determinate progress bar during a run */
+  .stone-btn.autoscan.scanning{animation:none; cursor:default; overflow:hidden; color:var(--bz-hi);
+    background:var(--inner); border-color:var(--bz2); box-shadow:inset 0 0 0 1px rgba(0,0,0,.4);}
+  .stone-btn.autoscan.scanning .scan-fill{position:absolute; left:0; top:0; bottom:0; width:0; z-index:0;
+    background:linear-gradient(180deg,var(--bz3),var(--bz1)); box-shadow:0 0 12px rgba(200,170,110,.5);
+    transition:width .35s ease;}
+  .stone-btn.autoscan.scanning .scan-lbl{position:relative; z-index:1; white-space:nowrap; overflow:hidden;
+    text-overflow:ellipsis; max-width:100%; text-shadow:0 1px 2px rgba(0,0,0,.6);}
+  @media (prefers-reduced-motion:reduce){ .mr-scanchip.run::before, .mr-scanchip.wait::before{animation:none;} }
+
   /* footer */
   .site-foot{margin-top:26px; padding:16px 4px 4px; border-top:1px solid var(--bz1);
     display:flex; gap:14px; flex-wrap:wrap; align-items:center; font-family:var(--mono); font-size:12px; color:var(--mut);}
@@ -899,6 +932,7 @@
         <span class="mh-title">Rares to price</span>
         <span class="mh-sub" id="manualSub"></span>
         <span class="mh-space"></span>
+        <label class="chk auto-auto" id="autoAutoWrap" hidden title="When the Trade Bridge is active, price a freshly-loaded build's rares automatically (once per build) — no button press."><input type="checkbox" id="autoAuto"> auto-scan on load</label>
         <button class="stone-btn autoscan" id="autoscanBtn" type="button" hidden title="Price every rare below hands-free via the Trade Bridge extension (runs on your own IP)">&#9889; Autoscan</button>
       </div>
       <div class="manual-body">
@@ -1562,8 +1596,107 @@ bpc.on('bridge',b=>{
   const badge=$('#bridgeBadge'), txt=$('#bridgeText');
   if(b.active){ badge.classList.add('on'); txt.textContent='bridge active'+(b.version?(' · v'+b.version):''); badge.title='Trade Bridge extension detected — rares can be priced hands-free from your own IP.'; }
   else { badge.classList.remove('on'); txt.textContent='no extension'; }
-  renderManual();          // autoscan / per-row auto buttons + the upgrade card depend on this
+  renderManual();          // autoscan / per-row auto buttons + upgrade card + auto-scan-on-load depend on this
 });
+
+/* ============================================================================
+ *  LIVE SCAN STATUS (protocol v1.1)  +  auto-scan-on-load
+ *  core.js drives a per-item scan session and emits "scanstatus"
+ *  { active, total, done, current, order, names, status{ key -> {stage,detail,ahead,resolved,waitUntil} } }.
+ *  Here we turn that into: a live chip per rare row, the Autoscan progress bar,
+ *  and a board-slot "appraising" overlay. With an OLD extension no progress
+ *  arrives, so rows simply read "scanning…" until the chunk reply resolves them
+ *  (chunk boundaries are page-side) — the UI never DEPENDS on v1.1 events.
+ * ========================================================================== */
+let scanTick=null;
+const autoFired=new Set();          // build keys already auto-scanned this session (never re-fire)
+function autoAutoOn(){ const v=localStorage.getItem('bpc_autoscan_auto'); return v===null ? true : v==='1'; }  // DEFAULT ON
+function buildKey(){ const m=bpc.state.meta; return m ? (m.cache_key||m.source_url||m.character||'build') : null; }
+function maybeAutoStart(){
+  // "not very auto if i have to press a button": with the bridge live, a freshly-loaded build with
+  // unpriced rares auto-scans EXACTLY ONCE. Never on the demo, never mid-scan, never twice per build.
+  if(bpc.state._mock) return;
+  if(!bpc.state.bridge.active) return;
+  if(!autoAutoOn()) return;
+  if(bpc.scanStatus().active) return;                  // respect an in-progress scan
+  const bk=buildKey(); if(!bk || autoFired.has(bk)) return;
+  if(!bpc.manualRows().some(r=>!r.priced)) return;     // nothing to price (e.g. the cache filled it in)
+  autoFired.add(bk);                                    // guard BEFORE launching (never loops / re-triggers)
+  bpc.autoscan();
+}
+function truncate(s,n){ s=String(s==null?'':s); return s.length>n ? s.slice(0,n-1)+'…' : s; }
+function nobuyoutDbg(d){ const b=[]; if(d&&d.fetched!=null)b.push(d.fetched+' fetched'); if(d&&d.nulls!=null)b.push(d.nulls+' without a buyout'); return b.join(', '); }
+function stageLabel(st){ return ({queued:'queued',scanning:'scanning',searching:'searching',fetching:'fetching',waiting:'waiting'})[st.stage]||'appraising'; }
+function chipHTML(st){
+  const d=st.detail||{};
+  switch(st.stage){
+    case 'queued':    return `<span class="mr-scanchip q">⏳ ${st.ahead>0?('waiting — '+st.ahead+' ahead'):'up next'}</span>`;
+    case 'scanning':  return `<span class="mr-scanchip run">scanning…</span>`;
+    case 'searching': return `<span class="mr-scanchip run">searching listings…</span>`;
+    case 'fetching':  return `<span class="mr-scanchip run">fetching listings…</span>`;
+    case 'waiting':{  const sec=st.waitUntil?Math.max(0,Math.ceil((st.waitUntil-Date.now())/1000)):(d.waitMs?Math.ceil(d.waitMs/1000):null);
+                      return `<span class="mr-scanchip wait">rate limit${sec!=null?(' — '+sec+'s'):''}</span>`; }
+    case 'done':      return `<span class="mr-scanchip done">✓ priced</span>`;
+    case 'nobuyout':{ const n=d.total!=null?d.total:0, dbg=nobuyoutDbg(d);
+                      return `<span class="mr-scanchip warn" title="${E(dbg||'no buyout')}">⚠ no buyout among ${n} listing${n===1?'':'s'}${dbg?(' · '+E(dbg)):''}</span>`; }
+    case 'error':{    const hs=d.status!=null?(' (HTTP '+d.status+')'):''; const msg=(d.message||'error')+hs;
+                      return `<span class="mr-scanchip err" title="${E(msg)}">✕ ${E(truncate(msg,64))}</span>`; }
+    default: return '';
+  }
+}
+function applyScanToRows(snap){
+  const rowsEl=$('#manualRows'); if(!rowsEl) return;
+  rowsEl.querySelectorAll('.mrow').forEach(row=>{
+    const k=row.dataset.mk, st=snap.status[k], chip=row.querySelector('[data-chip]');
+    row.classList.remove('scanning','scanfail');
+    if(chip) chip.innerHTML='';
+    if(!st) return;                                     // this row isn't part of the scan session
+    const p=bpc.state.priced[k];
+    if(p && p.chaos && p.chaos.median!=null) return;    // already priced -> shown as a done row, no chip
+    if(!st.resolved || st.stage==='done'){ row.classList.add('scanning'); if(chip) chip.innerHTML=chipHTML(st); }
+    else { row.classList.add('scanfail'); if(chip) chip.innerHTML=chipHTML(st); }  // nobuyout/error: keep controls + show why
+  });
+}
+function renderAutoscanBar(snap){
+  const b=$('#autoscanBtn'); if(!b) return;
+  if(snap.active){
+    b.classList.add('scanning'); b.disabled=true;
+    const pct=snap.total?Math.round(snap.done/snap.total*100):0;
+    const cur=snap.current?(snap.names[snap.current]||''):'';
+    const n=snap.total?Math.min(snap.done+1,snap.total):0;
+    b.innerHTML=`<span class="scan-fill" style="width:${pct}%"></span><span class="scan-lbl">scanning ${n}/${snap.total}${cur?(' — '+E(truncate(cur,26))):''}</span>`;
+  } else {
+    b.classList.remove('scanning'); b.disabled=false; b.innerHTML='&#9889; Autoscan';
+  }
+}
+function applyScanToBoard(snap){
+  (snap.order||[]).forEach(k=>{
+    const el=document.querySelector('.slot[data-k="'+cssEsc(k)+'"]'); if(!el) return;
+    const st=snap.status[k];
+    if(snap.active && st && !st.resolved){
+      el.classList.remove('nolist','notfound','fewresults','skipped'); el.classList.add('loading');
+      const t=el.querySelector('.appraising .apptxt'); if(t) t.textContent=stageLabel(st);
+    } else if(el.classList.contains('loading')){
+      el.classList.remove('loading'); updateSlot(k);    // repaint the true resolved state
+    }
+  });
+}
+function renderScan(snap){
+  snap = snap || bpc.scanStatus();
+  renderAutoscanBar(snap);
+  applyScanToRows(snap);
+  applyScanToBoard(snap);
+  // a 1s ticker keeps the rate-limit countdown + "N ahead" fresh while a scan runs
+  if(snap.active && !scanTick){ scanTick=setInterval(()=>renderScan(bpc.scanStatus()),1000); }
+  else if(!snap.active && scanTick){ clearInterval(scanTick); scanTick=null; }
+}
+bpc.on('scanstatus', renderScan);
+bpc.on('done', maybeAutoStart);
+(function initAutoAuto(){
+  const cb=$('#autoAuto'); if(!cb) return;
+  cb.checked=autoAutoOn();
+  cb.addEventListener('change',()=>{ localStorage.setItem('bpc_autoscan_auto', cb.checked?'1':'0'); if(cb.checked) maybeAutoStart(); });
+})();
 
 /* ---------- the manual / community pricing panel ---------- */
 function manualRowHTML(r){
@@ -1587,24 +1720,31 @@ function manualRowHTML(r){
     const noteRaw = (p.note && p.source!=='none') ? `<div class="mr-err" style="color:var(--parch);font-style:normal">${E(p.note)}</div>` : '';
     right += noteRaw;
   }
-  return `<div class="mrow ${rc} ${r.priced?'done':''}" data-mk="${E(k)}">${ico}<div class="mr-name">${E(it.name)}${slot}</div><div class="mr-right">${right}</div></div>`;
+  return `<div class="mrow ${rc} ${r.priced?'done':''}" data-mk="${E(k)}">${ico}<div class="mr-name">${E(it.name)}${slot}</div><div class="mr-right"><span data-chip></span>${right}</div></div>`;
 }
 function renderManual(rows){
   rows = rows || bpc.manualRows();
   const wrap=$('#manualWrap');
-  if(!rows.length){ wrap.hidden=true; updateUpgradeCard(0); return; }
+  if(!rows.length){ wrap.hidden=true; $('#autoAutoWrap').hidden=true; updateUpgradeCard(0); renderScan(bpc.scanStatus()); return; }
   wrap.hidden=false;
   const unpriced=rows.filter(r=>!r.priced).length;
+  const scanning=bpc.scanStatus().active;
   $('#manualSub').textContent = unpriced ? (unpriced+' still need'+(unpriced===1?'s':'')+' a price') : 'all priced ✓';
   $('#autoscanBtn').hidden = !(bpc.state.bridge.active && unpriced>0);
+  $('#autoAutoWrap').hidden = !bpc.state.bridge.active;         // the "auto-scan on load" toggle needs the bridge
+  const cb=$('#autoAuto'); if(cb) cb.checked=autoAutoOn();
   const intro=$('#manualIntro');
   if(unpriced){
-    intro.innerHTML = bpc.state.bridge.active
-      ? `<span class="mh-sub">Extension detected — hit <b>Autoscan</b> to price them all from your own IP, or price rows one at a time below.</span>`
-      : `<span class="mh-sub">Click <b>open search</b>, copy a listing's buyout in-game (its whisper), and paste it below — or just type <code>35c</code> / <code>2 div</code>. Prices fold into your total.</span>`;
+    intro.innerHTML = scanning
+      ? `<span class="mh-sub">Scanning your rares from your own IP — each row fills in as it resolves.</span>`
+      : (bpc.state.bridge.active
+        ? `<span class="mh-sub">Extension detected — hit <b>Autoscan</b> to price them all from your own IP, or price rows one at a time below.</span>`
+        : `<span class="mh-sub">Click <b>open search</b>, copy a listing's buyout in-game (its whisper), and paste it below — or just type <code>35c</code> / <code>2 div</code>. Prices fold into your total.</span>`);
   } else intro.innerHTML='';
   $('#manualRows').innerHTML = rows.map(manualRowHTML).join('');
   updateUpgradeCard(unpriced);
+  renderScan(bpc.scanStatus());     // (re)paint chips + the progress bar onto the freshly-built rows
+  maybeAutoStart();                 // may fire once when the bridge/rows first line up
 }
 function updateUpgradeCard(unpriced){
   // the calm inline upgrade card only when there are rares to price AND no bridge is present
@@ -1628,8 +1768,9 @@ $('#manualRows').addEventListener('keydown',e=>{
   if(e.key==='Enter'){ const inp=e.target.closest('.mr-input'); if(inp){ e.preventDefault(); applyRow(inp.dataset.mk); } }
 });
 $('#autoscanBtn').addEventListener('click',()=>{
-  const b=$('#autoscanBtn'); b.disabled=true; const old=b.innerHTML; b.innerHTML='⚡ scanning…';
-  Promise.resolve(bpc.autoscan()).then(()=>{ b.disabled=false; b.innerHTML=old; }).catch(()=>{ b.disabled=false; b.innerHTML=old; });
+  // the button becomes a progress bar for the duration; renderScan() drives + restores it.
+  if(bpc.scanStatus().active) return;                  // already scanning -> ignore
+  bpc.autoscan();
 });
 bpc.on('manual', renderManual);
 

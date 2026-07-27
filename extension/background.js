@@ -60,8 +60,9 @@ function mergeRules(bucket, header) {
 }
 
 // Wait until a call is safe under every rule, then record it. Serialized (see `serialize`),
-// so reads/writes of the persisted window never race.
-async function rateLimitGate(bucket) {
+// so reads/writes of the persisted window never race. `emit` (optional, v1.1) is a per-item
+// progress callback used to surface a rate-limiter pause to the page.
+async function rateLimitGate(bucket, emit) {
   const st = await rlGet(bucket);
   const now = Date.now();
   const maxWinMs = Math.max.apply(null, st.rules.map((r) => r[1])) * 1000;
@@ -77,7 +78,12 @@ async function rateLimitGate(bucket) {
       sleep = Math.max(sleep, winMs - (now - oldest));
     }
   }
-  if (sleep > 0) await delay(sleep + 100 + Math.floor(Math.random() * 200));
+  if (sleep > 0) {
+    const waitMs = sleep + 100 + Math.floor(Math.random() * 200);
+    // v1.1 progress: only report a *real* pause (> 1s); sub-second jitter isn't worth a message.
+    if (emit && waitMs > 1000) emit("waiting", { waitMs });
+    await delay(waitMs);
+  }
 
   hits = st.hits.filter((t) => Date.now() - t <= maxWinMs);
   hits.push(Date.now());
@@ -101,9 +107,11 @@ function parseRetryAfter(v) {
 }
 
 // ---- low-level request with retry/back-off (mirrors trade.py._request) -------
-async function tradeRequest(bucket, method, url, body, attempt) {
+// `emit`/`dbg` (optional, v1.1) let a call report rate-limiter pauses and record its HTTP status
+// for the page-visible debug object. Thrown errors carry `.status` when a response was received.
+async function tradeRequest(bucket, method, url, body, attempt, emit, dbg) {
   attempt = attempt || 0;
-  await rateLimitGate(bucket);
+  await rateLimitGate(bucket, emit);
 
   let r;
   const ctrl = new AbortController();
@@ -119,10 +127,16 @@ async function tradeRequest(bucket, method, url, body, attempt) {
     });
   } catch (e) {
     clearTimeout(to);
-    if (attempt < 2) { await delay(2000 + attempt * 2000); return tradeRequest(bucket, method, url, body, attempt + 1); }
+    if (attempt < 2) { await delay(2000 + attempt * 2000); return tradeRequest(bucket, method, url, body, attempt + 1, emit, dbg); }
     throw new Error("network error calling trade API: " + (e && e.message ? e.message : e));
   }
   clearTimeout(to);
+
+  // Record the HTTP status per endpoint so a failing item is self-describing (v1.1 debug).
+  if (dbg) {
+    if (bucket === "search") dbg.searchStatus = r.status;
+    else if (bucket === "fetch") dbg.fetchStatus = r.status;
+  }
 
   await applyHeaderRules(bucket, r.headers.get("X-Rate-Limit-Ip"));
 
@@ -130,40 +144,61 @@ async function tradeRequest(bucket, method, url, body, attempt) {
     let retry = parseRetryAfter(r.headers.get("Retry-After"));
     if (retry == null) retry = Math.max.apply(null, DEFAULT_RULES[bucket].map((x) => x[1]));
     retry = Math.max(5, Math.min(retry, 1800));
-    await delay(retry * 1000 + 1000);
-    if (attempt < 1) return tradeRequest(bucket, method, url, body, attempt + 1);
-    throw new Error("repeatedly rate-limited by trade API; try again later");
+    const waitMs = retry * 1000 + 1000;
+    if (emit) emit("waiting", { waitMs });          // a 429 back-off is the biggest rate-limiter pause
+    await delay(waitMs);
+    if (attempt < 1) return tradeRequest(bucket, method, url, body, attempt + 1, emit, dbg);
+    const e429 = new Error("repeatedly rate-limited by trade API (HTTP 429); try again later");
+    e429.status = 429;
+    throw e429;
   }
   if (r.status >= 500 && r.status <= 504 && attempt < 2) {
     await delay(3000 + attempt * 3000);
-    return tradeRequest(bucket, method, url, body, attempt + 1);
+    return tradeRequest(bucket, method, url, body, attempt + 1, emit, dbg);
   }
   if (!r.ok) {
+    // Diagnostics-in-product: name the real cause (HTTP status + first 80 chars of body) in the
+    // page-visible error, instead of a bare "HTTP 4xx".
     const txt = await r.text().catch(() => "");
-    throw new Error("HTTP " + r.status + " from trade API" + (txt ? ": " + txt.slice(0, 160) : ""));
+    const err = new Error("HTTP " + r.status + " from trade API: " + txt.slice(0, 80));
+    err.status = r.status;
+    throw err;
   }
   const ct = r.headers.get("content-type") || "";
-  if (ct.indexOf("json") === -1) throw new Error("non-JSON response from trade API");
+  if (ct.indexOf("json") === -1) {
+    const txt = await r.text().catch(() => "");
+    const err = new Error("non-JSON response (HTTP " + r.status + ", content-type '" + ct
+                          + "') from trade API: " + txt.slice(0, 80));
+    err.status = r.status;
+    throw err;
+  }
   return r.json();
 }
 
 // ---- search + fetch -> cheapest listing --------------------------------------
-async function priceQuery(query, league) {
+// `emit`/`dbg` (optional, v1.1) report stage transitions and accumulate the debug counters
+// (fetched / nulls) that make a "no buyout" outcome self-describing.
+async function priceQuery(query, league, emit, dbg) {
   if (!league) throw new Error("missing league");
   if (!query) throw new Error("missing query");
   const sUrl = BASE + "/search/" + encodeURIComponent(league);
-  const sres = await tradeRequest("search", "POST", sUrl, { query, sort: { price: "asc" } });
+  if (emit) emit("searching", {});
+  const sres = await tradeRequest("search", "POST", sUrl, { query, sort: { price: "asc" } }, 0, emit, dbg);
   const ids = (sres.result || []).slice(0, 10);          // API caps fetch at 10 ids
   const total = (sres.total != null) ? sres.total : (sres.result ? sres.result.length : 0);
   if (!ids.length) return { total: 0, amount: null, currency: null, listingId: sres.id || null };
 
   const fUrl = BASE + "/fetch/" + ids.join(",") + "?query=" + encodeURIComponent(sres.id);
-  const fres = await tradeRequest("fetch", "GET", fUrl);
-  for (const L of (fres.result || [])) {
+  if (emit) emit("fetching", {});
+  const fres = await tradeRequest("fetch", "GET", fUrl, null, 0, emit, dbg);
+  const listings = fres.result || [];
+  if (dbg) dbg.fetched = listings.length;                // how many listings we actually pulled
+  for (const L of listings) {
     const pr = L && L.listing && L.listing.price;
     if (pr && pr.amount != null) {
       return { total, amount: pr.amount, currency: pr.currency, listingId: sres.id || null };
     }
+    if (dbg) dbg.nulls++;                                 // this listing carried no buyout price
   }
   return { total, amount: null, currency: null, listingId: sres.id || null };   // results exist but no buyout price
 }
@@ -176,14 +211,58 @@ function serialize(fn) {
   return run;
 }
 
-async function priceMany(queries, league) {
+// ---- v1.1 per-item progress protocol -----------------------------------------
+// `ctx` = { tabId, reqId } is built (in the message listener) ONLY when the request opted into
+// protocolVersion >= 1.1 AND arrived from a tab. Progress is fire-and-forget: a closed tab or a
+// missing receiver must never break pricing, so every send failure is swallowed.
+function emitProgress(ctx, key, stage, detail) {
+  if (!ctx || ctx.tabId == null) return;
+  try {
+    chrome.tabs.sendMessage(
+      ctx.tabId,
+      { type: "bpc-price-progress", reqId: ctx.reqId, key, stage, detail: detail || {} },
+      () => { void chrome.runtime.lastError; }        // read lastError to silence "no receiver"
+    );
+  } catch (e) { /* no tabs API / receiver gone -> ignore */ }
+}
+
+// True when a version string/number is >= major.minor (compares major then minor; tolerant of
+// "1.1", "1.1.0", the number 1.1, etc.). Used to version-gate progress emission.
+function protoAtLeast(v, major, minor) {
+  if (v == null) return false;
+  const parts = String(v).split(".");
+  let maj = parseInt(parts[0], 10); if (isNaN(maj)) maj = 0;
+  let min = parseInt(parts[1], 10); if (isNaN(min)) min = 0;
+  if (maj !== major) return maj > major;
+  return min >= minor;
+}
+
+function snapshotDebug(dbg) {
+  return { searchStatus: dbg.searchStatus, fetchStatus: dbg.fetchStatus, fetched: dbg.fetched, nulls: dbg.nulls };
+}
+
+async function priceMany(queries, league, ctx) {
   const results = [];
-  for (const item of (queries || [])) {
+  const items = queries || [];
+
+  // "queued" for every item up front (only when progress is enabled).
+  if (ctx) for (const item of items) emitProgress(ctx, item.key, "queued", {});
+
+  for (const item of items) {
+    const emit = ctx ? (stage, detail) => emitProgress(ctx, item.key, stage, detail) : null;
+    const dbg = { searchStatus: null, fetchStatus: null, fetched: 0, nulls: 0 };
     try {
-      const r = await serialize(() => priceQuery(item.query, league));
-      results.push(Object.assign({ key: item.key }, r));
+      const r = await serialize(() => priceQuery(item.query, league, emit, dbg));
+      results.push(Object.assign({ key: item.key }, r, { debug: snapshotDebug(dbg) }));
+      if (emit) {
+        if (r.amount != null) emit("done", { total: r.total, amount: r.amount, currency: r.currency });
+        else emit("nobuyout", { total: r.total, fetched: dbg.fetched, nulls: dbg.nulls });
+      }
     } catch (e) {
-      results.push({ key: item.key, error: String(e && e.message ? e.message : e) });
+      const message = String(e && e.message ? e.message : e);
+      const status = (e && e.status != null) ? e.status : null;
+      results.push({ key: item.key, error: message, debug: snapshotDebug(dbg) });
+      if (emit) emit("error", { message, status });
     }
   }
   return results;
@@ -197,7 +276,15 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return false;
   }
   if (msg.type === "bpc-price") {
-    priceMany(msg.queries, msg.league)
+    // Build a progress context only when the caller opted into v1.1 AND the request came from a
+    // tab (content script). Popup-origin requests have no sender.tab -> ctx stays null -> progress
+    // is silently skipped; old (< v1.1) sites likewise get no progress. The price-result reply is
+    // unchanged for everyone (old site + new extension and vice versa keep working).
+    let ctx = null;
+    if (sender && sender.tab && sender.tab.id != null && protoAtLeast(msg.protocolVersion, 1, 1)) {
+      ctx = { tabId: sender.tab.id, reqId: msg.reqId };
+    }
+    priceMany(msg.queries, msg.league, ctx)
       .then((results) => sendResponse({ results }))
       .catch((e) => sendResponse({ error: String(e && e.message ? e.message : e) }));
     return true;   // async sendResponse

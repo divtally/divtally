@@ -308,6 +308,7 @@
   function reset() {
     state.meta = null; state.items = []; state.priced = {}; state.rares = {}; state.warnings = [];
     state.progress = ""; state.error = null; state.enabled = {}; state.purchased = {}; state._sig = {};
+    scanReset();     // drop any stale scan session so a new build starts with a clean status map
   }
   function fail(msg) { state.phase = "error"; state.error = msg; emit("error", msg); emit("phase", "error"); emit("state", state); }
 
@@ -642,6 +643,9 @@
       var d = ev.data;
       if (!d || d.source !== "bpc-ext") return;
       if (d.type === "hello" || d.type === "pong") { markBridge(d.version); if (pending[d.reqId]) { pending[d.reqId](); delete pending[d.reqId]; } return; }
+      // v1.1 per-item progress (status only — prices still land via price-result below).
+      // Route by reqId (must belong to the live scan) + key (must be in its order).
+      if (d.type === "price-progress") { if (scan.active && scan.reqIds[d.reqId]) scanSet(d.key, d.stage, d.detail); return; }
       if (d.type === "price-result" && pending[d.reqId]) {
         var cb = pending[d.reqId]; delete pending[d.reqId];
         cb(d.error ? { error: d.error } : { results: d.results || [] });
@@ -657,6 +661,67 @@
     state.bridge.active = true; state.bridge.version = version || null;
     emit("bridge", state.bridge);
   }
+
+  // =====================================================================
+  //  SCAN STATUS  (v1.1 per-item progress -> per-row chips + progress bar)
+  //  Additive to the D-0012 chunked bridge below. Progress events carry
+  //  STATUS ONLY; the priced numbers are still applied from the final
+  //  price-result reply in foldBatch() (single source of truth). Works with
+  //  an OLD extension too: no progress events => rows sit at "scanning" until
+  //  the chunk reply resolves them. Emits "scanstatus" with
+  //  { active, total, done, current, order, names, status{ key -> {stage,detail,ahead,resolved,waitUntil} } }.
+  //  stage: queued | scanning | searching | fetching | waiting | done | nobuyout | error
+  // =====================================================================
+  var scan = { active: false, order: [], names: {}, status: {}, reqIds: {} };
+  var SCAN_TERMINAL = { done: 1, nobuyout: 1, error: 1 };
+  var SCAN_ACTIVE = { scanning: 1, searching: 1, fetching: 1, waiting: 1 };
+  function scanReset() { scan = { active: false, order: [], names: {}, status: {}, reqIds: {} }; }
+  function scanResolved(key) { var s = scan.status[String(key)]; return !!(s && SCAN_TERMINAL[s.stage]); }
+  // a self-describing debug tail for a failing item (the owner's "no buyout everywhere" mystery)
+  function debugSuffix(dbg) {
+    if (!dbg) return "";
+    var bits = [];
+    if (dbg.searchStatus != null) bits.push("search " + dbg.searchStatus);
+    if (dbg.fetchStatus != null) bits.push("fetch " + dbg.fetchStatus);
+    if (dbg.fetched != null) bits.push(dbg.fetched + " fetched");
+    if (dbg.nulls != null) bits.push(dbg.nulls + " w/o buyout");
+    return bits.length ? (" [" + bits.join(", ") + "]") : "";
+  }
+  function scanSnapshot() {
+    var order = scan.order.slice(), status = {}, done = 0, unresolvedBefore = 0, current = null, i;
+    order.forEach(function (k) {
+      var s = scan.status[k] || { stage: "queued", detail: null };
+      var resolved = !!SCAN_TERMINAL[s.stage];
+      if (resolved) done++;
+      status[k] = { stage: s.stage, detail: s.detail || null, waitUntil: s.waitUntil || null,
+                    resolved: resolved, ahead: unresolvedBefore };
+      if (!resolved) unresolvedBefore++;      // ahead = # of unresolved rows earlier in SEND order
+    });
+    for (i = 0; i < order.length; i++) { if (SCAN_ACTIVE[status[order[i]].stage]) { current = order[i]; break; } }
+    if (current == null) { for (i = 0; i < order.length; i++) { if (!status[order[i]].resolved) { current = order[i]; break; } } }
+    return { active: scan.active, total: order.length, done: done, current: current,
+             order: order, names: Object.assign({}, scan.names), status: status };
+  }
+  function scanEmit() { emit("scanstatus", scanSnapshot()); }
+  function scanBegin(rows) {
+    scanReset(); scan.active = true;
+    rows.forEach(function (r) {
+      var k = String(r.key); scan.order.push(k);
+      scan.names[k] = (r.item && r.item.name) || k;
+      scan.status[k] = { stage: "queued", detail: null };
+    });
+    scanEmit();
+  }
+  function scanSet(key, stage, detail) {
+    key = String(key);
+    if (!scan.active || scan.order.indexOf(key) < 0) return;
+    if (scanResolved(key) && !SCAN_TERMINAL[stage]) return;      // never regress a resolved row
+    var s = scan.status[key] || (scan.status[key] = {});
+    s.stage = stage; s.detail = detail || null;
+    s.waitUntil = (stage === "waiting" && detail && detail.waitMs) ? (Date.now() + detail.waitMs) : null;
+    scanEmit();
+  }
+  function scanEnd() { if (!scan.active) return; scan.active = false; scanEmit(); }
 
   // Price one or more rows via the extension. Groups by league (one price message per league,
   // per the protocol — the extension prices the batch serially under its own limiter).
@@ -681,37 +746,52 @@
       for (var i = 0; i < byLeague[lg].length; i += CHUNK)
         chunks.push({ league: lg, queries: byLeague[lg].slice(i, i + CHUNK) });
     });
+    // Begin a scan session: the flat order is every queued key across chunks, in SEND order,
+    // so "N ahead" and the progress bar track exactly how the extension prices them serially.
+    var scanRows = [];
+    chunks.forEach(function (c) { c.queries.forEach(function (qq) {
+      scanRows.push({ key: qq.key, item: state.items.find(function (x) { return String(x.index) === String(qq.key); }) });
+    }); });
+    if (scanRows.length) scanBegin(scanRows);
     var cachedCount = 0;
     function foldBatch(b) {
       var toCache = [];
+      var seen = {};
       if (b.resp && !b.resp.error) {
         (b.resp.results || []).forEach(function (res) {
-          var key = String(res.key);
+          var key = String(res.key); seen[key] = true;
           var it = state.items.find(function (x) { return String(x.index) === key; });
           if (!it) return;
+          var dbg = res.debug || null;      // v1.1: {searchStatus, fetchStatus, fetched, nulls} (absent on old ext)
           if (res.error) {
             applyPrice(key, { confidence: "none", method: "extension", source: "trade",
-              note: "extension: " + res.error }, { include: false });
+              note: "extension: " + res.error + debugSuffix(dbg), debug: dbg }, { include: false });
+            scanSet(key, "error", { message: res.error, status: dbg && dbg.searchStatus });
             return;
           }
           if (res.amount == null) {
             applyPrice(key, { confidence: "none", method: "extension", source: "trade",
-              note: "listings exist but none had a buyout price", total_found: res.total || 0 }, { include: false });
+              note: "listings exist but none had a buyout price" + debugSuffix(dbg),
+              total_found: res.total || 0, debug: dbg }, { include: false });
+            scanSet(key, "nobuyout", { total: res.total || 0,
+              fetched: dbg ? dbg.fetched : null, nulls: dbg ? dbg.nulls : null });
             return;
           }
           var chaos = toChaos(res.amount, res.currency);
           if (chaos == null) {
             applyPrice(key, { confidence: "low", method: "extension", source: "trade",
-              note: "cheapest: " + fmtAmt(res.amount) + " " + res.currency + " (no chaos rate to convert)",
-              total_found: res.total || 0 }, { include: false });
+              note: "cheapest: " + fmtAmt(res.amount) + " " + res.currency + " (no chaos rate to convert)" + debugSuffix(dbg),
+              total_found: res.total || 0, debug: dbg }, { include: false });
+            scanSet(key, "nobuyout", { total: res.total || 0, amount: res.amount, currency: res.currency, norate: true });
             return;
           }
           applyPrice(key, {
             chaos: { min: chaos, median: chaos, high: chaos }, confidence: confFromTotal(res.total),
             method: "extension", source: "trade",
             note: "priced via extension — cheapest buyout of " + (res.total || 0) + " online listings",
-            sample_size: 1, total_found: res.total || 0
+            sample_size: 1, total_found: res.total || 0, debug: dbg
           }, { include: true });
+          scanSet(key, "done", { total: res.total || 0, amount: res.amount, currency: res.currency });
           // POST this real, on-IP price to the shared cache (short TTL) for everyone else
           toCache.push({ item: it, value: {
             chaos: { min: chaos, median: chaos, high: chaos }, confidence: confFromTotal(res.total),
@@ -720,18 +800,33 @@
           } });
         });
       }
+      // Any key in this chunk with no usable result (whole-chunk error/timeout, or omitted from
+      // the reply) resolves to a self-describing failure so the bar + chips still complete.
+      (b.keys || []).forEach(function (key) {
+        key = String(key);
+        if (seen[key] || scanResolved(key)) return;
+        var msg = (b.resp && b.resp.error) ? b.resp.error : "no result returned";
+        applyPrice(key, { confidence: "none", method: "extension", source: "trade",
+          note: "extension: " + msg }, { include: false });
+        scanSet(key, "error", { message: msg });
+      });
       if (toCache.length) { cachedCount += toCache.length; cachePost(toCache); }
     }
     var idx = 0;
     function nextChunk() {
-      if (idx >= chunks.length) return Promise.resolve({ ok: true, cached: cachedCount });
+      if (idx >= chunks.length) { scanEnd(); return Promise.resolve({ ok: true, cached: cachedCount }); }
       var c = chunks[idx++];
+      var keys = c.queries.map(function (qq) { return qq.key; });
       return new Promise(function (resolve) {
-        var id = bridgeSend("price", { league: c.league, queries: c.queries });
+        // protocolVersion 1.1 opts THIS request into per-item progress events; an old extension
+        // ignores the field and never emits them (feature-detected page-side => generic chip).
+        var id = bridgeSend("price", { league: c.league, queries: c.queries, protocolVersion: 1.1 });
+        scan.reqIds[id] = true;
+        keys.forEach(function (k) { scanSet(k, "scanning", null); });   // "sent"; v1.1 progress refines it
         // sized to THIS chunk's worst-case limiter pacing, not the whole scan
         var ms = 30000 + 30000 * c.queries.length;
-        pending[id] = function (resp) { resolve({ league: c.league, resp: resp }); };
-        setTimeout(function () { if (pending[id]) { delete pending[id]; resolve({ league: c.league, resp: { error: "timed out" } }); } }, ms);
+        pending[id] = function (resp) { resolve({ league: c.league, resp: resp, keys: keys }); };
+        setTimeout(function () { if (pending[id]) { delete pending[id]; resolve({ league: c.league, resp: { error: "timed out" }, keys: keys }); } }, ms);
       }).then(function (b) { foldBatch(b); return nextChunk(); });   // a failed chunk never blocks the rest
     }
     return nextChunk();
@@ -816,7 +911,7 @@
     setPurchased: setPurchased, isPurchased: isPurchased,
     // public pricing
     parseWhisper: parseWhisper, applyWhisper: applyWhisper, clearManual: clearManual, manualRows: manualRows,
-    autoscan: autoscan, priceViaExtension: priceViaExtension,
+    autoscan: autoscan, priceViaExtension: priceViaExtension, scanStatus: scanSnapshot,
     cacheOptOut: cacheOptOut, setCacheOptOut: setCacheOptOut,
     cacheKey: cacheKey, itemIdentity: itemIdentity, leagueKeyspace: leagueKeyspace,
     loadMock: loadMock,

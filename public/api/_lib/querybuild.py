@@ -312,15 +312,10 @@ class PublicPricer:
         stat_filters = [_statf(o) for o in stat_opts]
         equip_filters = {o["key"]: {"min": int(o["value"] * 0.85)} for o in equip_opts}
         n_skip = sum(1 for o in opts if o["kind"] == "stat" and not o["searchable"])
-        # D-0014: the strict AND-all default over-constrains real rares (owner-diagnosed:
-        # exact affix combos match a handful of unpriced dump-tab listings). With 3+ affixes,
-        # require n-1 of n via a `count` group instead - live-verified on PoE1 2026-07-27:
-        # the same helmet went 4 matches (0 buyouts fetched) -> 139 matches (all fetched priced).
-        n = len(stat_filters)
-        if n >= 3:
-            stat_groups = [{"type": "count", "value": {"min": n - 1}, "filters": stat_filters}]
-        else:
-            stat_groups = [{"type": "and", "filters": stat_filters}] if stat_filters else []
+        # D-0015 (supersedes D-0014's auto-relax, owner veto): the default requires ALL of the
+        # item's affixes - the tool NEVER silently excludes an affix the user didn't exclude.
+        # Affix selection belongs to the USER via the per-rare picker (advanced mode).
+        stat_groups = [{"type": "and", "filters": stat_filters}] if stat_filters else []
         return stat_groups, equip_filters, n_skip
 
     def _unique_value_filters(self, item: Item) -> List[dict]:

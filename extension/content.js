@@ -11,8 +11,13 @@
  *   ext   -> page : { source:"bpc-ext", type:"hello", version }            (announced on load)
  *                   { source:"bpc-ext", type:"pong",  reqId, version }
  *                   { source:"bpc-ext", type:"price-result", reqId, results:[...] | error }
+ *                   { source:"bpc-ext", type:"price-progress", reqId, key, stage, detail }  (v1.1)
  * Each `query` is the trade `query` object (status/type/name/stats/filters) -- exactly the
  * inner object the site already builds for its clickable ?q= links.
+ *
+ * v1.1 (additive): when the page's `price` request carries protocolVersion >= 1.1, the worker
+ * streams per-item progress (queued/searching/fetching/waiting/done/nobuyout/error) which this
+ * script relays verbatim as `price-progress`. A page that doesn't understand the type ignores it.
  */
 (function () {
   "use strict";
@@ -36,8 +41,11 @@
       return;
     }
     if (d.type === "price") {
+      // Forward reqId + protocolVersion so the worker can label progress events and version-gate
+      // them (>= 1.1). Additive only: a pre-1.1 worker ignores both fields; the request bridge
+      // otherwise behaves exactly as before.
       chrome.runtime.sendMessage(
-        { type: "bpc-price", league: d.league, queries: d.queries },
+        { type: "bpc-price", league: d.league, queries: d.queries, reqId: d.reqId, protocolVersion: d.protocolVersion },
         function (resp) {
           if (chrome.runtime.lastError) {
             toPage({ type: "price-result", reqId: d.reqId, error: String(chrome.runtime.lastError.message) });
@@ -50,6 +58,15 @@
           toPage({ type: "price-result", reqId: d.reqId, results: (resp && resp.results) || [] });
         }
       );
+    }
+  });
+
+  // v1.1 (additive, receive-only): relay per-item progress from the service worker to the page
+  // verbatim. The request bridge above is untouched; this is a separate listener that never
+  // sends a response (returns undefined so the message channel closes immediately).
+  chrome.runtime.onMessage.addListener(function (msg) {
+    if (msg && msg.type === "bpc-price-progress") {
+      toPage({ type: "price-progress", reqId: msg.reqId, key: msg.key, stage: msg.stage, detail: msg.detail || {} });
     }
   });
 })();
