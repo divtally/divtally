@@ -35,16 +35,18 @@ Paste the character link, click **Estimate**, watch live progress, and get a sty
 table (confidence badges, per-item trade links, totals). Runs entirely on your machine.
 Options pass through, e.g. `.\bpc-web.cmd --port 9000 --no-browser`.
 
-#### Choose a look (UI versions)
+#### The look (and alternate UI versions)
 
-The landing page (`/`) is a **gallery**: every version drives the *same* engine and live
-prices — only the interface differs. Pick whichever you like; it's just a bookmark.
+The landing page (`/`) is the **Stash Tab** skin — PoE-diegetic gear slots + a quad-stash
+grid, hover for priced tooltips (the primary, owner-picked interface; D-0007). Alternate
+looks still exist at `/gallery`: every version drives the *same* engine and live prices —
+only the interface differs.
 
 | Version | URL | What it is |
 |---------|-----|------------|
+| **Stash Tab** (default, at `/`) | `/v/stash` | PoE-diegetic gear slots + a quad-stash grid; hover for priced tooltips. |
 | **The Exilarch's Ledger** | `/v/ledger` | Itemized thermal-receipt with a running subtotal + barcode. |
 | **Abacus Terminal** | `/v/abacus` | Keyboard-first TUI: a job log and box-drawn price tables. |
-| **Stash Tab** | `/v/stash` | PoE-diegetic gear slots + a quad-stash grid; hover for priced tooltips. |
 | **Cargo Manifest** | `/v/manifest` | Boarding-pass / shipping manifest with a barcoded fare total. |
 | **Build Facts** | `/v/facts` | An FDA nutrition label: bold rules, % of total per slot, one giant Cost. |
 | **Budget Waterfall** | `/v/waterfall` | A data-viz cost cascade — each item stacks onto a running budget bar. |

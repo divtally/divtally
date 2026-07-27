@@ -32,7 +32,8 @@ _active = None                  # most recent job id; starting a new one cancels
 # ---- multi-version UI -------------------------------------------------------
 # Every *.html in bpc/ui/ (except _underscore files) is a self-contained front-end
 # "version" that drives the same /api/* backend through the shared engine at
-# /assets/core.js. The landing page (/) is a gallery; each version is at /v/<id>.
+# /assets/core.js. The landing page (/) is the stash skin (D-0007, owner pick); the
+# picker gallery lives at /gallery; each version is at /v/<id>.
 _UI_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ui")
 
 
@@ -471,6 +472,14 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = urlparse(self.path)
         if path.path == "/":
+            # D-0007: the stash skin IS the app (owner pick); the gallery moved to /gallery.
+            fp = _safe_join(_UI_DIR, "stash.html")
+            if fp and os.path.isfile(fp):
+                with open(fp, encoding="utf-8") as fh:
+                    self._send(200, fh.read(), "text/html; charset=utf-8")
+            else:
+                self._send(200, _gallery_html(), "text/html; charset=utf-8")
+        elif path.path == "/gallery":
             self._send(200, _gallery_html(), "text/html; charset=utf-8")
         elif path.path == "/classic":
             self._send(200, PAGE, "text/html; charset=utf-8")

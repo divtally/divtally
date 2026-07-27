@@ -130,3 +130,10 @@ from totals, its supports still counted). All 10 skins + classic: 5-slot belt in
 host-grouped gems with nested priced supports, glowing Autoscan wired to search-all-default in
 every picker copy. Verify caught + fix round resolved: the unshipped web.py line (blocker) and
 binder.html calling non-exported `bpc.itemGranted` (major). Both re-verified green; tests green.
+
+## D-0007 - Stash Tab is THE interface (Locked, 2026-07-26)
+Owner: "i only like the style ive been using" (the stash skin from his screenshots) - build
+around it. Effects: local web UI lands directly on the stash skin at `/` (picker gallery moved
+to `/gallery`; `/v/<id>` and `/classic` unchanged); the public site (B-001) ships stash as the
+face; new UI features land stash-FIRST and other skins are best-effort maintenance, no longer
+feature-parity targets (supersedes the all-skins fan-out default of D-0006's round).

@@ -25,6 +25,17 @@ adapted to PoE1; the Trade Bridge extension is already ported in `extension/`):
   live-verified 2026-07-26: neither poe.ninja nor the trade API sends ACAO to third-party
   origins; hands-free in-page rare pricing therefore requires a privileged install (extension /
   userscript / desktop companion) - deferred until user demand.
+- **REVISED 2026-07-26 (owner):** extension is IN SCOPE AT LAUNCH (manual whisper-paste path +
+  extension, site pushes the install) - supersedes "extension DEFERRED" above. Trust plan so it
+  never reads sketchy ("official" = transparency + restraint, NOT GGG-looking - carry the
+  standard not-affiliated-with-GGG footer): (1) store-only distribution (Chrome $5 / Edge /
+  Firefox AMO), never sideload; (2) minimal manifest - host permissions ONLY pathofexile.com/api/
+  trade/* + our domain, no cookies/tabs/all_urls, works logged-out; (3) open source, unminified,
+  repo linked from store + site; (4) one identity everywhere (name/icon/publisher/domain -
+  custom domain justified); (5) no dark patterns - site fully useful pre-install, calm inline
+  upgrade card w/ does/never-does list, "bridge active" state post-install; (6) /how-it-works
+  transparency page (endpoints, storage, cache opt-out, rate-limit ethics) doubling as launch-post
+  copy; (7) store review queues take days - submit early in the launch sequence.
 - **Rung-1 feedback UX (owner walkthrough 2026-07-26):** rare rows accept a pasted GGG
   copy-whisper string (parse the price from "...listed for 35 chaos..." / b/o variants - the
   PoE2 docx's "paste-the-whisper" pattern) or a typed "35c"/"2 div"; parsed price folds into
