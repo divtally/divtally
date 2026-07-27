@@ -182,3 +182,15 @@ details in docs/notes-public-fix1.md). Two are fundamental to B-001's trust thes
   a finite tier (a granted-only gem group no longer inflates the count: ascii fixture 6->5).
   pub-functional MINOR-2 (copy `vercel.json` to `public/` at deploy) is an owner step already
   documented - left as-is. `python tests.py` stays green; api `_verify` phase A green.
+
+## D-0010 - Public name: DivTally (Locked, 2026-07-27)
+Owner picked **DivTally** (his coinage; endgame lingo "how many divs?" + the tally/ledger
+aesthetic) after rejecting BuildTally (live construction-software collision at buildtally.com).
+Verified clean 2026-07-27: divtally.com + .net registry-confirmed unregistered (Verisign RDAP),
+divtally.pages.dev free, no product named DivTally findable. Canonical origin =
+**https://divtally.com** (Pages custom domain; staging + fallback origin divtally.pages.dev;
+both, plus www, in the extension's production content-script matches - localhost stays in
+manifest.dev.json only). Brand sweep: extension ("DivTally - Trade Bridge"), store listings,
+public site titles/footer, how-it-works, launch post, GOING-PUBLIC (running example -> divtally;
+domain registration moves from optional Phase 5 into Phase 1 since the name IS the domain).
+Local dev app keeps its repo identity; DivTally is the public-facing brand.

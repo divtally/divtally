@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "PoE1 Build Price Checker - Trade Bridge (DEV)",
+  "name": "DivTally - Trade Bridge (DEV)",
   "version": "1.0.0",
   "description": "DEV/LOCAL build of the Trade Bridge. Adds localhost + staging content-script matches for testing the page<->extension protocol against the local app (http://127.0.0.1:8765/v/_exttest) and staging deploys. DO NOT SUBMIT THIS MANIFEST TO A STORE - use manifest.json (via public/dist/build_zips.py) for submission.",
   "permissions": ["storage"],
@@ -15,7 +15,7 @@
   "background": { "service_worker": "background.js", "scripts": ["background.js"] },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "PoE1 Trade Bridge (DEV)",
+    "default_title": "DivTally Trade Bridge (DEV)",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png",
@@ -30,7 +30,8 @@
         "http://localhost:*/*",
         "https://*.pages.dev/*",
         "https://*.vercel.app/*",
-        "https://REPLACE-WITH-YOUR-DOMAIN/*"
+        "https://divtally.com/*",
+        "https://www.divtally.com/*"
       ],
       "js": ["content.js"],
       "run_at": "document_start"

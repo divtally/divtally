@@ -1,4 +1,4 @@
-# GOING PUBLIC — owner walkthrough (PoE1 Build Price Checker)
+# GOING PUBLIC — owner walkthrough (DivTally)
 
 > **The assistant walks you through these phases in chat; this file is the durable copy.**
 > If chat context is lost (auto-compaction), this file is the source of truth for every manual
@@ -25,7 +25,8 @@ way it is; do not "optimize" a server-side trade call back in.
 function to Vercel Pro ($20/mo) or AWS Lambda (code is identical) — see Phase 5.
 
 **Money summary:** the whole thing runs **$0** except the **one-time $5 Chrome Web Store** dev
-fee (skip it and ship Edge+Firefox for free), and an **optional ~$10/yr custom domain**.
+fee (skip it and ship Edge+Firefox for free), and the **~$10/yr `divtally.com` domain** — now
+registered up front in Phase 1.0, because the store listings link to it.
 
 ## Prerequisites (all free accounts; tools you likely already have)
 - **Cloudflare account** — https://dash.cloudflare.com (no credit card). Hosts the site + Worker.
@@ -36,18 +37,34 @@ fee (skip it and ship Edge+Firefox for free), and an **optional ~$10/yr custom d
 - **Chrome or Edge** — to load/test the extension. (Firefox optional.)
 - Browser store dev accounts (Phase 1).
 
-## Decide this ONE thing first — your public origin
-Your Cloudflare Pages project **name** becomes `https://<name>.pages.dev`, and that origin gets
-**baked into the extension zips** (the content-script match) and pasted into store listings. Pick
-it now and use it everywhere. This guide uses **`poe1price`** → `https://poe1price.pages.dev` as
-the running example. (A custom domain later is optional — Phase 5.)
+## Your public origin is already decided — DivTally
+The public brand **is** the domain: **`https://divtally.com`** (custom domain, registered in
+Phase 1.0), with **`divtally.pages.dev`** as the Cloudflare Pages origin and staging fallback.
+Both — plus `www.divtally.com` — are **already baked into the extension**
+(`extension/manifest.json` content-script matches) and into this guide, so there is nothing to
+pick. This guide uses **`divtally`** as the Pages/Vercel project name and `https://divtally.com`
+as the canonical site URL throughout.
 
 ---
 
-# PHASE 1 — Accounts + store submissions FIRST
+# PHASE 1 — Domain + accounts + store submissions FIRST
 Store review queues take **days**, so submit the extension early — before the site is even live —
 so approval lands when you're ready. The site is fully usable without the extension, so this
-parallelizes cleanly.
+parallelizes cleanly. **Register the domain before you submit**, because the store listings and the
+extension both carry `divtally.com`.
+
+## 1.0 Register `divtally.com` (do this FIRST)
+The name **is** the domain, and the store listings link to it, so register it before submitting
+anything. It was verified unregistered on 2026-07-27 (Verisign RDAP).
+1. **Cloudflare Registrar** (recommended — at-cost, ~$10/yr, no markup, free WHOIS privacy):
+   https://dash.cloudflare.com → **Domain Registration** → **Register Domain** → search
+   `divtally.com` → add to cart → complete purchase. Registering here also makes it a Cloudflare
+   zone, so attaching it to Pages later (Phase 5.1) is CNAME + free SSL with zero DNS fiddling.
+2. **Fallback — Porkbun** (https://porkbun.com) if Cloudflare Registrar is unavailable for the TLD
+   or you prefer it: register `divtally.com` there, then in Phase 5.1 attach it to Pages via a
+   CNAME (the guide covers the external-registrar path).
+> Grab `www.divtally.com` handling too (it's the same registration; you'll point both at Pages in
+> Phase 5.1). The raw `divtally.pages.dev` origin keeps working as a fallback either way.
 
 ## 1.1 Create the three browser dev accounts
 1. **Chrome Web Store** — go to https://chrome.google.com/webstore/devconsole → sign in with a
@@ -58,30 +75,29 @@ parallelizes cleanly.
 3. **Firefox AMO** — go to https://addons.mozilla.org/developers/ → sign in with a Firefox
    account → agree to the distribution agreement (**free**).
 
-## 1.2 Bake your real origin into the extension, then build the zips
-`public/dist/` ships only the build **script** — the store zips are generated (each must carry
-YOUR origin, so they can't be prebuilt). Set the origin, then build:
-1. Open `extension/manifest.json`, find `content_scripts[0].matches`, and replace
-   `https://REPLACE-WITH-YOUR-DOMAIN/*` with your real origin, e.g.
-   `https://poe1price.pages.dev/*` (add your custom-domain origin too if you'll use one).
-2. Build both **unminified** store artifacts:
-   ```powershell
-   python public\dist\build_zips.py
-   ```
-   It reads the version from `manifest.json`, copies every source file verbatim, and writes:
-   - `public\dist\trade-bridge-chrome-edge-1.0.0.zip`  (Chrome **and** Edge)
-   - `public\dist\trade-bridge-firefox-1.0.0.zip`      (Firefox AMO)
-   If the domain placeholder is still present the script **REFUSES**: it names the outputs
-   `..._INVALID_PLACEHOLDER.zip` and exits non-zero, so a hurried run can never emit a
-   submittable-looking zip — go back to step 1. `manifest.dev.json` and `generate_icons.py` are
-   excluded from the zips by design.
+## 1.2 Build the store zips (origins already baked)
+`public/dist/` ships only the build **script**; the zips are generated. The DivTally origins
+(`divtally.com`, `www.divtally.com`, `divtally.pages.dev`) are **already baked into
+`extension/manifest.json`**, so there is nothing to edit — just build both **unminified** store
+artifacts:
+```powershell
+python public\dist\build_zips.py
+```
+It reads the version from `manifest.json`, copies every source file verbatim, and writes:
+- `public\dist\trade-bridge-chrome-edge-1.0.0.zip`  (Chrome **and** Edge)
+- `public\dist\trade-bridge-firefox-1.0.0.zip`      (Firefox AMO)
+
+If the manifest's content-script domain is ever reverted to a bare placeholder, the script
+**REFUSES**: it names the outputs `..._INVALID_PLACEHOLDER.zip` and exits non-zero, so a hurried
+run can never emit a submittable-looking zip. `manifest.dev.json` and `generate_icons.py` are
+excluded from the zips by design.
 
 ## 1.3 Submit to the Chrome Web Store
 1. https://chrome.google.com/webstore/devconsole → **Add new item**.
 2. Upload `public\dist\trade-bridge-chrome-edge-1.0.0.zip`.
 3. Fill the listing from `docs/store-listings.md` (all copy is pre-written):
    - **Title**, **Short summary**, **Full description** — paste verbatim.
-   - Replace `<REPO-URL-PLACEHOLDER>` and `<SITE-URL-PLACEHOLDER>` (your repo + `https://poe1price.pages.dev`).
+   - Replace `<REPO-URL-PLACEHOLDER>` (your repo). The site URL is already `https://divtally.com` in the copy.
    - **Category:** Tools. **Store icon:** `extension/icons/icon128.png`.
    - **Screenshots** (1280×800 or 640×400): capture per the checklist in `store-listings.md §Screenshots`.
    - **Permission justifications:** paste the `storage`, host-permission, and content-script blurbs
@@ -126,7 +142,7 @@ npx wrangler kv namespace create PRICES     # prints:  id = "xxxxxxxx...."
    ```powershell
    npx wrangler deploy
    ```
-   Your endpoint prints as **`https://poe1-price-cache.<your-subdomain>.workers.dev`**. The cache
+   Your endpoint prints as **`https://divtally-price-cache.<your-subdomain>.workers.dev`**. The cache
    path is `/cache`. **Write this URL down** — it's `WORKER_BASE` in `config.js` and `--worker-url`
    for the seeder.
    - *(Optional)* The cache enforces a soft **per-IP daily write budget** (default 600 entries) so
@@ -135,7 +151,7 @@ npx wrangler kv namespace create PRICES     # prints:  id = "xxxxxxxx...."
      `wrangler.toml` (or `npx wrangler deploy --var MAX_WRITES_PER_IP_DAY:1200`).
 4. Sanity check (offline logic was already proven — 55/55 tests; this just confirms it's live):
    ```powershell
-   curl "https://poe1-price-cache.<sub>.workers.dev/cache?league=Standard&keys=v1_0000000000000000"
+   curl "https://divtally-price-cache.<sub>.workers.dev/cache?league=Standard&keys=v1_0000000000000000"
    ```
    Expect `{}` (empty — nothing seeded yet), **not** an error page.
 
@@ -154,7 +170,7 @@ cd C:\scripts\buildpricechecker-poe1\public
 vercel                     # answer prompts (see below) -> prints a PREVIEW url
 ```
 Prompt answers: **Set up and deploy = Yes**; scope = your account; **Link to existing = No**;
-project name = `poe1price` (or your choice); **Root Directory = ./** (you are already inside
+project name = `divtally` (or your choice); **Root Directory = ./** (you are already inside
 `public/`, which must be the root so functions resolve as `api/build.py`).
 1. Test the preview URL it printed:
    ```powershell
@@ -166,26 +182,27 @@ project name = `poe1price` (or your choice); **Root Directory = ./** (you are al
    ```powershell
    vercel --prod
    ```
-   Your function is then at **`https://poe1price.vercel.app`** (paths `/api/build`, `/api/health`).
+   Your function is then at **`https://divtally.vercel.app`** (paths `/api/build`, `/api/health`).
    **Write this down** — it's `API_BASE` in `config.js`.
 3. One real end-to-end call (this hits **poe.ninja only** — allowed; a handful of calls is fine):
    ```powershell
-   curl "https://poe1price.vercel.app/api/build?url=https://poe.ninja/poe1/builds/character/<acct>/<char>"
+   curl "https://divtally.vercel.app/api/build?url=https://poe.ninja/poe1/builds/character/<acct>/<char>"
    ```
    Expect HTTP 200 with a build document. Confirm it contains **no** `/api/trade` strings — only
    browser `/trade/search` links (the invariant).
 
 ## 2.3 Deploy the static site (Cloudflare Pages)
-Deploy once to **claim your `<name>.pages.dev` origin** (this must match the extension domain from
-Phase 1.2), then you'll fill config and redeploy.
+Deploy once to **claim the `divtally.pages.dev` origin** (the Pages project name must be `divtally`
+so it matches the `divtally.pages.dev` match already baked into the extension), then you'll fill
+config and redeploy. You can attach the custom domain `divtally.com` now or in Phase 5.1.
 
 **Fastest path — Direct Upload (no Git):**
 1. https://dash.cloudflare.com → **Workers & Pages** (sidebar) → **Create application** → **Pages**
    tab → **Upload assets**.
-2. **Project name** = `poe1price` (this is what makes `poe1price.pages.dev` — must match the origin
-   you baked into the extension in Phase 1.2).
+2. **Project name** = `divtally` (this is what makes `divtally.pages.dev` — must match the origin
+   already baked into the extension).
 3. Drag the **`public\site`** folder (the one containing `index.html`) into the drop zone → **Deploy site**.
-4. Open the printed `https://poe1price.pages.dev` — it should render the stash skin. Rares won't
+4. Open the printed `https://divtally.pages.dev` — it should render the stash skin. Rares won't
    price yet (config still has placeholders).
 
 > Gotchas: a Direct-Upload project can't later convert to Git (pick deliberately). For the Git path
@@ -196,8 +213,8 @@ Phase 1.2), then you'll fill config and redeploy.
 Edit **`public\site\config.js`** — the **only** file you edit in the site — replacing every
 `REPLACE_ME`:
 ```js
-API_BASE:    "https://poe1price.vercel.app",                        // from 2.2
-WORKER_BASE: "https://poe1-price-cache.<sub>.workers.dev",          // from 2.1  ("" disables cache)
+API_BASE:    "https://divtally.vercel.app",                        // from 2.2
+WORKER_BASE: "https://divtally-price-cache.<sub>.workers.dev",          // from 2.1  ("" disables cache)
 STORE_URLS: {
   chrome:  "https://chromewebstore.google.com/detail/<id>",         // from Phase 1 once approved
   edge:    "https://microsoftedge.microsoft.com/addons/detail/<id>",
@@ -214,15 +231,15 @@ again when they land. Then push the update:
 ---
 
 # PHASE 3 — Wiring checks on the real origin
-Do these against the **live** `poe1price.pages.dev` (not localhost).
+Do these against the **live** `divtally.pages.dev` (not localhost).
 
 ## 3.1 Mock render (no backend)
-Open `https://poe1price.pages.dev/index.html?mock`. The stash skin should render a full demo build
+Open `https://divtally.pages.dev/index.html?mock`. The stash skin should render a full demo build
 (sample snapshot) with no network calls to your API. Eyeball layout/animation — this is the render
 the local tests couldn't paint.
 
 ## 3.2 One real build end-to-end
-Open `https://poe1price.pages.dev/`, paste a real **poe.ninja PoE1 build URL** (or a PoB code),
+Open `https://divtally.pages.dev/`, paste a real **poe.ninja PoE1 build URL** (or a PoB code),
 Appraise. Expect: gems/currency/uniques priced from poe.ninja; rares showing a red/orange "needs
 pricing" cue and appearing in the **"Rares to price"** panel with an *open search ↗* link +
 whisper-paste box. Totals read as a **floor** (poe.ninja-priced items only). This is the first true
@@ -246,7 +263,7 @@ To test the live bridge before the store approves, side-load with the **dev** ma
 2. Chrome/Edge: open `chrome://extensions` → enable **Developer mode** → **Load unpacked** → select
    the scratch folder. (Firefox: `about:debugging` → **This Firefox** → **Load Temporary Add-on** →
    pick the `manifest.json` file.)
-3. Open `https://poe1price.pages.dev/`. The top-nav **bridge badge** should flip to **"bridge
+3. Open `https://divtally.pages.dev/`. The top-nav **bridge badge** should flip to **"bridge
    active"** (the calm upgrade card hides once the bridge is detected).
 4. Load a build with rares → click **Autoscan (N)** (or a per-row ⚡). The extension prices each
    rare **from your own IP** and folds the numbers in (`source:"trade"`), and POSTs them back to the
@@ -274,7 +291,7 @@ Confirm it resolves the league and lists sane build names.
 
 ## 4.2 One real seed (drives the trade API on your IP — run manually once)
 ```powershell
-python C:\scripts\buildpricechecker-poe1\tools\seed_cache.py --worker-url https://poe1-price-cache.<sub>.workers.dev/cache -n 15
+python C:\scripts\buildpricechecker-poe1\tools\seed_cache.py --worker-url https://divtally-price-cache.<sub>.workers.dev/cache -n 15
 ```
 `--worker-url` accepts the base or the full `/cache`. `--delay` (default 3s) paces builds. This is
 the same footprint as you pricing 15 builds yourself in the app. Afterward, reload a seeded build on
@@ -283,8 +300,8 @@ the live site with **no extension** and confirm its rares now show `source:"cach
 ## 4.3 Schedule it daily (Windows Task Scheduler)
 **CLI (run PowerShell as admin), daily at 06:00:**
 ```powershell
-schtasks /Create /TN "PoE1 Price Cache Seed" /SC DAILY /ST 06:00 /F ^
-  /TR "python C:\scripts\buildpricechecker-poe1\tools\seed_cache.py --worker-url https://poe1-price-cache.<sub>.workers.dev/cache -n 15"
+schtasks /Create /TN "DivTally Price Cache Seed" /SC DAILY /ST 06:00 /F ^
+  /TR "python C:\scripts\buildpricechecker-poe1\tools\seed_cache.py --worker-url https://divtally-price-cache.<sub>.workers.dev/cache -n 15"
 ```
 (Replace `<sub>`. `python` must be on PATH — if not, use its full path, e.g.
 `C:\Python313\python.exe`. The script finds the repo itself via its own location, so the working
@@ -292,10 +309,10 @@ directory doesn't matter.)
 
 **GUI equivalent** (if you prefer clicks):
 1. Open **Task Scheduler** → **Create Task…**
-2. **General:** name `PoE1 Price Cache Seed`; **Run whether user is logged on or not**.
+2. **General:** name `DivTally Price Cache Seed`; **Run whether user is logged on or not**.
 3. **Triggers:** New → **Daily**, start **06:00**, recur every **1 day**.
 4. **Actions:** New → **Start a program** → Program/script = `python` (or full path) → Add
-   arguments = `C:\scripts\buildpricechecker-poe1\tools\seed_cache.py --worker-url https://poe1-price-cache.<sub>.workers.dev/cache -n 15`.
+   arguments = `C:\scripts\buildpricechecker-poe1\tools\seed_cache.py --worker-url https://divtally-price-cache.<sub>.workers.dev/cache -n 15`.
 5. **Conditions:** untick "Start only on AC power" if on a laptop. **OK**.
 6. Right-click the task → **Run** once to verify, then check a seeded build on the live site.
 
@@ -304,14 +321,17 @@ directory doesn't matter.)
 
 ---
 
-# PHASE 5 — Optional custom domain + launch
-## 5.1 Custom domain (~$10/yr, optional)
-1. Cloudflare Pages project → **Custom domains** → **Set up a domain** → enter your
-   domain/subdomain → **Activate**. If the domain is already a Cloudflare zone, CNAME + free SSL are
-   automatic; an external registrar needs a CNAME (subdomain) or nameserver move (apex).
-2. If you adopt a custom origin, **add it to `extension/manifest.json` matches**, re-run
-   `python public\dist\build_zips.py`, and submit an extension update to each store. Also update
-   `config.js` if any absolute origin references change, and redeploy Pages.
+# PHASE 5 — Attach the custom domain + launch
+## 5.1 Attach `divtally.com` to Cloudflare Pages
+You already **registered** `divtally.com` back in Phase 1.0; now point it at your Pages site (this
+can also be done at the tail end of Phase 2, once the Pages project exists).
+1. Cloudflare Pages project → **Custom domains** → **Set up a domain** → enter `divtally.com`
+   (repeat for `www.divtally.com`) → **Activate**. If you registered via **Cloudflare Registrar**
+   it is already a Cloudflare zone, so CNAME + free SSL are automatic; an **external registrar**
+   (e.g. Porkbun) needs a CNAME (for `www`) or a nameserver move (for the apex).
+2. The extension already ships the `divtally.com` / `www.divtally.com` / `divtally.pages.dev`
+   matches, so **no manifest edit or extension re-submission is needed**. Just confirm `config.js`
+   points at your final origins and redeploy Pages.
 
 ## 5.2 Launch
 1. Confirm the three store listings are approved and their URLs are in `config.js` `STORE_URLS`;
@@ -330,9 +350,11 @@ directory doesn't matter.)
 | `REPLACE_ME_*_STORE_URL` | `public/site/config.js` | store listing URLs (Phase 1) |
 | `REPLACE_ME_REPO_URL` | `public/site/config.js` | your public repo |
 | `REPLACE_ME` (KV id) | `public/worker/wrangler.toml` | `kv namespace create` output (2.1) |
-| `REPLACE-WITH-YOUR-DOMAIN` | `extension/manifest.json` | your `pages.dev`/custom origin (1.2) |
-| `<REPO-URL-PLACEHOLDER>`, `<SITE-URL-PLACEHOLDER>` | store listings | repo + site (Phase 1) |
+| `<REPO-URL-PLACEHOLDER>` | store listings | your public repo (Phase 1) |
 | `copy public\api\vercel.json public\vercel.json` | Vercel root | (2.2, do before deploy) |
+
+> The extension's content-script domains and the store-listing site URL are **already baked to
+> `divtally.com` / `divtally.pages.dev`** — no placeholder to replace there.
 
 ## Verification already done for you (so you know what's solid vs. owner-test)
 - **api:** 41-item live poe.ninja build in ~1.6–2.2s, **zero** pathofexile.com calls; offline

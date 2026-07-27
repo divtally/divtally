@@ -1,11 +1,10 @@
 # Launch post — ready to edit
 
-Community announcement for the PoE1 Build Price Checker. The honest architecture explanation *is*
+Community announcement for DivTally. The honest architecture explanation *is*
 the trust pitch — lead with it. Fill the `<PLACEHOLDER>`s (they mirror `config.js`), trim to fit
 each venue (forum / Reddit / Discord), and post. Same story as the `/how-it-works` page.
 
-Placeholders:
-- `<SITE-URL>` — e.g. `https://poe1price.pages.dev`
+The site is `https://divtally.com`. Remaining placeholders to fill:
 - `<REPO-URL>` — your public, unminified source repo
 - `<CHROME-URL>` / `<EDGE-URL>` / `<FIREFOX-URL>` — store listings once approved
 
@@ -13,7 +12,7 @@ Placeholders:
 
 ## Title
 ```
-[Tool] PoE1 Build Price Checker — paste a poe.ninja/PoB link, get a full gear price breakdown (open source, no login)
+[Tool] DivTally — paste a poe.ninja/PoB link, get a full gear price breakdown (open source, no login)
 ```
 
 ## Body
@@ -21,7 +20,7 @@ Placeholders:
 Paste a poe.ninja build link or a Path of Building code and get the whole build priced — every
 piece of gear, every flask, every skill + support gem — totaled in Chaos and Divine Orbs.
 
-  ->  <SITE-URL>
+  ->  https://divtally.com
 
 It's free, open source, needs no login, and — this is the important part — it never makes a single
 trade-API call from a server. Here's exactly how it works and why that matters.
@@ -92,7 +91,7 @@ ACCURACY / HONESTY CAVEATS
 
 OPEN SOURCE + TRANSPARENCY
   - Full source (site, function, worker, extension — all unminified): <REPO-URL>
-  - How it works / privacy / rate-limit ethics / cache opt-out: <SITE-URL>/how-it-works
+  - How it works / privacy / rate-limit ethics / cache opt-out: https://divtally.com/how-it-works
 
 Feedback, bugs, and "it mispriced X" reports very welcome.
 
@@ -106,6 +105,6 @@ trademark of Grinding Gear Games.
 - **Reddit (r/pathofexile):** keep "HOW IT WORKS", the extension does/never list, and the caveats —
   that combination pre-empts the "is this safe / does it touch my account" questions.
 - **Official forum:** the full text is fine; forums reward thoroughness.
-- **Discord:** lead with the one-liner + `<SITE-URL>`, then a 3-bullet "reads poe.ninja server-side,
+- **Discord:** lead with the one-liner + `https://divtally.com`, then a 3-bullet "reads poe.ninja server-side,
   rares priced on your own IP, open source" and the repo link.
 ```

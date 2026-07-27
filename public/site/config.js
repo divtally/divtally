@@ -1,5 +1,5 @@
 /* ===========================================================================
- * PoE1 Build Price Checker — PUBLIC SITE CONFIG
+ * DivTally — PUBLIC SITE CONFIG
  * ---------------------------------------------------------------------------
  * Fill in every REPLACE_ME below before you deploy. Nothing else in the site
  * needs editing. This file is loaded FIRST (before core.js) and read by both
@@ -9,9 +9,9 @@
  * itself (`/api/build`, `/cache`).
  *
  *   API_BASE     the serverless build function (public/api on Vercel Hobby).
- *                e.g. "https://poe1price.vercel.app"
+ *                e.g. "https://divtally.vercel.app"
  *   WORKER_BASE  the Cloudflare Worker community price cache (public/worker).
- *                e.g. "https://poe1-price-cache.YOURSUB.workers.dev"
+ *                e.g. "https://divtally-price-cache.YOURSUB.workers.dev"
  *                Leave "" to disable the shared cache entirely (site still works).
  *   STORE_URLS   the extension listings, once each store approves it.
  *   REPO_URL     the public, open-source repository (linked from the footer and
@@ -23,8 +23,8 @@
  * whisper, or the browser extension running on the visitor's own IP.
  * =========================================================================== */
 window.BPC_CONFIG = {
-  API_BASE:    "REPLACE_ME_API_BASE",      // e.g. https://poe1price.vercel.app
-  WORKER_BASE: "REPLACE_ME_WORKER_BASE",   // e.g. https://poe1-price-cache.yoursub.workers.dev  ("" disables cache)
+  API_BASE:    "REPLACE_ME_API_BASE",      // e.g. https://divtally.vercel.app
+  WORKER_BASE: "REPLACE_ME_WORKER_BASE",   // e.g. https://divtally-price-cache.yoursub.workers.dev  ("" disables cache)
 
   STORE_URLS: {
     chrome:  "REPLACE_ME_CHROME_STORE_URL",  // Chrome Web Store listing

@@ -1,6 +1,6 @@
-# PoE1 Build Price Checker — Trade Bridge (browser extension)
+# DivTally — Trade Bridge (browser extension)
 
-This extension prices **rares/uniques** for the public Build Price Checker website by calling
+This extension prices **rares/uniques** for the public DivTally website by calling
 the official PoE1 trade API **from your own browser and IP**. That's the only safe way to do
 live rare pricing on a public site: the trade API blocks browser pages (CORS) and bans a shared
 server IP that searches for everyone, but an extension is privileged (CORS-exempt) and uses each
@@ -10,9 +10,10 @@ limiter state **persisted** so an MV3 service-worker restart can't burst past GG
 
 ## Files
 - `manifest.json` — **store** MV3 manifest (v1.0.0). Minimal by design: `storage` only,
-  `host_permissions` = **exactly** `https://www.pathofexile.com/api/trade/*`, and a single
-  content-script match placeholder `https://REPLACE-WITH-YOUR-DOMAIN/*` (replace with your real
-  public origin before submitting). No localhost, no `*.pages.dev`, no cookies/tabs/all_urls.
+  `host_permissions` = **exactly** `https://www.pathofexile.com/api/trade/*`, and the DivTally
+  production content-script matches already baked in (`https://divtally.com/*`,
+  `https://www.divtally.com/*`, `https://divtally.pages.dev/*`). No localhost, no wildcard hosts,
+  no cookies/tabs/all_urls.
 - `manifest.dev.json` — **local-testing** manifest. Same permissions, but its content-script
   matches also include `http://127.0.0.1:*/*`, `localhost`, and `*.pages.dev`/`*.vercel.app`
   staging wildcards so you can exercise the bridge locally. **Never submitted to a store.**
@@ -73,8 +74,9 @@ object the site already builds for its clickable `?q=` links. The extension retu
 
 ## Adding origins
 For **local/staging** work, edit `manifest.dev.json` → `content_scripts[0].matches`, then reload.
-For **production**, set the real origin in `manifest.json` (replace `REPLACE-WITH-YOUR-DOMAIN`
-with your public host, e.g. `https://poe1price.pages.dev`), then rebuild the store zips.
+For **production**, the DivTally origins are already set in `manifest.json`
+(`https://divtally.com/*`, `https://www.divtally.com/*`, `https://divtally.pages.dev/*`); if the
+public origin ever changes, edit them there and rebuild the store zips.
 
 ## Build the store zips
 `python public/dist/build_zips.py` produces two **unminified** artifacts in `public/dist/`:
@@ -82,7 +84,7 @@ with your public host, e.g. `https://poe1price.pages.dev`), then rebuild the sto
 `manifest.json` (the version drives the filenames), copies every source file verbatim, and
 specialises only the manifest per target (Chrome: `service_worker` only; Firefox: adds the
 `background.scripts` fallback + keeps `gecko.id`). It excludes `manifest.dev.json` and
-`generate_icons.py`. It prints a loud warning if the domain placeholder is still present.
+`generate_icons.py`. It refuses (non-zero exit) if the domain placeholder is ever reintroduced.
 Store-listing copy + permission justifications: `docs/store-listings.md`. Site-side protocol
 spec: `docs/notes-public-ext.md`.
 

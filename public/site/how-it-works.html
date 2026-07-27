@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="How the PoE1 Build Price Checker works: exactly which servers it talks to, where every price comes from, what is stored and for how long, and how to opt out of the shared cache. Not affiliated with Grinding Gear Games.">
-<title>How it works · PoE1 Build Price Checker</title>
+<meta name="description" content="How DivTally works: exactly which servers it talks to, where every price comes from, what is stored and for how long, and how to opt out of the shared cache. Not affiliated with Grinding Gear Games.">
+<title>How it works · DivTally</title>
 <!-- Fonts are self-hosted (assets/fonts/) so the browser contacts NO third party for them
      (B-001 trust promise / "every server this site contacts", below). -->
 <link rel="stylesheet" href="/assets/fonts.css">
@@ -66,9 +66,9 @@
 <body>
 <div class="stage">
   <div class="topnav">
-    <span class="brandmark">PoE1 Build Price Checker</span>
+    <span class="brandmark">DivTally</span>
     <span class="navspace"></span>
-    <a href="/">&larr; Back to the checker</a>
+    <a href="/">&larr; Back to DivTally</a>
   </div>
 
   <h1>How it works</h1>
@@ -76,7 +76,7 @@
 
   <div class="callout hard">
     <span class="k">The one rule</span>
-    <b>This site never talks to the Path&nbsp;of&nbsp;Exile trade site.</b> The page you are on, the pricing function, and the shared
+    <b>DivTally never talks to the Path&nbsp;of&nbsp;Exile trade site.</b> The page you are on, the pricing function, and the shared
     cache <span class="no">never</span> call <code>pathofexile.com</code> &mdash; not the trade search, not any of its data endpoints.
     Trade prices for rares are produced only on <b>real player machines</b> (you, or a volunteer's PC), never by a server pretending to be one.
     That single rule is the reason the whole thing is built the way it is.
@@ -100,7 +100,7 @@
   </div>
 
   <h2>The exact endpoints</h2>
-  <p>These are every server this site contacts. You can verify them in your browser's Network tab.</p>
+  <p>These are every server DivTally contacts. You can verify them in your browser's Network tab.</p>
   <div class="panel">
     <table>
       <thead><tr><th>When</th><th>Request</th><th>Whose server</th></tr></thead>
@@ -153,7 +153,7 @@
   <h2>The extension, precisely</h2>
   <p>Optional, open source, and deliberately boring:</p>
   <ul>
-    <li><span class="yes">Only</span> requests to <code>pathofexile.com/api/trade/*</code> and this site's own domain. Nothing else.</li>
+    <li><span class="yes">Only</span> requests to <code>pathofexile.com/api/trade/*</code> and DivTally's own domain. Nothing else.</li>
     <li><span class="no">No</span> access to your tabs, browsing history, or other sites. <span class="no">No</span> cookies, <span class="no">no</span> login, <span class="no">no</span> <code>POESESSID</code>.</li>
     <li>Store-only distribution (Chrome / Edge / Firefox), unminified, with the source readable in the repo and the store listing.</li>
     <li>The site is fully usable without it &mdash; it only saves you the copy-paste.</li>
@@ -166,7 +166,7 @@
   </div>
 
   <footer class="site-foot">
-    <a href="/">The checker</a>
+    <a href="/">DivTally</a>
     <a id="footRepo" href="#">Open source</a>
     <span class="foot-space"></span>
     <span class="ggg">Not affiliated with or endorsed by Grinding Gear Games.</span>

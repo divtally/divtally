@@ -89,7 +89,7 @@ def main():
     if placeholder:
         print("ERROR: manifest.json still has the placeholder content-script match")
         print("       'https://REPLACE-WITH-YOUR-DOMAIN/*'. Replace it with your real public")
-        print("       site origin (e.g. https://poe1price.pages.dev/*), then re-run this script.")
+        print("       site origin (e.g. https://divtally.pages.dev/*), then re-run this script.")
         print("       Building CLEARLY-MARKED zips you must NOT submit:\n")
 
     targets = [

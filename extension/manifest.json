@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "PoE1 Build Price Checker - Trade Bridge",
+  "name": "DivTally - Trade Bridge",
   "version": "1.0.0",
-  "description": "Prices rares/uniques for the PoE1 Build Price Checker using YOUR browser + YOUR IP, so the public website never hits GGG's trade rate limits or risks a ban. Not affiliated with Grinding Gear Games.",
+  "description": "Prices rares/uniques for DivTally using YOUR browser + YOUR IP, so the public website never hits GGG's trade rate limits or risks a ban. Not affiliated with Grinding Gear Games.",
   "permissions": ["storage"],
   "host_permissions": ["https://www.pathofexile.com/api/trade/*"],
   "browser_specific_settings": { "gecko": { "id": "bpc-trade-bridge@buildpricechecker" } },
@@ -15,7 +15,7 @@
   "background": { "service_worker": "background.js" },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "PoE1 Trade Bridge",
+    "default_title": "DivTally Trade Bridge",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png",
@@ -25,7 +25,7 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://REPLACE-WITH-YOUR-DOMAIN/*"],
+      "matches": ["https://divtally.com/*", "https://www.divtally.com/*", "https://divtally.pages.dev/*"],
       "js": ["content.js"],
       "run_at": "document_start"
     }
