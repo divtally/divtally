@@ -329,5 +329,83 @@ console.log("· D-0016 item 4 — rare tiers from the extension's prices[] (loca
   eq(bpc.tiersFromChaos([10]), { min: 10, median: 10, high: 10, sample: 1 }, "single value -> min=median=high");
 }
 
+// =====================================================================
+//  D-0019 — VARIANT-DEFINING (locked) mods on a registered unique. The
+//  defining mods ARE the item identity (D-0015): the picker lists them but
+//  can never untick/exclude/loosen them — buildRareQuery ALWAYS emits them
+//  as required filters with the locked value (option split / exact seed),
+//  while an ordinary optional roll on the SAME item still toggles.
+// =====================================================================
+// Forbidden Flesh: one DEFINING option mod (Allocates-notable, base id + value.option) + one
+// ordinary optional Life roll. Mirrors public API §2.6 (defining/option) + §2.8.
+const VDEF = { affixes: [
+  { kind: "stat", text: "Allocates Unnatural Instinct if you have the matching modifier on Forbidden Flame",
+    stat_id: "explicit.stat_1190333629", value: null, default_min: null, default_max: null,
+    searchable: true, resist: false, negated: false, defining: true, option: 88, prefer: true, priority: "required" },
+  { kind: "stat", text: "+20 to maximum Life", stat_id: "explicit.stat_life", value: 20,
+    default_min: 20, default_max: null, searchable: true, resist: false, negated: false, prefer: false, priority: "nice" },
+], pseudo: [] };
+// the unique's own strict query (name + type + the defining option filter + the optional roll) —
+// what the API hands the row as origQuery; a unique carries no `scopes` (searched by name+type).
+const VORIG = { status: { option: "online" }, name: "Forbidden Flesh", type: "Cobalt Jewel",
+  stats: [{ type: "and", filters: [
+    { id: "explicit.stat_1190333629", value: { option: 88 } },
+    { id: "explicit.stat_life", value: { min: 20 } } ] }] };
+// Lethal Pride: one DEFINING exact-seed mod (timeless). Displayed seed == filter value (min==max).
+const VSEED = { affixes: [
+  { kind: "stat", text: "Commanded leadership over 11711 warriors under Kaom",
+    stat_id: "explicit.pseudo_timeless_jewel_kaom", value: 11711, default_min: 11711, default_max: null,
+    searchable: true, resist: false, negated: false, defining: true, exact: true, prefer: true, priority: "required" },
+], pseudo: [] };
+const VSEED_ORIG = { status: { option: "online" }, name: "Lethal Pride", type: "Timeless Jewel",
+  stats: [{ type: "and", filters: [
+    { id: "explicit.pseudo_timeless_jewel_kaom", value: { min: 11711, max: 11711 } } ] }] };
+
+console.log("· D-0019 — defining OPTION mod: all-ticked reproduces the unique's own strict query");
+{
+  eqQ(bpc.buildRareQuery(VDEF, VORIG), VORIG, "all-ticked (option split + optional roll) reproduces ORIG");
+  const q = bpc.buildRareQuery(VDEF, VORIG);
+  eq(q.name, "Forbidden Flesh", "unique name copied verbatim from the query");
+  eq(q.type, "Cobalt Jewel", "unique base type copied verbatim");
+  eq(filterFor(q, "explicit.stat_1190333629").value, { option: 88 }, "defining OPTION emits value.option (base id, pipe stripped)");
+  eqQ(bpc.applyScope(VDEF, VORIG, "base"), VORIG, "a unique carries no scopes -> applyScope leaves name+type unchanged");
+}
+
+console.log("· D-0019 — the defining mod is LOCKED: untick can't drop it; the optional roll still toggles");
+{
+  const p = bpc.rareDefaultPicks(VDEF);
+  p.affix[0].ticked = false;    // the picker tries to untick the DEFINING mod (must be ignored)
+  p.affix[1].ticked = false;    // untick the ordinary optional roll (must be honoured)
+  const q = bpc.buildRareQuery(VDEF, VORIG, p);
+  ok(!!filterFor(q, "explicit.stat_1190333629"), "defining mod is STILL emitted after an untick (item identity)");
+  eq(filterFor(q, "explicit.stat_1190333629").value, { option: 88 }, "…with its locked option value intact");
+  ok(!filterFor(q, "explicit.stat_life"), "the ordinary optional roll IS removed when unticked");
+  eq(statIds(q), ["explicit.stat_1190333629"], "only the locked defining filter remains");
+}
+
+console.log("· D-0019 — a 'not needed' tier can't exclude a defining mod; it stays in the AND group");
+{
+  const p = bpc.rareDefaultPicks(VDEF);
+  p.affix[0].tier = "notneeded";  // try to demote the DEFINING mod out of the search
+  p.affix[1].tier = "notneeded";  // demote the optional roll (this one really goes away)
+  const grouped = bpc.tierGroups(VDEF, p);
+  const q = bpc.buildRareQuery(VDEF, VORIG, grouped);
+  const ids = q.stats.reduce((a, g) => a.concat(g.filters.map(f => f.id)), []);
+  ok(ids.indexOf("explicit.stat_1190333629") >= 0, "defining survives a not-needed demotion (never excluded)");
+  ok(ids.indexOf("explicit.stat_life") < 0, "the optional roll obeys not-needed (excluded)");
+  const andG = q.stats.find(g => g.type === "and");
+  ok(!!andG && andG.filters.some(f => f.id === "explicit.stat_1190333629"), "the defining filter sits in the AND (required) group");
+}
+
+console.log("· D-0019 — defining EXACT seed: min==max, locked against any picker edit");
+{
+  eq(filterFor(bpc.buildRareQuery(VSEED, VSEED_ORIG), "explicit.pseudo_timeless_jewel_kaom").value,
+     { min: 11711, max: 11711 }, "exact seed emits min==max == the displayed seed");
+  const p = bpc.rareDefaultPicks(VSEED); p.affix[0].min = 5000; p.affix[0].max = 9000;   // user tries to loosen
+  eq(filterFor(bpc.buildRareQuery(VSEED, VSEED_ORIG, p), "explicit.pseudo_timeless_jewel_kaom").value,
+     { min: 11711, max: 11711 }, "exact seed ignores picker min/max edits (locked identity)");
+  eqQ(bpc.buildRareQuery(VSEED, VSEED_ORIG), VSEED_ORIG, "all-ticked reproduces the exact-seed query");
+}
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

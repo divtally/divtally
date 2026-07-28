@@ -564,7 +564,8 @@
       var p = state.priced[String(it.index)];
       if (!p) return false;
       var priceable = it.category === "rare" || it.category === "magic" ||
-                      (it.category === "unique" && (p.method === "unique-unpriced" || p.source === "trade"));
+                      (it.category === "unique" && (p.method === "unique-unpriced" || p.source === "trade" ||
+                                                    !!it.variant));   // D-0019: variant uniques always listed (locked picker + exact search + deep-link)
       if (!priceable) return false;
       if (it.swap && !includeSwap()) return false;   // D-0018: swap gear sits out until re-included
       var hasQuery = !!(p.trade_query || p.trade_url || it.trade_query || it.trade_url);
@@ -1003,6 +1004,16 @@
     if (Object.keys(v).length) f.value = v;
     return f;
   }
+  // D-0019 — a variant-DEFINING mod's LOCKED filter, built from the affix's own identity value
+  // (never from user picks): an OPTION mod (Allocates-notable / ring-size / keystone-radius) ->
+  // {id: base, value:{option:N}}; an EXACT seed/count -> min==max; else the roll min. Defining mods
+  // ARE the item (D-0015), so the picker can't loosen them — the value comes off the affix alone.
+  function _definingFilter(a) {
+    if (a.option != null) return { id: a.stat_id, value: { option: a.option } };
+    var pf = affixPrefill(a);
+    if (a.exact) { var v = (pf.min != null ? pf.min : pf.max); return _statFilter(a.stat_id, v, v); }
+    return _statFilter(a.stat_id, pf.min, pf.max);
+  }
   function _pickOf(map, i, a) {
     var e = map && map[i];
     if (e) return { ticked: !!e.ticked, min: _pnum(e.min), max: _pnum(e.max), group: (e.group != null ? e.group : null) };
@@ -1038,6 +1049,10 @@
         if (a.kind !== "stat") return;
         if (!a.searchable || !a.stat_id) return;          // unsearchable is NEVER emitted
         if (usePseudo && a.resist) return;                // folded into a pseudo total below
+        // D-0019 — a variant-DEFINING mod is the item's identity: ALWAYS emitted as a required
+        // filter (in the first/AND group), never unticked or excluded by the picker (D-0015). Its
+        // value is locked to the item's own roll (option / exact seed / count) via _definingFilter.
+        if (a.defining) { if (gi === 0) filters.push(_definingFilter(a)); return; }
         var pk = _pickOf(picks.affix, i, a); if (!pk.ticked) return;
         if ((pk.group != null ? pk.group : 0) !== gi) return;
         filters.push(_statFilter(a.stat_id, pk.min, pk.max));
@@ -1088,6 +1103,7 @@
     affixes.forEach(function (a, i) {
       if (a.kind !== "stat" || !a.searchable || !a.stat_id) return;
       if (usePseudo && a.resist) return;
+      if (a.defining) { req++; return; }                  // D-0019: a defining mod is always required
       var t = tOf(picks.affix, i, a); if (t === "required") req++; else if (t === "nice") nice++;
     });
     if (usePseudo) pseudos.forEach(function (p, j) {
@@ -1106,6 +1122,10 @@
                 countMin: (cGi >= 0 ? groups[cGi].min : null) };
     function place(map, i, a, dst, isPseudo) {
       var base = _pickOf(map, i, a), t = tOf(map, i, a);
+      if (!isPseudo && a.defining) {                       // D-0019: defining -> the AND group, locked ON
+        dst[i] = { ticked: true, min: base.min, max: base.max, tier: "required", group: (andGi < 0 ? 0 : andGi) };
+        return;
+      }
       var e = { ticked: base.ticked, min: base.min, max: base.max, tier: t };
       if (a.kind === "equip") { e.ticked = (t !== "notneeded"); dst[i] = e; return; }
       if (!isPseudo && usePseudo && a.resist) { dst[i] = e; return; }   // folded away; group irrelevant

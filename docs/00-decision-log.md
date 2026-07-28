@@ -205,6 +205,17 @@ is a technical transparency disclosure, not marketing; strip on owner request. P
 identity: repo-local user = DivTally <divtally@gmail.com>, full history rewritten to it
 pre-publish (personal email never ships in public metadata).
 
+## D-0020 - Five-round bug campaign (owner-commissioned, 2026-07-27)
+When current work completes: FIVE rounds of bug testing; fix between rounds, DEPLOY fixes, wait
+for completion, re-sweep with DIFFERENT tests each round. Test inputs = owner-provided builds in
+research/data/bugtest/inputs.json (4 poe.ninja Allflame chars banked; 2 PoB codes pending
+re-supply as files - chat transfer corrupted them). Round lenses: R1 API end-to-end across all
+builds (parse/price/taxonomy/variants); R2 browser UI via Playwright + real extension (autoscan,
+statuses, picker, whisper-paste); R3 query correctness + live spot-checks (sole trade budget,
+paced); R4 edge/adversarial (caches, tier switching, swap toggle, recents, PoB league default,
+error paths); R5 full regression + acceptance vs README/how-it-works promises, fresh agents.
+Each round: findings -> fix -> deploy -> re-verify before next round.
+
 ## D-0019 - Variant-unique registry + timeless jewel handling (Locked, 2026-07-27)
 Owner: items like Forbidden Flesh with defining unique affixes must be searched WITH the specific
 mod (from the build's own copy), not name-only; compile the list with heavy subagent fan-out;

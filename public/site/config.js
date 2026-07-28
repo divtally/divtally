@@ -27,12 +27,13 @@ window.BPC_CONFIG = {
   WORKER_BASE: "https://divtally-cache.divtally.workers.dev",   // "" disables cache
 
   STORE_URLS: {
-    chrome:  "https://chromewebstore.google.com/detail/hcemnjhmgnobpolmjnjcnfclklamkgdk",  // live once Google approves
+    chrome:  "REPLACE_ME_CHROME_STORE_URL",  // on approval: https://chromewebstore.google.com/detail/hcemnjhmgnobpolmjnjcnfclklamkgdk
     edge:    "REPLACE_ME_EDGE_STORE_URL",    // Microsoft Edge Add-ons listing
-    firefox: "https://addons.mozilla.org/firefox/addon/divtally-browser-extension/"    // live once AMO publishes
+    firefox: "REPLACE_ME_FIREFOX_AMO_URL"    // on publish: https://addons.mozilla.org/firefox/addon/divtally-browser-extension/
   },
 
-  REPO_URL: "https://github.com/divtally/divtally",           // e.g. https://github.com/you/buildpricechecker-poe1
+  REPO_URL: "https://github.com/divtally/divtally",
+  RELEASE_URL: "https://github.com/divtally/divtally/releases",   // packaged extension builds (works while store reviews pend)
 
   /* Optional. Leave as-is unless you know you need them. */
   DEFAULT_LEAGUE: "",                         // "" = use each build's own league; or pin e.g. "Standard"

@@ -10,7 +10,7 @@
 <title>DivTally · Path of Exile build price checker</title>
 <!-- Fonts are self-hosted (assets/fonts/) so the browser contacts NO third party for them
      (B-001 trust promise / how-it-works "every server this site contacts"). -->
-<link rel="stylesheet" href="/assets/fonts.css?v=20260727e">
+<link rel="stylesheet" href="/assets/fonts.css?v=20260727g">
 <style>
   :root{
     --base:#100c08; --panel:#1a140d; --panel2:#221a10; --inner:#0d0a06;
@@ -542,6 +542,44 @@
   .tt-mod.imp{color:#9aa0d8;}
   .tt-modsep{height:1px; background:linear-gradient(90deg,transparent,var(--bz1),transparent); margin:7px 0;}
 
+  /* ---------- D-0019: variant uniques (locked defining mods · timeless jewels) ---------- */
+  .lockg{vertical-align:-1px; opacity:.92; flex:0 0 auto;}
+  /* the human variant label under the item name (tooltip head sub-line, like .base) */
+  .tt-head .vlabel{font-family:var(--mono); font-size:11.5px; letter-spacing:.05em; color:var(--bz3);
+    display:block; margin-top:3px; text-transform:none;}
+  .tt-head .vlabel .lockg{margin-right:4px;}
+  /* a defining mod in the tooltip's mod list carries the lock */
+  .tt-mod.locked{color:var(--bz-hi);}
+  .tt-mod.locked .lockg{margin-right:4px; color:var(--bz3);}
+  /* visibly-low-confidence FLOOR badge (method unique-ninja-floor) */
+  .tt-floorbadge{margin-top:9px; display:inline-block; font-family:var(--mono); font-size:10px;
+    letter-spacing:.08em; text-transform:uppercase; color:var(--bad);
+    border:1px solid rgba(208,107,94,.45); border-radius:3px; padding:2px 7px;}
+  /* board-slot variant tag: a second line inside the bottom name band */
+  .slot .iname .vtag{display:block; font-family:var(--mono); font-size:9px; letter-spacing:.05em;
+    color:var(--bz3); margin-top:2px; text-transform:none;}
+  .slot .iname .vtag .lockg{margin-right:3px;}
+  /* manual-row variant tag (under the item name, beside the slot label) */
+  .mrow .mr-vtag{display:block; font-family:var(--mono); font-size:10px; letter-spacing:.04em;
+    color:var(--bz3); margin-top:2px; text-transform:none;}
+  .mrow .mr-vtag .lockg{margin-right:3px;}
+  /* picker: the variant banner + the LOCKED defining-mod row */
+  .pvariant{margin:2px 0 9px; padding:8px 11px; font-family:var(--serif); font-size:14px; color:var(--parch);
+    background:rgba(200,170,110,.07); border:1px solid rgba(200,170,110,.32); border-radius:5px; line-height:1.35;}
+  .pvariant b{color:var(--bz-hi); font-weight:600;}
+  .pvariant .lockg{margin-right:4px; color:var(--bz3);}
+  .pvariant .vinspect{color:var(--bz3); text-decoration:underline; text-underline-offset:2px; white-space:nowrap;}
+  .pvariant .vinspect:hover{color:var(--bz-hi);}
+  .pvariant-note{margin:-3px 0 9px; font-family:var(--serif); font-size:13px; font-style:italic;
+    color:var(--parch); line-height:1.35; padding:0 3px;}
+  .svrow.locked{background:rgba(200,170,110,.05);}
+  .svrow.locked .svtxt{color:var(--bz-hi);}
+  .svlockchip{display:flex; align-items:center; justify-content:flex-end; gap:5px; font-family:var(--mono);
+    font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--bz3); white-space:nowrap;}
+  .svlockval{font-family:var(--mono); font-size:13px; text-align:center; color:var(--bz-hi); white-space:nowrap;}
+  .afx.locked .atext{color:var(--bz-hi);}
+  .afx .lockb{display:grid; place-items:center; color:var(--bz3);}
+
   /* ---------- THE PICKER (crafting-tooltip modal) ---------- */
   #pickwrap{position:fixed; inset:0; z-index:80; display:none; align-items:center; justify-content:center; padding:20px;
     background:rgba(8,5,3,.72); backdrop-filter:blur(2px);}
@@ -945,6 +983,7 @@
   <div class="intro" id="intro">
     <h2>What does this build cost?</h2>
     <p>Paste a build link or a build import code below. Gems and uniques are priced from public economy data; rares you price yourself with one click or a pasted buyout. <a href="/how-it-works.html" style="color:var(--bz3); white-space:nowrap">How it works&nbsp;&rarr;</a></p>
+    <p style="font-size:14px; color:var(--mut); margin:6px 0 0;">Hands-free rare pricing: <a id="heroExtLink" href="https://github.com/divtally/divtally/releases" target="_blank" rel="noopener" style="color:var(--bz3)">get the DivTally browser extension</a></p>
   </div>
 
   <!-- ===== live pricing indicator (above the board) ===== -->
@@ -1005,6 +1044,7 @@
         <span class="uh-tag">optional</span>
       </div>
       <p class="uh-lead">The DivTally browser extension prices your rares automatically &mdash; it runs the same trade searches right from <b>your</b> browser, so nothing here ever has to talk to the trade site. The site is fully usable without it; this just saves you the copy-paste. <a href="/how-it-works.html">How it works &rarr;</a></p>
+      <p class="uh-lead" style="margin-top:4px">Store listings are in review &mdash; meanwhile the identical build is on <a id="upgradeGh" href="https://github.com/divtally/divtally/releases" target="_blank" rel="noopener">GitHub &rarr;</a></p>
       <div class="cols">
         <div class="does">
           <h5>What it does</h5>
@@ -1077,8 +1117,8 @@
 <div id="pickwrap"><div class="pick" id="pick"></div></div>
 
 <script src="/config.js"></script>
-<script src="/assets/sample.js?v=20260727e"></script>
-<script src="/assets/core.js?v=20260727e"></script>
+<script src="/assets/sample.js?v=20260727g"></script>
+<script src="/assets/core.js?v=20260727g"></script>
 <script>
 "use strict";
 const $=s=>document.querySelector(s), E=bpc.esc;
@@ -1099,6 +1139,35 @@ const SLOT_GLYPH = {
 const SHORT = {"Body Armour":"Body","Weapon":"Wpn","Off-hand":"Off-Hand",
   "Weapon (swap)":"Wpn ⇄","Off-hand (swap)":"Off ⇄"};
 const catClass = c => ({unique:"r-unique",rare:"r-rare",magic:"r-magic",gem:"r-gem",normal:"r-normal"}[c]||"r-normal");
+
+/* ---------- D-0019: variant uniques (contract §2.8 `variant` block) ---------- */
+const LOCK_SVG='<svg class="lockg" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="9.5" rx="2"></rect><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"></path></svg>';
+function variantOf(it){ return (it && it.variant && it.variant.label) ? it.variant : null; }
+function isVariantUnique(it){ return !!(it && it.category==='unique' && variantOf(it)); }
+function isTimeless(it){ const v=variantOf(it); return !!(v && v['class']==='seed-jewel'); }
+/* Owner-sanctioned community deep-link (docs/research/timeless-community-tools.md §1.3): the
+   Vilsol timeless-jewel calculator renders exactly what this seed+conqueror does on the tree.
+   jewel ids 1..5 = Glorious Vanity, Lethal Pride, Brutal Restraint, Militant Faith, Elegant
+   Hubris; conqueror + seed come from the API's locked_stats (the DISPLAYED seed — verified
+   empirically 2026-07-27 that the tool wants the displayed value for ALL five jewels, incl.
+   Elegant Hubris). Unparseable -> '' (the link simply doesn't render). */
+const TIMELESS_JEWEL_ID={'glorious vanity':1,'lethal pride':2,'brutal restraint':3,'militant faith':4,'elegant hubris':5};
+function timelessInspectUrl(it){
+  const v=variantOf(it); if(!v || v['class']!=='seed-jewel') return '';
+  const ls=(v.locked_stats && v.locked_stats[0])||null;
+  if(!ls || !ls.stat_id || !ls.value || ls.value.min==null) return '';
+  const m=String(ls.stat_id).match(/pseudo_timeless_jewel_([a-z]+)$/); if(!m) return '';
+  const conq=m[1].charAt(0).toUpperCase()+m[1].slice(1);
+  const nm=String(it.name||'').toLowerCase();
+  let jid=0; Object.keys(TIMELESS_JEWEL_ID).forEach(n=>{ if(nm.indexOf(n)>=0) jid=TIMELESS_JEWEL_ID[n]; });
+  if(!jid) return '';
+  return 'https://vilsol.github.io/timeless-jewels/tree?jewel='+jid+'&conqueror='+encodeURIComponent(conq)+'&seed='+encodeURIComponent(ls.value.min)+'&mode=seed';
+}
+/* which of an item's mod lines are variant-DEFINING (for the tooltip lock glyphs) */
+function lockedTextsOf(it){
+  const v=variantOf(it);
+  return (v && v.locked_stats) ? v.locked_stats.map(s=>s && s.text).filter(Boolean) : null;
+}
 
 /* ---------- controls ---------- */
 $('#liststatus').innerHTML = bpc.STATUS_ORDER.map(o=>`<option value="${o}">Listings: ${E(bpc.STATUS_LABEL[o])}</option>`).join('');
@@ -1382,16 +1451,20 @@ function fillSlotContents(el,it){
   const label = (it.group==='equipment'||it.group==='flask') ? (SHORT[it.slot]||it.slot) : '';
   const glyph = SLOT_GLYPH[it.slot]||SLOT_GLYPH[it.group]||'◆';
   const cnt = it.count>1 ? `<span class="cnt">×${it.count}</span>` : '';
-  // rares/magic get a "price it" pip that opens the manual pricer (trade link + paste + extension)
+  // rares/magic get a "price it" pip that opens the manual pricer (trade link + paste + extension);
+  // D-0019: a variant unique gets the same pip, opening ITS picker (locked defining mods + search)
+  const vr = variantOf(it);
   const editbtn = (it.category==='rare' || it.category==='magic')
-    ? `<button class="editbtn" data-edit="${E(k)}" title="price this rare — paste a buyout or open the trade search">✎</button>` : '';
+    ? `<button class="editbtn" data-edit="${E(k)}" title="price this rare — paste a buyout or open the trade search">✎</button>`
+    : (vr ? `<button class="editbtn" data-edit="${E(k)}" title="view this unique's locked variant mods · refine + open the exact-variant search">✎</button>` : '');
+  const vtag = vr ? `<span class="vtag" title="price-defining variant — locked into this item's trade search">${LOCK_SVG}${E(vr.label)}</span>` : '';
   if(it.icon) el.classList.add('has-ico');
   el.innerHTML =
     `<div class="bezel"></div>`+
     (label?`<div class="label">${E(label)}</div>`:'')+
     (it.icon?`<div class="ico-wrap"><img class="ico" src="${E(it.icon)}" alt="" loading="lazy" style="${iconCap(it.icon)}"></div>`:'')+
     `<div class="glyph">${glyph}</div>`+
-    `<div class="iname">${E(it.name)}</div>`+
+    `<div class="iname">${E(it.name)}${vtag}</div>`+
     `<div class="incmark" title="Include / exclude this item's value in the total">✔</div>`+
     `<div class="buymark" title="Mark as purchased — removes its value from the remaining total">${CART_SVG}</div>`+
     `<div class="pricetag" data-tag></div>`+
@@ -1418,8 +1491,9 @@ function updateSlot(k){
   const el=document.querySelector('.slot[data-k="'+cssEsc(k)+'"]');
   const it=itemByKey(k); if(!el||!it) return;
   const p=bpc.state.priced[k];
-  // clickable if it has a trade link, OR it's a rare/magic whose manual pricer can be opened
-  const pickable = it.category==='rare' || it.category==='magic';
+  // clickable if it has a trade link, OR it's a rare/magic whose manual pricer can be opened,
+  // OR a D-0019 variant unique whose picker (locked defining mods) can be opened
+  const pickable = it.category==='rare' || it.category==='magic' || isVariantUnique(it);
   el.style.cursor = ((p && p.trade_url) || pickable) ? 'pointer' : 'default';
   el.classList.remove('nolist','skipped','loading','on','off','notfound','fewresults','bought');
   const tag=el.querySelector('[data-tag]');
@@ -1480,7 +1554,12 @@ function cssEsc(s){ return String(s).replace(/"/g,'\\"'); }
 /* ---------- slot interactions: click=open trade, checkbox=include, hover=tooltip ---------- */
 $('#board').addEventListener('click',e=>{
   const edit=e.target.closest('[data-edit]');
-  if(edit){ e.stopPropagation(); hideTip(); openManual(edit.dataset.edit); return; }
+  if(edit){ e.stopPropagation(); hideTip();
+    const ei=itemByKey(edit.dataset.edit);
+    // D-0019: a variant unique's pip opens ITS picker (locked defining mods), not the manual pricer
+    if(ei && isVariantUnique(ei) && rareData(edit.dataset.edit)) openPicker(edit.dataset.edit,{edit:true});
+    else openManual(edit.dataset.edit);
+    return; }
   const tw=e.target.closest('.sk-tw');                 // skill disclosure triangle
   if(tw){ const sk=tw.closest('.skill'); const k=sk.dataset.k;
     if(skillsOpen.has(k)) skillsOpen.delete(k); else skillsOpen.add(k);
@@ -1498,8 +1577,10 @@ $('#board').addEventListener('click',e=>{
   const slot=e.target.closest('.slot'); if(!slot) return;
   const k=slot.dataset.k; const it=itemByKey(k);
   // rares/magic open the manual pricer (paste a buyout · open the trade search · extension);
+  // D-0019 variant uniques open their picker (locked defining mods · exact-variant search);
   // everything else opens its ready-made trade search in a new tab.
   if(it && (it.category==='rare' || it.category==='magic')){ openManual(k); return; }
+  if(it && isVariantUnique(it) && rareData(k)){ openPicker(k,{edit:true}); return; }
   const u=cardTradeUrl(k);
   if(u) window.open(u,'_blank','noopener');
 });
@@ -1536,9 +1617,15 @@ function refreshHoveredTooltip(){
   if(slot && tt.classList.contains('show')) showTip(slot);
 }
 function hideTip(){ tt.classList.remove('show'); }
-function modsHTML(mods){
+function modsHTML(mods, lockedTexts){
   if(!mods) return '';
-  const sec=(arr,cls)=> (arr&&arr.length) ? arr.map(m=>`<div class="tt-mod ${cls}">${E(m)}</div>`).join('') : '';
+  // D-0019: a mod line matching a variant locked_stats[].text renders with the lock glyph
+  // (containment either way — the item line may bundle extra text, e.g. a timeless seed line).
+  const isLocked=m=> !!(lockedTexts && lockedTexts.some(t=>t && (m===t || m.indexOf(t)>=0 || t.indexOf(m)>=0)));
+  const sec=(arr,cls)=> (arr&&arr.length) ? arr.map(m=>{
+    const lk=cls==='exp' && isLocked(m);
+    return `<div class="tt-mod ${cls}${lk?' locked':''}">${lk?LOCK_SVG:''}${E(m)}</div>`;
+  }).join('') : '';
   let h=sec(mods.implicit,'imp');
   if(mods.implicit&&mods.implicit.length && (mods.explicit&&mods.explicit.length))
     h+='<div class="tt-modsep"></div>';
@@ -1549,17 +1636,22 @@ function showTip(slot){
   const k=slot.dataset.k; const it=itemByKey(k); if(!it) return;
   const p=bpc.state.priced[k];
   const hc='h-'+(it.category||'normal');
+  const v=variantOf(it);                   // D-0019 §2.8 variant block (registry uniques only)
   let body='';
   if(it.slot) body+=`<div style="text-align:center;color:var(--mut);font-size:12px;margin-bottom:2px">${E(it.group==='equipment'?it.slot:cap(it.group))}</div>`;
-  body+=modsHTML(it.mods);                 // affixes (equipment / jewels / flasks)
+  body+=modsHTML(it.mods, lockedTextsOf(it));   // affixes; defining mods carry the lock glyph
   body+=`<div class="tt-div"><span class="dia">◆</span></div>`;
   const manualable = it && (it.category==='rare' || it.category==='magic');
+  // D-0019: clicking a variant unique opens its picker (locked mods + exact-variant search)
+  const vClick = (v && rareData(k)) ? `<div class="tt-link">click → locked mods · exact-variant search ↗</div>` : '';
   if(!p){
     body+=`<div class="tt-empty">loading…</div>`;
   } else if(p.chaos.median==null){
     body+=`<div class="tt-empty">${manualable?'Not priced yet — price it yourself.':'No server price.'}</div>`;
     if(p.note) body+=`<div class="tt-note">${E(p.note)}</div>`;
+    if(isTimeless(it)) body+=`<div class="tt-note">Priced by exact seed + conqueror; thin market — verify via the trade link.</div>`;
     if(manualable) body+=`<div class="tt-link">click → paste a buyout or open the search ↗</div>`;
+    else if(vClick) body+=vClick;
     else if(p.trade_url) body+=`<div class="tt-link">click → open on trade ↗</div>`;
   } else {
     body+=`<div class="tt-prices">
@@ -1575,12 +1667,22 @@ function showTip(slot){
       const srcLbl = p.source==='poe.ninja' ? 'poe.ninja' : p.source==='manual' ? 'you pasted this' : p.source==='trade' ? 'extension' : '';
       body+=`<div class="tt-conf"><span class="dot ${E(p.confidence)}"></span>${E(p.confidence)} confidence${p.sample_size?(' &middot; '+p.sample_size+' samples'):''}${srcLbl?(' &middot; '+E(srcLbl)):''}</div>`;
     }
+    // D-0019 §3: unique-ninja-floor = ONE aggregate poe.ninja line across every variant of the
+    // name — a low-confidence FLOOR, never this copy's price. Say so, visibly.
+    if(p.method==='unique-ninja-floor'){
+      body+=`<div><span class="tt-floorbadge">floor price — low confidence</span></div>`;
+      body+=`<div class="tt-note">${isTimeless(it)
+        ? 'poe.ninja floor: cheapest copy of <b>any seed</b> of this jewel — not this seed’s price.'
+        : 'poe.ninja floor: cheapest copy of <b>any variant</b> of this name — not this copy’s price.'}</div>`;
+    }
     if(p.note) body+=`<div class="tt-note">${E(p.note)}</div>`;
+    if(isTimeless(it)) body+=`<div class="tt-note">Priced by exact seed + conqueror; thin market — verify via the trade link.</div>`;
     if(manualable) body+=`<div class="tt-link">click → re-price / open search ↗</div>`;
+    else if(vClick) body+=vClick;
     else if(p.trade_url) body+=`<div class="tt-link">click → open on trade ↗</div>`;
   }
   $('#ttinner').innerHTML =
-    `<div class="tt-head ${hc}">${E(it.name)}${it.group==='equipment'?'':''}</div>`+
+    `<div class="tt-head ${hc}">${E(it.name)}${v?`<span class="base vlabel">${LOCK_SVG}${E(v.label)}</span>`:''}</div>`+
     `<div class="tt-body">${body}</div>`;
   positionTip(slot);
   tt.classList.add('show');
@@ -1665,7 +1767,9 @@ function freshPK(){ return { order:[], decided:new Set(), key:null, usePseudo:tr
 let PK = freshPK();
 function pkNum(s){ s=(s==null?'':String(s)).trim(); if(s==='') return null; const n=Number(s); return isNaN(n)?null:n; }
 function rareData(k){ return bpc.rareOf(k); }
-function isPickableRare(it){ return !!(it && it.category==='rare' && rareData(it.index)); }
+/* D-0019: variant uniques are pickable too — their picker shows the LOCKED defining mods
+   (the item's identity, per D-0015 locking only ADDS required filters) + any optional rolls. */
+function isPickableRare(it){ return !!(it && (it.category==='rare' || isVariantUnique(it)) && rareData(it.index)); }
 /* scope + links come ONLY from the item's own query (trade_query, else scope_q) — never invented */
 function itemOrigQuery(it){
   if(it && it.trade_query && it.trade_query.query) return it.trade_query.query;
@@ -1820,7 +1924,7 @@ function renderPicker(){
   const remain = inQueue ? PK.order.filter(x=>!PK.decided.has(x)).length : 0;
   const p=bpc.state.priced[k];
   const already = PK.decided.has(k) || !!(p && p.chaos && p.chaos.median!=null);
-  const step = inQueue ? `Rare ${pos+1} of ${PK.order.length}` : 'edit affixes';
+  const step = inQueue ? `${PKM.it.category==='unique'?'Unique':'Rare'} ${pos+1} of ${PK.order.length}` : 'edit affixes';
   let h=pkHeader(step, links)+`<div class="pbody">`;
   if(inQueue && remain>1 && bpc.state.bridge.active)
     h+=`<div class="pautoscan"><button class="stone-btn autoscan" data-pk="autoscan" type="button" title="Price all ${remain} remaining rares with their default search via the extension">&#9889; Autoscan (${remain})</button></div>`;
@@ -1834,7 +1938,26 @@ function rollText(a){
   const shown=a.value!=null?Math.abs(a.value):null;
   return shown!=null ? E(a.text).replace(String(shown),`<span class="roll">${E(String(shown))}</span>`) : E(a.text);
 }
+/* D-0019/D-0015: a variant-DEFINING mod IS the item's identity. Locking it ADDS a required
+   filter — nothing the user kept is ever dropped — so it renders visibly but is NOT un-tickable
+   and its value is not editable (core.js emits it from the affix itself, ignoring picks). The
+   user can still Skip the whole item; only the mod, not the item, is locked. */
+function svLockedValue(a){
+  if(a.option!=null) return 'exact';                    // Allocates/keystone/ring-size option
+  const pf=bpc.affixPrefill(a);
+  if(a.exact) return '= '+(pf.min!=null?pf.min:'?');    // exact seed / socket count (min==max)
+  if(pf.min!=null) return '≥ '+pf.min;                  // aura/own-roll min
+  if(pf.max!=null) return '≤ '+pf.max;
+  return '—';
+}
+function svLockedRowHTML(a,i){
+  return `<div class="svrow locked" data-i="${i}" data-kind="affix" data-tier="required">`+
+    `<div class="svtxt">${rollText(a)}<span class="range">(variant-defining)</span></div>`+
+    `<div class="svlockchip" title="This mod defines the item's price variant — it IS the item, so the search always requires it. You can still Skip the whole item.">${LOCK_SVG}locked</div>`+
+    `<div class="svlockval">${E(svLockedValue(a))}</div><div></div></div>`;
+}
 function svRowHTML(a,i,kind){
+  if(kind==='affix' && a.defining) return svLockedRowHTML(a,i);
   const isEquip=a.kind==='equip';
   const tier=PKM.tier[kind][i]||'required', mm=PKM.minmax[kind][i]||{};
   const tiers = isEquip ? [['required','Required'],['notneeded','Not needed']]
@@ -1855,7 +1978,18 @@ function svUnsearchHTML(a){
 }
 function renderSurveyBody(){
   const rare=PKM.rare;
-  let h=`<div class="phint">Tag how much each mod matters — the search builds itself. <button class="svlink" data-pk="togroups" type="button">count groups →</button></div>`;
+  let h='';
+  // D-0019: the variant banner — what makes this copy a price-variant, plus (timeless only) the
+  // owner-sanctioned Vilsol deep-link so the user can grade the seed themselves.
+  const vr=variantOf(PKM.it);
+  if(vr){
+    const insp=timelessInspectUrl(PKM.it);
+    h+=`<div class="pvariant">${LOCK_SVG}<b>${E(vr.label)}</b> — the locked mods below define this item's price variant; the search always requires them (they <i>are</i> the item).`+
+       (insp?` <a class="vinspect" href="${E(insp)}" target="_blank" rel="noopener">see what this seed does ↗</a>`:'')+`</div>`;
+    if(isTimeless(PKM.it))
+      h+=`<div class="pvariant-note">Timeless jewel: priced by exact seed + conqueror; thin market — verify via the trade link. Any poe.ninja number is only the cheapest copy of <b>any</b> seed.</div>`;
+  }
+  h+=`<div class="phint">Tag how much each mod matters — the search builds itself. <button class="svlink" data-pk="togroups" type="button">count groups →</button></div>`;
   h+=`<div class="pklegend"><span class="lg-req"><span class="lgi">&#9670;</span><b>required</b> — a match must have it</span><span class="lg-nice"><span class="lgi">&#9671;</span><b>nice-to-have</b> — “match at least N” below</span><span class="lg-not"><span class="lgi">&#10005;</span><b>not needed</b> — left out</span></div>`;
   if(rare.pseudo && rare.pseudo.length)
     h+=`<div class="pseudo-switch ${PKM.usePseudo?'on':''}" data-pk="pseudo" role="button" tabindex="0" title="Search the item's TOTAL resistance instead of each individual resistance — how the trade site groups them"><span class="sw"></span> Combine resistances into a pseudo total</div>`;
@@ -1888,6 +2022,14 @@ function collectGroupRows(gi){
   return out;
 }
 function grpAffixRowHTML(a,i,kind,gi,isEquip){
+  // D-0019: a defining mod in the groups editor — no checkbox, no group-move, no editable
+  // bounds; it lives in the AND (required) group by construction (core.js tierGroups).
+  if(kind==='affix' && a.defining){
+    return `<div class="afx r4 locked" data-i="${i}" data-kind="affix">`+
+      `<div class="abullet lockb" title="variant-defining — always required (D-0015: locking only ADDS a required filter)">${LOCK_SVG}</div>`+
+      `<div class="atext">${rollText(a)}<span class="reason">variant-defining — always required</span></div>`+
+      `<div class="svlockval">${E(svLockedValue(a))}</div><div></div><div></div></div>`;
+  }
   const mm=PKM.minmax[kind][i]||{}, ticked=PKM.ticked[kind][i]!==false;
   const move = isEquip ? '' : `<select class="stone-sel grpmove" title="move this mod to another group">`+PKM.groups.map((g,x)=>`<option value="${x}" ${x===gi?'selected':''}>Grp ${x+1}</option>`).join('')+`</select>`;
   const minInp=`<input class="mm amin" value="${mm.min!=null?E(String(mm.min)):''}" inputmode="numeric" placeholder="any">`;
@@ -2124,26 +2266,33 @@ function manualRowHTML(r){
   const rc = it.category==='rare'?'r-rare':it.category==='magic'?'r-magic':it.category==='unique'?'r-unique':'';
   const ico = it.icon ? `<img class="mr-ico" src="${E(it.icon)}" alt="" loading="lazy">` : `<span class="mr-ico ph">◆</span>`;
   const slot = it.slot ? `<span class="mr-slot">${E(it.slot)}</span>` : '';
+  // D-0019: variant uniques show their locked-variant label under the name, and (timeless only)
+  // the owner-sanctioned "see what this seed does" deep-link next to the trade search.
+  const vr = variantOf(it);
+  const vtag = vr ? `<span class="mr-vtag" title="price-defining variant — locked into this item's trade search">${LOCK_SVG}${E(vr.label)}</span>` : '';
+  const inspUrl = timelessInspectUrl(it);
+  const inspBtn = inspUrl ? `<a class="stone-btn" href="${E(inspUrl)}" target="_blank" rel="noopener" style="padding:6px 11px;font-size:13px" title="Vilsol timeless-jewel calculator — renders exactly what this seed + conqueror does on the tree">see what this seed does ↗</a>` : '';
   // D-0015: EVERY rare row gets an "edit affixes" button (always — priced or not) that reopens the
-  // affix picker for just that item. Only rares carry an affix payload worth picking.
-  const affixBtn = (it.category==='rare' && bpc.rareOf(k)) ? `<button class="stone-btn mr-affix" data-mk="${E(k)}" type="button" style="padding:5px 10px;font-size:12px" title="Pick exactly which affixes to require (min/max), then re-search this rare">edit affixes</button>` : '';
+  // affix picker for just that item. Rares carry an affix payload worth picking; D-0019 variant
+  // uniques do too (their picker shows the LOCKED defining mods + optional rolls).
+  const affixBtn = ((it.category==='rare' || isVariantUnique(it)) && bpc.rareOf(k)) ? `<button class="stone-btn mr-affix" data-mk="${E(k)}" type="button" style="padding:5px 10px;font-size:12px" title="${it.category==='rare'?'Pick exactly which affixes to require (min/max), then re-search this rare':'View the locked variant mods, tune any optional rolls, then run the exact-variant search'}">edit affixes</button>` : '';
   let right='';
   if(r.priced){
     const srcCls = p.source==='cache'?'cache':p.source==='trade'?'trade':'manual';
     const srcLbl = p.source==='cache'?'community':p.source==='trade'?'extension':'you';
     right = `<span class="mr-src ${srcCls}" title="${E(p.note||'')}">${srcLbl}</span>`+
             `<span class="mr-price">${bpc.priceHTML(cardEx(p))}</span>`+   // D-0016 item 4: follows the min/median/high selector
-            `<button class="stone-btn mr-edit" data-mk="${E(k)}" type="button" style="padding:5px 10px;font-size:12px">re-price</button>`+ affixBtn;
+            `<button class="stone-btn mr-edit" data-mk="${E(k)}" type="button" style="padding:5px 10px;font-size:12px">re-price</button>`+ affixBtn + inspBtn;
   } else {
     const openBtn = r.trade_url ? `<a class="stone-btn" href="${E(r.trade_url)}" target="_blank" rel="noopener" style="padding:6px 11px;font-size:13px">open search ↗</a>` : '';
     const autoBtn = bpc.state.bridge.active ? `<button class="stone-btn search mr-auto" data-mk="${E(k)}" type="button" style="padding:6px 11px;font-size:13px" title="price this one via the extension">⚡ auto</button>` : '';
-    right = openBtn +
+    right = openBtn + inspBtn +
       `<input class="mr-input" data-mk="${E(k)}" placeholder="35c · 2 div · paste whisper" spellcheck="false" autocomplete="off">`+
       `<button class="stone-btn search mr-apply" data-mk="${E(k)}" type="button" style="padding:6px 11px;font-size:13px">apply</button>`+ autoBtn + affixBtn;
     const noteRaw = (p.note && p.source!=='none') ? `<div class="mr-err" style="color:var(--parch);font-style:normal">${E(p.note)}</div>` : '';
     right += noteRaw;
   }
-  return `<div class="mrow ${rc} ${r.priced?'done':''}" data-mk="${E(k)}">${ico}<div class="mr-name">${E(it.name)}${slot}</div><div class="mr-right"><span data-chip></span>${right}</div></div>`;
+  return `<div class="mrow ${rc} ${r.priced?'done':''}" data-mk="${E(k)}">${ico}<div class="mr-name">${E(it.name)}${vtag}${slot}</div><div class="mr-right"><span data-chip></span>${right}</div></div>`;
 }
 function renderManual(rows){
   rows = rows || bpc.manualRows();
@@ -2204,7 +2353,7 @@ function openManual(k){
   const p=bpc.state.priced[k]||{};
   const tradeUrl = p.trade_url || it.trade_url || '';
   let body=`<div class="mp-lead">Rares are priced on <b>your</b> machine — this site never runs the search itself.</div>`;
-  body+=modsHTML(it.mods);
+  body+=modsHTML(it.mods, lockedTextsOf(it));
   body+=`<div class="tt-div"><span class="dia">◆</span></div>`;
   if(tradeUrl) body+=`<div class="mp-block"><a class="stone-btn viewtrade" href="${E(tradeUrl)}" target="_blank" rel="noopener" style="display:block;text-align:center">↗ open this search on the trade site</a></div>`;
   if(bpc.state.bridge.active) body+=`<div class="mp-block"><button class="stone-btn autoscan" id="mpExt" type="button" style="width:100%">⚡ price via extension</button></div>`;
@@ -2239,6 +2388,11 @@ bpc.on('meta',m=>{ if(m && m.league) seedLeagues(m.league); });
     if(url && !/REPLACE_ME/.test(url)){ a.href=url; }
     else { a.classList.add('disabled'); a.title='store listing coming soon'; a.removeAttribute('href'); } }
   setStore('storeChrome', s.chrome); setStore('storeEdge', s.edge); setStore('storeFirefox', s.firefox);
+  const hero=$('#heroExtLink');
+  if(hero){ const first=[s.chrome,s.edge,s.firefox].find(u=>u && !/REPLACE_ME/.test(u));
+    if(first) hero.href=first;
+    else if(CFG && CFG.RELEASE_URL) hero.href=CFG.RELEASE_URL; }
+  const gh=$('#upgradeGh'); if(gh && CFG && CFG.RELEASE_URL) gh.href=CFG.RELEASE_URL;
   const repo=$('#footRepo');
   if(repo){ if(CFG && CFG.REPO_URL && !/REPLACE_ME/.test(CFG.REPO_URL)) repo.href=CFG.REPO_URL;
     else { repo.classList.add('disabled'); repo.title='repository link coming soon'; repo.removeAttribute('href'); } }
