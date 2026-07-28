@@ -166,6 +166,22 @@ def _sublines(mod: str) -> List[str]:
     return [s.strip() for s in str(mod).split("\n") if s.strip()]
 
 
+def _is_gem_level_mod(text: str) -> bool:
+    """A '+# to Level of all <X> (Skill) Gems' modifier -- the price-defining axis of the
+    Dragonfang's Flight family (D-0022):
+      * base Dragonfang's Flight -> per-DAMAGE-TAG '... Fire/Cold/Lightning/Physical/Chaos
+        Skill Gems' (each a plain explicit.stat_N id);
+      * Replica Dragonfang's Flight -> per-SPECIFIC-GEM '... Determination/Defiance Banner/...
+        Gems' (each a plain explicit.indexable_skill_N id).
+    Both forms end in 'Gems' and carry 'to Level of all'; this matches BOTH and is scoped (by
+    the registry lookup) to Dragonfang copies, so it never mistakes the item's fixed
+    resistance / reservation-efficiency / reduced-attribute-requirement mods (none of which
+    carry 'to level of all'). PRIMARY-SOURCED: /api/trade/data/stats ships these as INDIVIDUAL
+    ids -- there is NO base|opt option form for gem levels (docs/notes-d0022-api.md)."""
+    t = _norm_keepcase(text).lower()
+    return "to level of all" in t and t.endswith("gems")
+
+
 # ---- the builder ----------------------------------------------------------------------
 class VariantResult(dict):
     """Thin dict wrapper (JSON-friendly): keys class, label, locked_stats, locked_idx,
@@ -302,15 +318,30 @@ def build_variant(item, entry: dict, mapper) -> VariantResult:
         # branches (dead code) and forced non-aura families (Megalomaniac, Aul's Uprising, The
         # Light of Meaning, Vessel of Vinktar) into the aura branch -- dropping their defining
         # filters and mislabelling them "aura variant" (D-0019 MAJOR-1). Correct order:
+        #   * from.match == "gem-level" -> the "+# to Level of all <X> Gems" mod (Dragonfang)
         #   * emit == presence          -> the '1 Added Passive Skill is <Notable>' flags
         #   * a real 'while affected by' aura mod IS on the copy -> the aura branch (Watcher's
         #     Eye / Sublime Vision / Circle-of-X heralds / Doryani's Delusion element pen)
         #   * else the copy's mods that resolve to a DEFINING id (The Light of Meaning; a
         #     reservation/lightning copy that names the representative mod)
         #   * else (roll-defined) the copy's own rolls -- never a name-only unique search.
+        # D-0022: a gem-level defining entry (from.match == "gem-level") -- Replica Dragonfang's
+        # Flight -- is priced by the ONE "+# to Level of all <Gem> Gems" mod the copy actually
+        # rolled (which GEM IS the price identity; poe.ninja folds every gem version into one
+        # floor line). Pick that mod BY TEXT (its id is one of ~290 individual per-gem
+        # explicit.indexable_skill_N ids, resolved through StatMapper), so ONLY the gem-level mod
+        # becomes a required filter -- never the item's fixed res / reservation-efficiency /
+        # reduced-attribute mods. _is_gem_level_mod also matches the per-tag "Skill Gems" form for
+        # future-proofing, but no such unique ships today (the base "Dragonfang's Flight" is not a
+        # tradeable PoE1 unique -- notes-d0022-api.md). Checked FIRST so it wins over the generic
+        # aura / presence / def-id / own-rolls dispatch below.
+        gem_level = any((d.get("from") or {}).get("match") == "gem-level" for d in defining)
         aura_mods = [r for r in resolved if "while affected by" in r[3].lower()]
         picked = []
-        if is_presence:
+        if gem_level:
+            picked = [r for r in resolved if _is_gem_level_mod(r[3])]
+            label = picked[0][3] if picked else "gem-level variant"
+        elif is_presence:
             picked = [r for r in resolved if "added passive skill is" in r[3].lower()]
             names = [_after(r[3], "Added Passive Skill is") for r in picked]
             names = [n for n in names if n]
@@ -324,7 +355,7 @@ def build_variant(item, entry: dict, mapper) -> VariantResult:
             picked = [r for r in resolved if r[1] in def_ids]
             label = picked[0][3] if picked else ""
 
-        if not picked and rule in ("own-explicit-rolls", None) and cls == "roll-defined":
+        if not picked and not gem_level and rule in ("own-explicit-rolls", None) and cls == "roll-defined":
             # fall back to the copy's OWN searchable rolls -- never a name-only search for a
             # roll-defined unique (Split Personality / That Which Was Taken; Aul's Uprising and
             # any other family whose copy doesn't name the representative defining id)

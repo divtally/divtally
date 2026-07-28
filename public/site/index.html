@@ -580,22 +580,23 @@
   .mrow .mr-vtag{display:block; font-family:var(--mono); font-size:10px; letter-spacing:.04em;
     color:var(--bz3); margin-top:2px; text-transform:none;}
   .mrow .mr-vtag .lockg{margin-right:3px;}
-  /* picker: the variant banner + the LOCKED defining-mod row */
+  /* picker: the variant banner + the variant-DEFINING rows (D-0022: normal tier rows, deselectable) */
   .pvariant{margin:2px 0 9px; padding:8px 11px; font-family:var(--serif); font-size:14px; color:var(--parch);
     background:rgba(200,170,110,.07); border:1px solid rgba(200,170,110,.32); border-radius:5px; line-height:1.35;}
   .pvariant b{color:var(--bz-hi); font-weight:600;}
-  .pvariant .lockg{margin-right:4px; color:var(--bz3);}
   .pvariant .vinspect{color:var(--bz3); text-decoration:underline; text-underline-offset:2px; white-space:nowrap;}
   .pvariant .vinspect:hover{color:var(--bz-hi);}
   .pvariant-note{margin:-3px 0 9px; font-family:var(--serif); font-size:13px; font-style:italic;
     color:var(--parch); line-height:1.35; padding:0 3px;}
-  .svrow.locked{background:rgba(200,170,110,.05);}
-  .svrow.locked .svtxt{color:var(--bz-hi);}
-  .svlockchip{display:flex; align-items:center; justify-content:flex-end; gap:5px; font-family:var(--mono);
-    font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--bz3); white-space:nowrap;}
-  .svlockval{font-family:var(--mono); font-size:13px; text-align:center; color:var(--bz-hi); white-space:nowrap;}
-  .afx.locked .atext{color:var(--bz-hi);}
-  .afx .lockb{display:grid; place-items:center; color:var(--bz3);}
+  /* a variant-defining mod row: subtle bronze wash + a "variant-defining" hint. Its VALUE is the
+     item's identity, so it shows statically (spanning the min+max columns) beside the live tier control. */
+  .svrow.defining{background:rgba(200,170,110,.05);}
+  .svrow.defining .svtxt{color:var(--bz-hi);}
+  .svrow.defining .svlockval{grid-column:3 / 5;}
+  .afx.defining .atext{color:var(--bz-hi);}
+  .afx.defining .svlockval{grid-column:3 / 6;}
+  .vdef{color:var(--bz3); font-style:italic;}
+  .svlockval{font-family:var(--mono); font-size:13px; text-align:right; color:var(--bz-hi); white-space:nowrap; padding-right:2px;}
 
   /* ---------- THE PICKER (crafting-tooltip modal) ---------- */
   #pickwrap{position:fixed; inset:0; z-index:80; display:none; align-items:center; justify-content:center; padding:20px;
@@ -1511,8 +1512,8 @@ function fillSlotContents(el,it){
   const vr = variantOf(it);
   const editbtn = (it.category==='rare' || it.category==='magic')
     ? `<button class="editbtn" data-edit="${E(k)}" title="price this rare — paste a buyout or open the trade search">✎</button>`
-    : (vr ? `<button class="editbtn" data-edit="${E(k)}" title="view this unique's locked variant mods · refine + open the exact-variant search">✎</button>` : '');
-  const vtag = vr ? `<span class="vtag" title="price-defining variant — locked into this item's trade search">${LOCK_SVG}${E(vr.label)}</span>` : '';
+    : (vr ? `<button class="editbtn" data-edit="${E(k)}" title="view this unique's variant-defining mods · refine + open the exact-variant search">✎</button>` : '');
+  const vtag = vr ? `<span class="vtag" title="price-defining variant — required by default in this item's trade search">${LOCK_SVG}${E(vr.label)}</span>` : '';
   if(sico) el.classList.add('has-ico');
   el.innerHTML =
     `<div class="bezel"></div>`+
@@ -1698,7 +1699,7 @@ function showTip(slot){
   body+=`<div class="tt-div"><span class="dia">◆</span></div>`;
   const manualable = it && (it.category==='rare' || it.category==='magic');
   // D-0019: clicking a variant unique opens its picker (locked mods + exact-variant search)
-  const vClick = (v && rareData(k)) ? `<div class="tt-link">click → locked mods · exact-variant search ↗</div>` : '';
+  const vClick = (v && rareData(k)) ? `<div class="tt-link">click → variant-defining mods · exact-variant search ↗</div>` : '';
   if(!p){
     body+=`<div class="tt-empty">loading…</div>`;
   } else if(p.chaos.median==null){
@@ -1824,8 +1825,8 @@ function freshPK(){ return { order:[], decided:new Set(), key:null, usePseudo:tr
 let PK = freshPK();
 function pkNum(s){ s=(s==null?'':String(s)).trim(); if(s==='') return null; const n=Number(s); return isNaN(n)?null:n; }
 function rareData(k){ return bpc.rareOf(k); }
-/* D-0019: variant uniques are pickable too — their picker shows the LOCKED defining mods
-   (the item's identity, per D-0015 locking only ADDS required filters) + any optional rolls. */
+/* D-0019/D-0022: variant uniques are pickable too — their picker shows the variant-defining mods
+   (the item's identity; required by default but deselectable per D-0022) + any optional rolls. */
 function isPickableRare(it){ return !!(it && (it.category==='rare' || isVariantUnique(it)) && rareData(it.index)); }
 /* scope + links come ONLY from the item's own query (trade_query, else scope_q) — never invented */
 function itemOrigQuery(it){
@@ -1893,7 +1894,7 @@ function pkSync(){
       const i=+row.dataset.i, kind=row.dataset.kind;
       const ts=row.querySelector('.svseg'); if(ts) PKM.tier[kind][i]=ts.dataset.value;
       const mn=row.querySelector('.amin'), mx=row.querySelector('.amax');
-      PKM.minmax[kind][i]={ min:mn?pkNum(mn.value):null, max:mx?pkNum(mx.value):null };
+      if(mn||mx) PKM.minmax[kind][i]={ min:mn?pkNum(mn.value):null, max:mx?pkNum(mx.value):null };   // a defining row has no min/max inputs — keep its prefilled value (D-0022)
     });
     const cm=pick.querySelector('.countmin');
     if(cm){
@@ -1996,10 +1997,11 @@ function rollText(a){
   const shown=a.value!=null?Math.abs(a.value):null;
   return shown!=null ? E(a.text).replace(String(shown),`<span class="roll">${E(String(shown))}</span>`) : E(a.text);
 }
-/* D-0019/D-0015: a variant-DEFINING mod IS the item's identity. Locking it ADDS a required
-   filter — nothing the user kept is ever dropped — so it renders visibly but is NOT un-tickable
-   and its value is not editable (core.js emits it from the affix itself, ignoring picks). The
-   user can still Skip the whole item; only the mod, not the item, is locked. */
+/* D-0019/D-0022: a variant-DEFINING mod IS the item's identity, but it is now a NORMAL
+   tier-controlled row — required by DEFAULT (it defines the item's price), yet the user may set it
+   Nice-to-have or Not-needed to loosen or drop it (D-0022 supersedes the forced lock). Its VALUE is
+   not editable (core.js emits the option / exact seed / roll from the affix itself), so the row
+   shows that value statically beside the live tier control. */
 function svLockedValue(a){
   if(a.option!=null) return 'exact';                    // Allocates/keystone/ring-size option
   const pf=bpc.affixPrefill(a);
@@ -2008,15 +2010,9 @@ function svLockedValue(a){
   if(pf.max!=null) return '≤ '+pf.max;
   return '—';
 }
-function svLockedRowHTML(a,i){
-  return `<div class="svrow locked" data-i="${i}" data-kind="affix" data-tier="required">`+
-    `<div class="svtxt">${rollText(a)}<span class="range">(variant-defining)</span></div>`+
-    `<div class="svlockchip" title="This mod defines the item's price variant — it IS the item, so the search always requires it. You can still Skip the whole item.">${LOCK_SVG}locked</div>`+
-    `<div class="svlockval">${E(svLockedValue(a))}</div><div></div></div>`;
-}
 function svRowHTML(a,i,kind){
-  if(kind==='affix' && a.defining) return svLockedRowHTML(a,i);
   const isEquip=a.kind==='equip';
+  const defining = kind==='affix' && !!a.defining;
   const tier=PKM.tier[kind][i]||'required', mm=PKM.minmax[kind][i]||{};
   const tiers = isEquip ? [['required','Required'],['notneeded','Not needed']]
                         : [['required','Required'],['nice','Nice to have'],['notneeded','Not needed']];
@@ -2026,6 +2022,13 @@ function svRowHTML(a,i,kind){
               notneeded:'Not needed &mdash; left out of the search'};
   const sel=`<div class="svseg" data-value="${E(tier)}" role="radiogroup" aria-label="priority">`+
     tiers.map(([v,l])=>`<button type="button" class="segbtn t-${v}${tier===v?' on':''}" data-t="${v}" title="${HINT[v]}" aria-pressed="${tier===v}">${GLYPH[v]}</button>`).join('')+`</div>`;
+  // D-0022: a defining mod is a normal tier row (default required, deselectable). Its value is the
+  // item's identity — core.js emits the option/exact/seed filter from the affix itself — so the row
+  // shows that value statically (no editable min/max) with a subtle "variant-defining" hint, no lock.
+  if(defining){
+    const hint=`<span class="range vdef" title="This mod defines the item's price variant. It's required by default (it IS the item) — set it Nice-to-have or Not-needed to loosen or drop it.">variant-defining</span>`;
+    return `<div class="svrow defining" data-i="${i}" data-kind="${kind}" data-tier="${E(tier)}"><div class="svtxt">${rollText(a)} ${hint}</div>${sel}<div class="svlockval">${E(svLockedValue(a))}</div></div>`;
+  }
   const note = isEquip ? ` <span class="range">(defence total)</span>` : '';
   const minInp=`<input class="mm amin" value="${mm.min!=null?E(String(mm.min)):''}" inputmode="numeric" placeholder="any">`;
   const maxInp= isEquip ? `<div class="mmx"></div>` : `<input class="mm amax" value="${mm.max!=null?E(String(mm.max)):''}" inputmode="numeric" placeholder="any">`;
@@ -2042,7 +2045,7 @@ function renderSurveyBody(){
   const vr=variantOf(PKM.it);
   if(vr){
     const insp=timelessInspectUrl(PKM.it);
-    h+=`<div class="pvariant">${LOCK_SVG}<b>${E(vr.label)}</b> — the locked mods below define this item's price variant; the search always requires them (they <i>are</i> the item).`+
+    h+=`<div class="pvariant"><b>${E(vr.label)}</b> — the mods below define this item's price variant. They're <b>required by default</b> (they <i>are</i> the item), but you can set any to nice-to-have or not-needed to loosen or drop it.`+
        (insp?` <a class="vinspect" href="${E(insp)}" target="_blank" rel="noopener">see what this seed does ↗</a>`:'')+`</div>`;
     if(isTimeless(PKM.it))
       h+=`<div class="pvariant-note">Timeless jewel: priced by exact seed + conqueror; thin market — verify via the trade link. Any poe.ninja number is only the cheapest copy of <b>any</b> seed.</div>`;
@@ -2054,7 +2057,7 @@ function renderSurveyBody(){
   h+=`<div class="svlist"><div class="svrow svhead"><div></div><div class="svhh">priority</div><div class="mmhead">min</div><div class="mmhead">max</div></div>`;
   let nice=0;
   (rare.affixes||[]).forEach((a,i)=>{
-    if(PKM.usePseudo && a.resist && a.searchable) return;           // folded into the pseudo total
+    if(PKM.usePseudo && a.resist && a.searchable && !a.defining) return;   // fold non-defining resists; a defining resist stays its own deselectable row (D-0022/R3-1)
     if(a.searchable && (a.stat_id || a.kind==='equip')){
       if(a.kind!=='equip' && (PKM.tier.affix[i]||'required')==='nice') nice++;
       h+=svRowHTML(a,i,'affix');
@@ -2073,20 +2076,23 @@ function renderSurveyBody(){
 /* ---- GROUPS editor ("edit groups" reveal): raw group composition ---- */
 function collectGroupRows(gi){
   const out=[], rare=PKM.rare;
-  (rare.affixes||[]).forEach((a,i)=>{ if(a.kind!=='stat'||!a.searchable||!a.stat_id) return; if(PKM.usePseudo&&a.resist) return;
+  (rare.affixes||[]).forEach((a,i)=>{ if(a.kind!=='stat'||!a.searchable||!a.stat_id) return; if(PKM.usePseudo&&a.resist&&!a.defining) return;
     if((PKM.assign.affix[i]!=null?PKM.assign.affix[i]:0)===gi) out.push({a:a,i:i,kind:'affix'}); });
   if(PKM.usePseudo) (rare.pseudo||[]).forEach((p,j)=>{ if(!p.stat_id) return;
     if((PKM.assign.pseudo[j]!=null?PKM.assign.pseudo[j]:0)===gi) out.push({a:p,i:j,kind:'pseudo'}); });
   return out;
 }
 function grpAffixRowHTML(a,i,kind,gi,isEquip){
-  // D-0019: a defining mod in the groups editor — no checkbox, no group-move, no editable
-  // bounds; it lives in the AND (required) group by construction (core.js tierGroups).
+  // D-0022: a defining mod in the groups editor is now a NORMAL row — a checkbox (untick to drop it)
+  // and a group-move menu are available, like any stat. Only its VALUE stays fixed (the item's
+  // identity: option / exact seed / roll), shown statically; core.js emits it via _definingFilter.
   if(kind==='affix' && a.defining){
-    return `<div class="afx r4 locked" data-i="${i}" data-kind="affix">`+
-      `<div class="abullet lockb" title="variant-defining — always required (D-0015: locking only ADDS a required filter)">${LOCK_SVG}</div>`+
-      `<div class="atext">${rollText(a)}<span class="reason">variant-defining — always required</span></div>`+
-      `<div class="svlockval">${E(svLockedValue(a))}</div><div></div><div></div></div>`;
+    const ticked=PKM.ticked.affix[i]!==false;
+    const move=`<select class="stone-sel grpmove" title="move this mod to another group">`+PKM.groups.map((g,x)=>`<option value="${x}" ${x===gi?'selected':''}>Grp ${x+1}</option>`).join('')+`</select>`;
+    return `<div class="afx r4 defining" data-i="${i}" data-kind="affix">`+
+      `<label class="abullet"><input type="checkbox" class="acb" ${ticked?'checked':''}><span class="dia"><span>✓</span></span></label>`+
+      `<div class="atext">${rollText(a)}${move}<span class="range vdef"> variant-defining</span></div>`+
+      `<div class="svlockval">${E(svLockedValue(a))}</div></div>`;
   }
   const mm=PKM.minmax[kind][i]||{}, ticked=PKM.ticked[kind][i]!==false;
   const move = isEquip ? '' : `<select class="stone-sel grpmove" title="move this mod to another group">`+PKM.groups.map((g,x)=>`<option value="${x}" ${x===gi?'selected':''}>Grp ${x+1}</option>`).join('')+`</select>`;
@@ -2333,13 +2339,13 @@ function manualRowHTML(r){
   // D-0019: variant uniques show their locked-variant label under the name, and (timeless only)
   // the owner-sanctioned "see what this seed does" deep-link next to the trade search.
   const vr = variantOf(it);
-  const vtag = vr ? `<span class="mr-vtag" title="price-defining variant — locked into this item's trade search">${LOCK_SVG}${E(vr.label)}</span>` : '';
+  const vtag = vr ? `<span class="mr-vtag" title="price-defining variant — required by default in this item's trade search">${LOCK_SVG}${E(vr.label)}</span>` : '';
   const inspUrl = timelessInspectUrl(it);
   const inspBtn = inspUrl ? `<a class="stone-btn" href="${E(inspUrl)}" target="_blank" rel="noopener" style="padding:6px 11px;font-size:13px" title="Vilsol timeless-jewel calculator — renders exactly what this seed + conqueror does on the tree">see what this seed does ↗</a>` : '';
   // D-0015: EVERY rare row gets an "edit affixes" button (always — priced or not) that reopens the
   // affix picker for just that item. Rares carry an affix payload worth picking; D-0019 variant
-  // uniques do too (their picker shows the LOCKED defining mods + optional rolls).
-  const affixBtn = ((it.category==='rare' || isVariantUnique(it)) && bpc.rareOf(k)) ? `<button class="stone-btn mr-affix" data-mk="${E(k)}" type="button" style="padding:5px 10px;font-size:12px" title="${it.category==='rare'?'Pick exactly which affixes to require (min/max), then re-search this rare':'View the locked variant mods, tune any optional rolls, then run the exact-variant search'}">edit affixes</button>` : '';
+  // uniques do too (their picker shows the variant-defining mods + optional rolls).
+  const affixBtn = ((it.category==='rare' || isVariantUnique(it)) && bpc.rareOf(k)) ? `<button class="stone-btn mr-affix" data-mk="${E(k)}" type="button" style="padding:5px 10px;font-size:12px" title="${it.category==='rare'?'Pick exactly which affixes to require (min/max), then re-search this rare':'View the variant-defining mods, tune or deselect any, then run the exact-variant search'}">edit affixes</button>` : '';
   let right='';
   if(r.priced){
     const srcCls = p.source==='cache'?'cache':p.source==='trade'?'trade':'manual';

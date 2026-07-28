@@ -1,7 +1,7 @@
 {
   "_meta": {
     "schema": "divtally.variant_uniques/1",
-    "generated": "2026-07-27T21:01:44-0500",
+    "generated": "2026-07-28T15:27:48-0500",
     "generator": "tools/build_variant_registry.py",
     "decision": "D-0019 (variant-unique registry + timeless-jewel handling)",
     "ninja_league": "Allflame",
@@ -43,26 +43,26 @@
       "seed-jewel": "timeless jewels; exact displayed-seed (min=max) + conqueror id; ninja floor-only.",
       "notable-jewel": "OPTION stat (Allocates / keystone radius / ring size); pre-flattened base|opt; ninja floor-only.",
       "socket-defined": "exact abyssal-socket / added-passive COUNT; ninja enumerates count lines (map by observed count, labels not always literal).",
-      "roll-defined": "value = which/what the copy rolled (aura combo, notables, own rolls); ninja floors it; price from the build copy's mods.",
+      "roll-defined": "value = which/what the copy rolled (aura combo, notables, own rolls, or which gem its '+# to Level of all <Gem> Gems' names -- Replica Dragonfang, D-0022); ninja floors it; price from the copy's mods.",
       "mod-variant": "poe.ninja enumerates discrete variant/base lines; map the owned copy to the line; that line's chaosValue is the price.",
       "links": "5L/6L price variance (237 uniques this league) is handled GENERICALLY by the engine's max_link>=5 filter (D-0003); NOT enumerated here. Items that also vary by links carry also_links:true."
     },
     "foulborn_note": "The 237 league-transient 'Foulborn ' rolled-mod copies (variant-ninja.md sec 6, [INFERRED] league noise, group under a different name) are EXCLUDED from this durable registry; regenerate per league.",
     "coverage": {
-      "registry_items": 40,
+      "registry_items": 41,
       "by_class": {
         "seed-jewel": 5,
         "notable-jewel": 4,
         "socket-defined": 7,
-        "roll-defined": 6,
+        "roll-defined": 7,
         "mod-variant": 18
       },
       "by_source": {
         "ninja-harvest": 10,
-        "primary-stat": 19,
+        "primary-stat": 20,
         "crosscheck": 11
       },
-      "defining_stat_ids": 40,
+      "defining_stat_ids": 41,
       "defining_stat_ids_all_resolve": true,
       "durable_ninja_multi_variant": 12,
       "durable_ninja_base_variant": 3,
@@ -70,6 +70,10 @@
       "crosscheck_dropped": [],
       "excluded_foulborn_names": 237,
       "links_variant_names_handled_by_engine": 183,
+      "folded_gem_variant_names": [
+        "Replica Dragonfang's Flight"
+      ],
+      "folded_gem_variant_unregistered": [],
       "ninja_names_harvested": 1406
     }
   },
@@ -1092,6 +1096,47 @@
       "crosscheck_tags": [
         "[NOT FROM SOURCE - maxroll 'Cluster Jewels Explained' (3-random-notables)]"
       ]
+    },
+    {
+      "name": "Replica Dragonfang's Flight",
+      "class": "roll-defined",
+      "base": [
+        "Onyx Amulet"
+      ],
+      "source": "primary-stat",
+      "variant_sensitive": true,
+      "defining": [
+        {
+          "stat_id": "explicit.indexable_skill_138",
+          "kind": "gem-level",
+          "axis": "gem",
+          "family_size": 289,
+          "from": {
+            "group": "explicit",
+            "match": "gem-level",
+            "pattern": "+# to Level of all <Gem> Gems",
+            "emit": "roll-min",
+            "note": "Match the copy's own '+# to Level of all <Gem> Gems' mod via StatMapper -> its specific explicit.indexable_skill_N id, emit value:{min:roll}. The named GEM is the price identity; poe.ninja folds all ~280 gem versions into one line (floor-only). D-0022."
+          }
+        }
+      ],
+      "ninja_variant_rule": {
+        "strategy": "floor-only",
+        "axis": "floor",
+        "match": "poe.ninja lists ONE null-variant floor line for this name; use it only as a low-confidence floor. The real price is the defining-mod trade search on the build's own copy.",
+        "observed_variants": [],
+        "ninja_floor_chaos": 15.0,
+        "ninja_floor_listings": 7216,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "floor-low",
+        "cap": "low",
+        "trade": "defining-filter-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "poe.ninja folds every '+# to Level of all <Gem> Gems' version into ONE aggregate line (~15c across 7,216 mixed listings) -- a LOW floor; the specific gem's real price is the defining-mod trade search on the copy."
+      },
+      "notes": "Replica grants '+3 to Level of all <specific gem> Gems' (one indexable_skill id per gem, e.g. Determination=indexable_skill_67). poe.ninja can't split by gem -> floor-only; price the exact gem via the trade link. LIVE-verified 2026-07-28: the Determination filter returns 14 listings, all carrying stat.explicit.indexable_skill_67 (notes-d0022-api.md)."
     },
     {
       "name": "Split Personality",

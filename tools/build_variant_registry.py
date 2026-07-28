@@ -260,6 +260,32 @@ def harvest_ninja(league, refresh):
     return rec, status
 
 
+def detect_folded_gem_variants(league):
+    """HARVEST-GAP GUARD (D-0022). poe.ninja FOLDS a gem-level-defined unique -- Replica
+    Dragonfang's Flight carries ~280 *optional* '+# to Level of all <Gem> Gems' modifiers on
+    ONE line whose `variant` is null -- so `durable_ninja_names` (which keys on >=2 distinct
+    variant LABELS) never surfaces it for the roster, and the whole CLASS of gem/option-defined
+    uniques poe.ninja folds into one line is silently skipped by the auto-harvest.
+
+    Scan the CACHED dumps for that FOLD SIGNATURE (a line whose explicitModifiers carry >=3
+    optional 'to Level of all ... Gems' entries) and return the names, so `assemble` can WARN
+    when such a name is absent from the hand-authored roster. Detection ONLY -- the gem axis is
+    priced by a StatMapper-matched defining filter (`defining_gem_level`), not a ninja variant
+    line, so recipes stay hand-authored (do NOT auto-add). Reads cached files only (the harvest
+    already refreshed them), so it never issues a network call of its own."""
+    names = set()
+    for t in NINJA_TYPES:
+        lines, _ = load_ninja_type(league, t, False)
+        for ln in lines:
+            nm = ln.get("name") or ""
+            hits = sum(1 for m in (ln.get("explicitModifiers") or [])
+                       if m.get("optional") and "to Level of all" in (m.get("text") or "")
+                       and (m.get("text") or "").rstrip().endswith("Gems"))
+            if nm and hits >= 3:
+                names.add(nm)
+    return names
+
+
 # =========================================================================
 # 3. RECIPE BUILDERS  (resolve + validate defining filters against the schema)
 # =========================================================================
@@ -350,6 +376,44 @@ def defining_family(schema, group, predicate, pred_label, samples, emit, axis, n
                       family_size=len(fam), samples=sorted(samples), note=note)
     return OrderedDict([
         ("stat_id", rep_id), ("kind", "value"), ("axis", axis), ("from", frm),
+    ])
+
+
+def defining_gem_level(schema, rep_id, note):
+    """GEM-LEVEL variant recipe (Replica Dragonfang's Flight, D-0022). The price axis is WHICH
+    specific gem the copy grants ``+# to Level of all <Gem> Gems`` for. Unlike Forbidden's
+    OPTION stat, PoE1 ships each of these as an INDIVIDUAL stat id -- one
+    ``explicit.indexable_skill_N`` per specific gem -- NOT a ``base|opt`` option (PRIMARY-SOURCED
+    live: ``/api/trade/data/stats`` carries ZERO pipe form for gem levels; docs/notes-d0022-api.md).
+    ``rep_id`` is a real, verified family member (validated here) that documents the family; the
+    RUNTIME matches the copy's OWN mod by TEXT (``from.match == 'gem-level'`` ->
+    variantreg._is_gem_level_mod), so it needs no id list. ``family_size`` counts the resolved
+    per-gem ids (documentation only). RAISES if the rep id or the family does not resolve in the
+    shipped schema (the D-0019 gate).
+
+    NOTE (D-0022): there is intentionally NO per-DAMAGE-TAG entry. The owner-hypothesised base
+    "Dragonfang's Flight" (per-tag '+# to Level of all <Tag> Skill Gems') does NOT exist as a
+    tradeable PoE1 unique -- LIVE /api/trade/data/items lists only "Replica Dragonfang's Flight",
+    and a name search for the base returns HTTP 400 "Unknown item name". A per-tag skill-level mod
+    would anyway already be searched by the generic _unique_value_filters path (its text contains
+    "Skill"), so it needs no registry recipe; only the Replica's "<Gem> Gems" (no "Skill") form
+    was invisible to that path. The runtime _is_gem_level_mod still matches the per-tag form, so a
+    future per-tag gem-level unique would only need a one-line roster add here."""
+    if not schema.has_id(rep_id):
+        raise BuildError("gem-level rep %s not in schema" % rep_id)
+    # per-specific-gem (indexable): "... <Gem> Gems", NOT "... Skill Gems" (that is the per-tag
+    # / generic form, handled by _unique_value_filters), NOT a conditional "... if ... Equipped".
+    fam = schema.family("Explicit",
+                        lambda t: t.startswith("+# to Level of all ")
+                        and t.rstrip().endswith(" Gems") and "Skill Gems" not in t
+                        and " if " not in t)
+    if len(fam) < 3:
+        raise BuildError("gem-level family resolves to %d stats (<3)" % len(fam))
+    return OrderedDict([
+        ("stat_id", rep_id), ("kind", "gem-level"), ("axis", "gem"),
+        ("family_size", len(fam)),
+        ("from", _mkfrom("explicit", "gem-level", "+# to Level of all <Gem> Gems", "roll-min",
+                         note=note)),
     ])
 
 
@@ -558,6 +622,33 @@ def build_roster(schema, ninja):
               _floor_conf("Value dominated by which aura's reservation-removal mod rolled."),
               base=["Onyx Amulet"],
               tags=["[NOT FROM SOURCE - poewiki/trade experience 'Aul's Uprising']"])
+    # D-0022: Replica Dragonfang's Flight -- a GEM-LEVEL-defined amulet. The price is WHICH
+    # specific gem the copy grants "+# to Level of all <Gem> Gems" for; poe.ninja FOLDS all ~280
+    # gem versions into ONE aggregate line (variant=None, ~15c across 7,216 mixed listings), so
+    # the auto-harvest -- which keys on >=2 distinct ninja variant LABELS -- MISSES it (the CLASS
+    # gap detect_folded_gem_variants guards). Recipe (roll-defined: value = which the copy rolled,
+    # ninja floors it): match the copy's OWN gem-level mod to its individual indexable_skill id,
+    # floor the ninja line. NOT an OPTION stat -- no base|opt form exists (notes-d0022-api.md;
+    # live-checked). The owner-hypothesised BASE "Dragonfang's Flight" (per-tag) is deliberately
+    # NOT added: it is not a tradeable PoE1 unique (LIVE data/items has only the Replica; a name
+    # search 400s "Unknown item name"), and a per-tag "Skill Gems" mod is already covered by the
+    # generic _unique_value_filters path anyway (see defining_gem_level's NOTE).
+    add("Replica Dragonfang's Flight", "roll-defined", "primary-stat",
+        [defining_gem_level(schema, "explicit.indexable_skill_138",
+                            "Match the copy's own '+# to Level of all <Gem> Gems' mod via "
+                            "StatMapper -> its specific explicit.indexable_skill_N id, emit "
+                            "value:{min:roll}. The named GEM is the price identity; poe.ninja "
+                            "folds all ~280 gem versions into one line (floor-only). D-0022.")],
+        "floor",
+        _floor_conf("poe.ninja folds every '+# to Level of all <Gem> Gems' version into ONE "
+                    "aggregate line (~15c across 7,216 mixed listings) -- a LOW floor; the "
+                    "specific gem's real price is the defining-mod trade search on the copy."),
+        base=["Onyx Amulet"],
+        notes="Replica grants '+3 to Level of all <specific gem> Gems' (one indexable_skill id "
+              "per gem, e.g. Determination=indexable_skill_67). poe.ninja can't split by gem -> "
+              "floor-only; price the exact gem via the trade link. LIVE-verified 2026-07-28: the "
+              "Determination filter returns 14 listings, all carrying stat.explicit.indexable_"
+              "skill_67 (notes-d0022-api.md).")
 
     # ---- mod-variant : poe.ninja enumerates discrete variant/base lines ---
     # For NINJA-HARVEST items the ninja variant enumeration IS the price recipe (mapped in
@@ -846,6 +937,18 @@ def assemble(schema, ninja, league, harvest_status, refresh):
         raise BuildError("MISSING durable ninja variant names (validation 2 failed): "
                          "multi=%s base=%s" % (missing_multi, missing_base))
 
+    # ---- HARVEST-GAP GUARD (D-0022): gem/option-defined uniques poe.ninja folds into ONE
+    # line (variant=null + many optional gem-level mods) are invisible to durable_ninja_names.
+    # WARN (non-fatal) about any folded-gem name absent from the roster so a future league's new
+    # such unique is caught; the recipe itself is authored by hand (defining_gem_level). ----
+    folded = detect_folded_gem_variants(league)
+    folded_unregistered = sorted(folded - reg_names)
+    if folded_unregistered:
+        sys.stderr.write(
+            "  [D-0022 HARVEST-GAP] poe.ninja folds these gem-level-defined uniques into one "
+            "line (variant=null); they need a hand-authored defining_gem_level recipe: %s\n"
+            % folded_unregistered)
+
     # ---- coverage stats ----
     by_class = OrderedDict()
     for c in CLASS_ORDER:
@@ -871,6 +974,10 @@ def assemble(schema, ninja, league, harvest_status, refresh):
         ("crosscheck_dropped", [OrderedDict([("name", n), ("reason", r)]) for n, r in dropped]),
         ("excluded_foulborn_names", fb),
         ("links_variant_names_handled_by_engine", links_names),
+        # D-0022 harvest-gap guard: names poe.ninja FOLDS into one gem-level line (the class the
+        # auto-harvest misses); *_unregistered must stay [] (each folded name has a hand recipe).
+        ("folded_gem_variant_names", sorted(folded)),
+        ("folded_gem_variant_unregistered", folded_unregistered),
         ("ninja_names_harvested", len(ninja)),
     ])
 
@@ -902,7 +1009,8 @@ def assemble(schema, ninja, league, harvest_status, refresh):
             ("socket-defined", "exact abyssal-socket / added-passive COUNT; ninja enumerates "
                                "count lines (map by observed count, labels not always literal)."),
             ("roll-defined", "value = which/what the copy rolled (aura combo, notables, own "
-                             "rolls); ninja floors it; price from the build copy's mods."),
+                             "rolls, or which gem its '+# to Level of all <Gem> Gems' names -- "
+                             "Replica Dragonfang, D-0022); ninja floors it; price from the copy's mods."),
             ("mod-variant", "poe.ninja enumerates discrete variant/base lines; map the owned "
                             "copy to the line; that line's chaosValue is the price."),
             ("links", "5L/6L price variance (237 uniques this league) is handled GENERICALLY "

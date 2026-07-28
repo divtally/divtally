@@ -1193,10 +1193,12 @@
     if (Object.keys(v).length) f.value = v;
     return f;
   }
-  // D-0019 — a variant-DEFINING mod's LOCKED filter, built from the affix's own identity value
+  // D-0019/D-0022 — a variant-DEFINING mod's filter VALUE, built from the affix's own identity value
   // (never from user picks): an OPTION mod (Allocates-notable / ring-size / keystone-radius) ->
-  // {id: base, value:{option:N}}; an EXACT seed/count -> min==max; else the roll min. Defining mods
-  // ARE the item (D-0015), so the picker can't loosen them — the value comes off the affix alone.
+  // {id: base, value:{option:N}}; an EXACT seed/count -> min==max; else the roll min. The VALUE is
+  // always the item's identity. D-0022 UNLOCKS the requirement: the picker now chooses WHETHER to
+  // emit it (tier required/nice) or drop it (not-needed) — but when emitted it is exactly this
+  // value, so all-required reproduces the D-0019 exact-variant query byte-for-byte.
   function _definingFilter(a) {
     if (a.option != null) return { id: a.stat_id, value: { option: a.option } };
     var pf = affixPrefill(a);
@@ -1237,12 +1239,19 @@
       affixes.forEach(function (a, i) {
         if (a.kind !== "stat") return;
         if (!a.searchable || !a.stat_id) return;          // unsearchable is NEVER emitted
-        // D-0019 — a variant-DEFINING mod is the item's identity: ALWAYS emitted as a required
-        // filter (in the first/AND group), never unticked, excluded, OR folded into a pseudo total.
-        // D-0020 R3-1: emit it BEFORE the resist-fold, so a defining RESISTANCE (Purity Watcher's
-        // Eye, Viridian Grand Spectrum) is never folded into the pseudo total and dropped. Its
-        // value is locked to the item's own roll (option / exact seed / count) via _definingFilter.
-        if (a.defining) { if (gi === 0) filters.push(_definingFilter(a)); return; }
+        // D-0019/D-0022 — a variant-DEFINING mod is the item's identity but is now a NORMAL
+        // tier-controlled row (required by default, deselectable). Handled BEFORE the resist-fold
+        // (D-0020 R3-1) so a defining RESISTANCE (Purity Watcher's Eye, Viridian Grand Spectrum) is
+        // never folded into a pseudo total. Emitted when its pick is ticked (tier required/nice),
+        // OMITTED when not-needed; its VALUE stays the item's own identity (option / exact seed /
+        // count) via _definingFilter, never the picker's min/max.
+        if (a.defining) {
+          var dpk = _pickOf(picks.affix, i, a);
+          if (!dpk.ticked) return;                        // not-needed / unticked -> filter OMITTED
+          if ((dpk.group != null ? dpk.group : 0) !== gi) return;   // route to its tier's group (default AND=0)
+          filters.push(_definingFilter(a));
+          return;
+        }
         if (usePseudo && a.resist) return;                // folded into a pseudo total below
         var pk = _pickOf(picks.affix, i, a); if (!pk.ticked) return;
         if ((pk.group != null ? pk.group : 0) !== gi) return;
@@ -1297,8 +1306,9 @@
     var req = 0, nice = 0;
     affixes.forEach(function (a, i) {
       if (a.kind !== "stat" || !a.searchable || !a.stat_id) return;
-      if (a.defining) { req++; return; }                  // D-0019/R3-1: defining counted BEFORE the fold
-      if (usePseudo && a.resist) return;                  // (so a defining resist still creates the AND group)
+      // D-0022: a defining mod is counted BY ITS TIER (required/nice), like any stat — but a defining
+      // RESIST skips the fold (R3-1: never folded), so it still counts and creates its own group.
+      if (!a.defining && usePseudo && a.resist) return;
       var t = tOf(picks.affix, i, a); if (t === "required") req++; else if (t === "nice") nice++;
     });
     if (usePseudo) pseudos.forEach(function (p, j) {
@@ -1317,13 +1327,11 @@
                 countMin: (cGi >= 0 ? groups[cGi].min : null) };
     function place(map, i, a, dst, isPseudo) {
       var base = _pickOf(map, i, a), t = tOf(map, i, a);
-      if (!isPseudo && a.defining) {                       // D-0019: defining -> the AND group, locked ON
-        dst[i] = { ticked: true, min: base.min, max: base.max, tier: "required", group: (andGi < 0 ? 0 : andGi) };
-        return;
-      }
       var e = { ticked: base.ticked, min: base.min, max: base.max, tier: t };
       if (a.kind === "equip") { e.ticked = (t !== "notneeded"); dst[i] = e; return; }
-      if (!isPseudo && usePseudo && a.resist) { dst[i] = e; return; }   // folded away; group irrelevant
+      // D-0022: a defining mod routes by its tier like any stat (required->AND, nice->count,
+      // not-needed->unticked) — but is NEVER folded into a pseudo total (R3-1), so it skips the fold.
+      if (!isPseudo && !a.defining && usePseudo && a.resist) { dst[i] = e; return; }   // folded away; group irrelevant
       if (t === "required") { e.group = (andGi < 0 ? 0 : andGi); e.ticked = true; }
       else if (t === "nice") { e.group = (cGi < 0 ? 0 : cGi); e.ticked = true; }
       else { e.ticked = false; }                                        // notneeded -> excluded

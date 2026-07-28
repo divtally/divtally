@@ -530,9 +530,56 @@ def phase_variant():
     check("non-registry unique keeps legacy name-match (not floor)",
           nv.method == "unique-ninja" and nv.confidence == "high", f"{nv.method}/{nv.confidence}")
 
+    # ---- D-0022: Dragonfang's Flight family -- GEM-LEVEL variant. poe.ninja FOLDS every
+    # "+# to Level of all <X> Gems" version into ONE line, so the price identity is WHICH gem/tag
+    # the copy grants -- matched from the copy's OWN mod to its individual indexable_skill /
+    # per-tag stat id (NOT an option stat; live-verified no base|opt form -- notes-d0022-api.md).
+    # The query must carry EXACTLY that one gem-level filter, never the copy's fixed
+    # resistance / reservation-efficiency / reduced-attribute-requirement mods. ----
+    econ._uniques["replica dragonfang's flight"] = [
+        {"name": "Replica Dragonfang's Flight", "baseType": "Onyx Amulet", "variant": None,
+         "chaosValue": 15.0, "listingCount": 7216, "count": 399}]
+    rep_dd = mk("Replica Dragonfang's Flight", "Onyx Amulet", [
+        "+3 to Level of all Determination Gems",
+        "+7% to all Elemental Resistances",
+        "8% increased Reservation Efficiency of Skills",
+        "Items and Gems have 6% reduced Attribute Requirements"], group="equipment")
+    r = P.price_unique_ninja(rep_dd)
+    rf = stats_of(r)
+    check("Replica Dragonfang: exactly ONE defining filter = the Determination gem-level id (min=3)",
+          rf == [{"id": "explicit.indexable_skill_67", "value": {"min": 3}}], str(rf))
+    check("Replica Dragonfang: floor-capped LOW (ninja folds all gems into one 15c line)",
+          r.method == "unique-ninja-floor" and r.confidence == "low"
+          and abs((r.tier.median or 0) - 15.0) < 1e-6, f"{r.method}/{r.confidence}/{r.tier.median}")
+    check("Replica Dragonfang: variant label names the specific gem mod",
+          (r.extra.get("variant_info") or {}).get("label") == "+3 to Level of all Determination Gems",
+          str((r.extra.get("variant_info") or {}).get("label")))
+    # copy-specific: a DIFFERENT gem (Spark) must emit Spark's id, proving the filter is read off
+    # the COPY's own mod, not a fixed id baked into the recipe.
+    rep_spark = P.price_unique_ninja(mk("Replica Dragonfang's Flight", "Onyx Amulet",
+                   ["+3 to Level of all Spark Gems", "+7% to all Elemental Resistances"], group="equipment"))
+    check("Replica Dragonfang: a Spark copy emits Spark's id, not Determination's (copy-specific)",
+          stats_of(rep_spark) == [{"id": "explicit.indexable_skill_27", "value": {"min": 3}}],
+          str(stats_of(rep_spark)))
+    # base "Dragonfang's Flight" is DELIBERATELY not a shipped registry item: it does NOT exist
+    # as a tradeable PoE1 unique (LIVE /api/trade/data/items lists only the Replica; a base name
+    # search returns 400 "Unknown item name" -- notes-d0022-api.md). Instead lock the gem-level
+    # MATCHER contract directly: it recognises BOTH the per-gem ("<Gem> Gems") and the per-tag
+    # ("<Tag> Skill Gems") forms and rejects the item's fixed non-gem mods, so a future per-tag
+    # gem-level unique would be matched without shipping a phantom entry today.
+    from _lib import variantreg as _vr
+    check("gem-level matcher: recognises the per-specific-gem form (Replica, no 'Skill')",
+          _vr._is_gem_level_mod("+3 to Level of all Determination Gems") is True)
+    check("gem-level matcher: recognises the per-tag 'Skill Gems' form (future-proofing)",
+          _vr._is_gem_level_mod("+1 to Level of all Fire Skill Gems") is True)
+    check("gem-level matcher: rejects the copy's fixed res / reservation / attr-req mods",
+          not _vr._is_gem_level_mod("+7% to all Elemental Resistances")
+          and not _vr._is_gem_level_mod("Items and Gems have 6% reduced Attribute Requirements")
+          and not _vr._is_gem_level_mod("8% increased Reservation Efficiency of Skills"))
+
     # ---- picker payload + item-row variant block via the FULL response ----
     from _lib import response as resp
-    items = [ff, we, lp, vo, sh]
+    items = [ff, we, lp, vo, sh, rep_dd]
     results = P.price_build(items)
     meta = BuildMeta(account="t", character="t", league="TestLeague")
     doc = resp.build_response(meta, results, P, "TestLeague", "poe.ninja")
@@ -540,7 +587,8 @@ def phase_variant():
     check("variant fixtures are uniques", cats == {"unique"}, str(cats))
     rows = {it["name"].split(",")[0]: it for it in doc["items"]}
     check("every variant row carries a variant block",
-          all("variant" in rows[n] for n in ("Forbidden Flesh", "Watcher's Eye", "Lethal Pride", "Voices")),
+          all("variant" in rows[n] for n in ("Forbidden Flesh", "Watcher's Eye", "Lethal Pride",
+                                              "Voices", "Replica Dragonfang's Flight")),
           str([n for n in rows if "variant" not in rows[n]]))
     # the picker marks defining mods (Forbidden option row, Voices exact-count row)
     rr = doc["rares"]
@@ -559,6 +607,15 @@ def phase_variant():
     check("picker: Lethal Pride seed row is searchable + exact (was unmatched full-line)",
           len(lp_def) == 1 and lp_def[0]["searchable"] is True and lp_def[0].get("exact") is True
           and lp_def[0]["reason"] == "", str(lp_def))
+    # D-0022: the Replica Dragonfang gem-level mod is the sole defining picker row -- required,
+    # searchable via its specific indexable_skill id, prefilled min=3; the copy's fixed
+    # res/reservation/attr mods are NOT flagged defining.
+    dd_idx = str(rows["Replica Dragonfang's Flight"]["index"])
+    dd_def = [a for a in rr[dd_idx]["affixes"] if a.get("defining")]
+    check("picker: Replica Dragonfang gem row is the sole defining row (required+searchable, min=3)",
+          len(dd_def) == 1 and dd_def[0]["priority"] == "required" and dd_def[0]["prefer"] is True
+          and dd_def[0]["searchable"] is True and dd_def[0]["default_min"] == 3
+          and dd_def[0]["stat_id"] == "explicit.indexable_skill_67", str(dd_def))
 
     # ---- D-0019 MAJOR-1 regression: the non-aura roll/mod-variant families. EVERY family
     # carries from.match=="family-all", so the old blanket `if family_all` forced these into

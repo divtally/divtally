@@ -205,6 +205,23 @@ is a technical transparency disclosure, not marketing; strip on owner request. P
 identity: repo-local user = DivTally <divtally@gmail.com>, full history rewritten to it
 pre-publish (personal email never ships in public metadata).
 
+## D-0022 - Dragonfang variant registry gap + unlock defining mods (owner, 2026-07-28)
+1. **Replica Dragonfang's Flight (and base Dragonfang's Flight) missing from the variant
+   registry** - its price-defining mod is "+# to Level of all <specific gem> Gems" (Replica) /
+   "+# to Level of all <tag> Skill Gems" (base). poe.ninja FOLDS every gem version into ONE
+   aggregate line (variant:None, ~13c floor), so the harvest (which keys on poe.ninja's variant
+   field) missed it - a CLASS bug: option/gem-defined uniques poe.ninja doesn't split. Fix: add
+   both to variant_uniques.json with the correct defining stat (the gem-level stat, an OPTION
+   stat that was SLIMMED out of the bundled trade_stats.json - must be re-added), recipe extracts
+   the specific gem from the build's own copy; live-verify the search returns only that gem's
+   copies. Also flag the harvest gap for the registry tool.
+2. **UNLOCK defining mods in the picker** (owner: "locking the mods is not necessary, if the user
+   WANTS to deselect them they should be able to"). Supersedes D-0019's forced-locked defining
+   rows: defining mods now render as NORMAL tier-controlled rows (required/nice/not-needed),
+   DEFAULT required (they define the item), but fully deselectable; keep a "variant-defining"
+   hint. The client query builder must emit the option/exact/seed filter when the defining mod is
+   ticked required and OMIT it when the user sets not-needed. Same for the groups editor.
+
 ## D-0021 - Jewel pricing + section-toggle UX (owner, 2026-07-28)
 Owner feedback during the campaign:
 1. **poe.ninja is LAST-CHANCE for jewels**: jewels are trade-scanned first (autoscan includes
