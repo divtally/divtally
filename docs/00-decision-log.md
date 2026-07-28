@@ -205,6 +205,18 @@ is a technical transparency disclosure, not marketing; strip on owner request. P
 identity: repo-local user = DivTally <divtally@gmail.com>, full history rewritten to it
 pre-publish (personal email never ships in public metadata).
 
+## D-0021 - Jewel pricing + section-toggle UX (owner, 2026-07-28)
+Owner feedback during the campaign:
+1. **poe.ninja is LAST-CHANCE for jewels**: jewels are trade-scanned first (autoscan includes
+   ninja-priced unique jewels via needsScan + manualRows); the ninja number is kept only when the
+   live trade search finds nothing (jewel-aware keep-floor in foldBatch fail branches), not as the
+   default. Jewel ninja prices are variant-noisy, so they're a floor, not the answer.
+2. **Non-unique (magic) flasks excluded from scanning by default**, like weapon-swap (D-0018):
+   a `bpc_include_magicflask` toggle re-includes them.
+3. **weapon-swap + magic-flasks become BUTTONS** (styled like "toggle all") in the Equipment
+   header; **flasks / jewels / gems become toggle BUTTONS** to the right of "Stash" (toggle each
+   group's totals inclusion). Button style: GOLD when on, black when off.
+
 ## D-0020 AMENDMENTS (owner, 2026-07-27/28)
 - **LOOP UNTIL DRY**: not a fixed round count - keep iterating fresh rounds (new lenses/tests
   each time) until TWO consecutive rounds produce no meaningful adjustments.

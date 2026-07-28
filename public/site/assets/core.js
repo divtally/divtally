@@ -165,9 +165,14 @@
   function isPriced(it) { var p = state.priced[String(it.index)]; return !!(p && p.chaos && p.chaos.median != null); }
   function includeSwap() { return lsget("bpc_include_swap") === "1"; }
   function itemSwap(k) { var it = state.items.find(function (x) { return String(x.index) === String(k); }); return !!(it && it.swap); }
-  // default include-state for a row the first time its price lands (granted and, per D-0018,
-  // weapon-swap items start excluded; the equipment-header toggle re-includes swaps)
-  function defaultOn(k) { return !itemGranted(k) && !(itemSwap(k) && !includeSwap()); }
+  // D-0021: non-unique (magic) flasks are excluded by default (cheap; not worth scan budget),
+  // re-includable via the equipment-header "magic flasks" button. Mirrors the swap pattern.
+  function includeMagicFlasks() { return lsget("bpc_include_magicflask") === "1"; }
+  function isMagicFlask(it) { return !!(it && it.group === "flask" && it.category === "magic"); }
+  function isMagicFlaskK(k) { return isMagicFlask(state.items.find(function (x) { return String(x.index) === String(k); })); }
+  // default include-state for a row the first time its price lands (granted, weapon-swap, and
+  // magic flasks all start excluded; their header buttons re-include).
+  function defaultOn(k) { return !itemGranted(k) && !(itemSwap(k) && !includeSwap()) && !(isMagicFlaskK(k) && !includeMagicFlasks()); }
   function setIncludeSwap(on) {
     lsset("bpc_include_swap", on ? "1" : "0");
     state.items.forEach(function (it) {
@@ -178,6 +183,19 @@
     });
     emit("manual", manualRows()); emit("totals", totals()); emit("swap", { on: !!on });
   }
+  function setIncludeMagicFlasks(on) {
+    lsset("bpc_include_magicflask", on ? "1" : "0");
+    state.items.forEach(function (it) {
+      if (!isMagicFlask(it)) return;
+      var k = String(it.index);
+      if (state.priced[k] && state.priced[k].chaos && state.priced[k].chaos.median != null)
+        state.enabled[k] = on ? !itemGranted(k) : false;
+    });
+    emit("manual", manualRows()); emit("totals", totals()); emit("magicflasks", { on: !!on });
+  }
+  // D-0021: is this jewel currently sitting on a poe.ninja floor (last-chance price)?
+  function isJewelFloor(k) { var it = state.items.find(function (x) { return String(x.index) === String(k); }); var p = state.priced[String(k)];
+    return !!(it && it.group === "jewel" && p && p.chaos && p.chaos.median != null && /^unique-ninja/.test(p.method || "")); }
   function itemGranted(k) { var it = state.items.find(function (x) { return String(x.index) === String(k); }); return !!(it && it.granted); }
   function totals() {
     var mn = 0, md = 0, hi = 0, sMn = 0, sMd = 0, sHi = 0, inc = 0, tot = 0, bought = 0;
@@ -232,6 +250,22 @@
       if (state.priced[k] && state.priced[k].chaos && state.priced[k].chaos.median != null) state.enabled[k] = on ? !it.granted : false;
     });
     emit("enabled", { group: group, on: !!on }); emit("totals", totals());
+  }
+  // D-0021: is a group currently ON (any priced row in it enabled)? drives the gold/black header buttons.
+  function groupEnabled(group) {
+    return state.items.some(function (it) {
+      if (it.group !== group) return false;
+      var k = String(it.index);
+      return state.enabled[k] && state.priced[k] && state.priced[k].chaos && state.priced[k].chaos.median != null;
+    });
+  }
+  // does a group have any priced row at all (so its button is worth showing)?
+  function groupHasPriced(group) {
+    return state.items.some(function (it) {
+      if (it.group !== group) return false;
+      var k = String(it.index);
+      return state.priced[k] && state.priced[k].chaos && state.priced[k].chaos.median != null;
+    });
   }
   function itemsByGroup() {
     var out = [];
@@ -650,9 +684,13 @@
       if (!p) return false;
       var priceable = it.category === "rare" || it.category === "magic" ||
                       (it.category === "unique" && (p.method === "unique-unpriced" || p.source === "trade" ||
-                                                    !!it.variant));   // D-0019: variant uniques always listed (locked picker + exact search + deep-link)
+                                                    !!it.variant ||
+                                                    // D-0021: unique JEWELS priced by poe.ninja are scannable —
+                                                    // trade is the real price, ninja is only the last-chance floor.
+                                                    (it.group === "jewel" && /^unique-ninja/.test(p.method || ""))));
       if (!priceable) return false;
       if (it.swap && !includeSwap()) return false;   // D-0018: swap gear sits out until re-included
+      if (isMagicFlask(it) && !includeMagicFlasks()) return false;   // D-0021: magic flasks sit out unless re-included
       var hasQuery = !!(p.trade_query || p.trade_url || it.trade_query || it.trade_url);
       return hasQuery;
     }).map(function (it) {
@@ -892,17 +930,16 @@
           if (!it) return;
           var dbg = res.debug || null;      // v1.1: {searchStatus, fetchStatus, fetched, nulls} (absent on old ext)
           if (res.error) {
-            applyPrice(key, dropIfPlaceholder(key, { confidence: "none", method: "extension", source: "trade",
-              note: "extension: " + res.error + debugSuffix(dbg), debug: dbg }), { include: false });
-            scanSet(key, "error", { message: res.error, status: dbg && dbg.searchStatus });
+            foldFail(key, { confidence: "none", method: "extension", source: "trade",
+              note: "extension: " + res.error + debugSuffix(dbg), debug: dbg },
+              "error", { message: res.error, status: dbg && dbg.searchStatus });
             return;
           }
           if (res.amount == null) {
-            applyPrice(key, dropIfPlaceholder(key, { confidence: "none", method: "extension", source: "trade",
+            foldFail(key, { confidence: "none", method: "extension", source: "trade",
               note: "listings exist but none had a buyout price" + debugSuffix(dbg),
-              total_found: res.total || 0, debug: dbg }), { include: false });
-            scanSet(key, "nobuyout", { total: res.total || 0,
-              fetched: dbg ? dbg.fetched : null, nulls: dbg ? dbg.nulls : null });
+              total_found: res.total || 0, debug: dbg },
+              "nobuyout", { total: res.total || 0, fetched: dbg ? dbg.fetched : null, nulls: dbg ? dbg.nulls : null });
             return;
           }
           // D-0016 item 4: build real {min,median,high} from ALL fetched listings (ext v1.2.0
@@ -911,10 +948,10 @@
           var band = rareTiersFromPrices(res.prices, divRate());
           var chaos = toChaos(res.amount, res.currency);   // cheapest (norate guard + fallback)
           if (band == null && chaos == null) {
-            applyPrice(key, dropIfPlaceholder(key, { confidence: "low", method: "extension", source: "trade",
+            foldFail(key, { confidence: "low", method: "extension", source: "trade",
               note: "cheapest: " + fmtAmt(res.amount) + " " + res.currency + " (no chaos rate to convert)" + debugSuffix(dbg),
-              total_found: res.total || 0, debug: dbg }), { include: false });
-            scanSet(key, "nobuyout", { total: res.total || 0, amount: res.amount, currency: res.currency, norate: true });
+              total_found: res.total || 0, debug: dbg },
+              "nobuyout", { total: res.total || 0, amount: res.amount, currency: res.currency, norate: true });
             return;
           }
           var tierObj = band ? { min: band.min, median: band.median, high: band.high }
@@ -944,9 +981,8 @@
         key = String(key);
         if (seen[key] || scanResolved(key)) return;
         var msg = (b.resp && b.resp.error) ? b.resp.error : "no result returned";
-        applyPrice(key, dropIfPlaceholder(key, { confidence: "none", method: "extension", source: "trade",
-          note: "extension: " + msg }), { include: false });
-        scanSet(key, "error", { message: msg });
+        foldFail(key, { confidence: "none", method: "extension", source: "trade", note: "extension: " + msg },
+          "error", { message: msg });
       });
       if (toCache.length) { cachedCount += toCache.length; cachePost(toCache); }
     }
@@ -979,7 +1015,10 @@
   function needsScan(r) {
     if (!r.priced) return true;
     var p = r.price || {};
-    return !!(r.item && r.item.variant && /^unique-ninja/.test(p.method || ""));
+    // D-0019 variant uniques AND D-0021 unique jewels both load on a poe.ninja floor that autoscan
+    // must replace with a real trade price (ninja is last-chance only).
+    if (r.item && /^unique-ninja/.test(p.method || "") && (r.item.variant || r.item.group === "jewel")) return true;
+    return false;
   }
   // F1 (R2): a variant unique carries a poe.ninja name-level PLACEHOLDER at load (D-0019: "floor
   // is a PLACEHOLDER, not its price"). If its exact locked-mod search then comes back with no real
@@ -997,6 +1036,14 @@
     if (it && it.variant && p && p.chaos && p.chaos.median != null && /^unique-ninja/.test(p.method || ""))
       patch.chaos = { min: null, median: null, high: null };
     return patch;
+  }
+  // D-0021: single funnel for a scan row that resolved WITHOUT a real trade price. A JEWEL keeps its
+  // poe.ninja floor (last-chance price - priced + included, just annotated); everything else drops the
+  // placeholder + excludes, exactly as before.
+  function foldFail(key, patch, stage, detail) {
+    if (isJewelFloor(key)) applyPrice(key, { note: "no live trade match — poe.ninja estimate (last resort)" });
+    else applyPrice(key, dropIfPlaceholder(key, patch), { include: false });
+    scanSet(key, stage, detail);
   }
   function autoscan() { return priceRowsViaExtension(manualRows().filter(needsScan)); }
   function priceViaExtension(key) {
@@ -1424,6 +1471,7 @@
     setControl: setControl, loadPrefs: loadPrefs,
     price: price, priceHTML: priceHTML, curImg: curImg, nfmt: nfmt, esc: esc, divRate: divRate, tierEx: tierEx,
     totals: totals, setEnabled: setEnabled, setIncludeSwap: setIncludeSwap, includeSwap: includeSwap, needsScan: needsScan, setGroupEnabled: setGroupEnabled, isPriced: isPriced, itemsByGroup: itemsByGroup,
+    setIncludeMagicFlasks: setIncludeMagicFlasks, includeMagicFlasks: includeMagicFlasks, groupEnabled: groupEnabled, groupHasPriced: groupHasPriced,
     gemGroups: gemGroups, gemBreakdown: gemBreakdown, gemHost: gemHost,
     setPurchased: setPurchased, isPurchased: isPurchased,
     // public pricing

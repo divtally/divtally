@@ -146,6 +146,14 @@
     color:var(--mut); cursor:pointer; border:1px solid var(--bz1); border-radius:4px; padding:2px 9px; background:var(--inner);
   }
   .panel-head .grp-toggle:hover{color:var(--fg); border-color:var(--bz2);}
+  /* D-0021: gold-when-on / black-when-off toggle buttons (weapon swap, magic flasks, stash sections) */
+  .panel-head .ph-btns{display:flex; align-items:center; gap:7px; flex-wrap:wrap;}
+  .hbtn{font-family:var(--serif); text-transform:none; letter-spacing:0; font-size:13px; cursor:pointer;
+    border:1px solid var(--bz1); border-radius:4px; padding:2px 11px; background:var(--inner); color:var(--mut);
+    transition:background .12s, color .12s, border-color .12s;}
+  .hbtn:hover{border-color:var(--bz2); color:var(--fg);}
+  .hbtn.on{background:linear-gradient(180deg, var(--bz3), var(--bz1)); color:#160f08; border-color:var(--bz-hi); font-weight:600;}
+  .hbtn.on:hover{color:#160f08;}
 
   /* equipment doll grid — canonical paper-doll positions, square slots */
   .doll{
@@ -1015,8 +1023,11 @@
                 <span class="lg-item"><span class="lg-sw notfound"></span> not found</span>
                 <span class="lg-item"><span class="lg-sw fewresults"></span> &lt;5</span>
               </span></span>
-            <label class="chk swapinc" title="Weapon-swap items (second weapon set) are excluded by default — most builds don't use them. Tick to include them in pricing, scans, and totals."><input type="checkbox" id="swapInc"> weapon swap</label>
-            <span class="grp-toggle" data-grp="equipment">toggle all</span>
+            <span class="ph-btns">
+              <button type="button" class="hbtn" id="swapInc" title="Weapon-swap items (second weapon set) are excluded by default — most builds don't use them. Gold = included in scans, pricing and totals.">weapon swap</button>
+              <button type="button" class="hbtn" id="magicFlaskInc" title="Non-unique (magic) flasks are excluded by default — they're cheap. Gold = included in scans, pricing and totals.">magic flasks</button>
+              <span class="grp-toggle" data-grp="equipment">toggle all</span>
+            </span>
           </div>
           <div class="doll" id="doll"></div>
         </div>
@@ -1026,7 +1037,12 @@
     <div class="stash-wrap">
       <div class="frame">
         <div class="inner">
-          <div class="panel-head"><span>Stash</span><span style="color:var(--mut);font-family:var(--serif);text-transform:none;letter-spacing:0;font-size:12px">flasks · jewels · gems</span></div>
+          <div class="panel-head"><span>Stash</span>
+            <span class="ph-btns" id="stashToggles">
+              <button type="button" class="hbtn" data-sgrp="flask" title="Toggle Flasks in the totals (gold = counted)">flasks</button>
+              <button type="button" class="hbtn" data-sgrp="jewel" title="Toggle Jewels in the totals (gold = counted)">jewels</button>
+              <button type="button" class="hbtn" data-sgrp="gem" title="Toggle Gems in the totals (gold = counted)">gems</button>
+            </span></div>
           <div class="stash-groups" id="stash"></div>
         </div>
       </div>
@@ -1212,10 +1228,25 @@ $('#f').addEventListener('submit',e=>{ e.preventDefault(); const u=$('#url').val
 $('#liststatus').addEventListener('change',e=>bpc.setControl('status',e.target.value));
 $('#league').addEventListener('change',e=>bpc.setControl('league',e.target.value));
 $('#refresh').addEventListener('change',e=>bpc.setControl('refresh',e.target.checked));
-const swapCb=$('#swapInc');
-if(swapCb && bpc.setIncludeSwap){ swapCb.checked=bpc.includeSwap();
-  swapCb.addEventListener('change',()=>bpc.setIncludeSwap(swapCb.checked));
-  bpc.on('items',()=>{ swapCb.checked=bpc.includeSwap(); }); }
+/* D-0021: gold/black header toggle buttons. weapon-swap + magic-flasks (scan+totals inclusion);
+   stash flasks/jewels/gems (per-group totals inclusion). */
+function paintHdrToggles(){
+  const sw=$('#swapInc'); if(sw && bpc.includeSwap) sw.classList.toggle('on', bpc.includeSwap());
+  const mf=$('#magicFlaskInc'); if(mf && bpc.includeMagicFlasks) mf.classList.toggle('on', bpc.includeMagicFlasks());
+  document.querySelectorAll('#stashToggles .hbtn[data-sgrp]').forEach(b=>{
+    const g=b.dataset.sgrp, has=bpc.groupHasPriced&&bpc.groupHasPriced(g);
+    b.hidden=!has; if(has) b.classList.toggle('on', bpc.groupEnabled(g));
+  });
+}
+(function wireHdrToggles(){
+  const sw=$('#swapInc'); if(sw && bpc.setIncludeSwap) sw.addEventListener('click',()=>bpc.setIncludeSwap(!bpc.includeSwap()));
+  const mf=$('#magicFlaskInc'); if(mf && bpc.setIncludeMagicFlasks) mf.addEventListener('click',()=>bpc.setIncludeMagicFlasks(!bpc.includeMagicFlasks()));
+  document.querySelectorAll('#stashToggles .hbtn[data-sgrp]').forEach(b=>{
+    b.addEventListener('click',()=>{ bpc.setGroupEnabled(b.dataset.sgrp, !bpc.groupEnabled(b.dataset.sgrp)); paintHdrToggles(); });
+  });
+  ['items','priced','enabled','totals','swap','magicflasks','manual'].forEach(ev=>bpc.on(ev,paintHdrToggles));
+  paintHdrToggles();
+})();
 
 /* ---------- side data ---------- */
 let recentExpanded=false, recentData=[], removedShown=false;
