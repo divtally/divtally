@@ -411,3 +411,49 @@ Tests: `test_scanstatus.mjs` 64->106 (build-timeout / whisper-separator / recent
 `tests.py` gains PoB corruption+swap parse-layer assertions. R4-3/R4-6/R4-7/R4I-1 (minors/info/cosmetic)
 flagged, out of this round's five-finding scope. Next per D-0020: deploy, then Round 5 (regression +
 acceptance) - R4 was not dry (5 majors), so LOOP-UNTIL-DRY continues.
+
+## D-0020 R6 - concurrency + security fixes applied (2026-07-28)
+Round 6 (fresh lenses; the 4 standard angles done, R5 dry) fixed. Two MAJORs; full notes in
+`docs/bugtest/r6-fix1.md`. All harnesses green, contracts additive (no engine->UI JSON field
+added/renamed/removed; `state.gen` is internal). Both fixes carry a NON-VACUOUS regression test
+(proven: neutralise the fix in a scratchpad copy -> the new test fails; restore -> passes).
+- **F1 - no per-build generation token (race lens, `r6-race.md`)**: overlapping async continuations
+  from a superseded build/scan ran against whatever build was current. Live-proven: appraise A then B
+  before A settled rendered the WRONG build (A) with an incoherent `state.source` (B); and a zombie
+  A autoscan reply, delivered after switching to B, folded A's price onto B's SAME-INDEX items
+  (`item.index` is positional: B Headhunter 14 613c->999c) AND POSTed those cross-build prices into
+  the SHARED community cache under B's identities (persisted cross-user corruption). Fix
+  (`public/site/assets/core.js`): `reset()` stamps `state.gen = ++genSeq` and aborts the prior build
+  fetch; `start()` captures `gen` and every async continuation drops itself when `gen !== state.gen`
+  - the build fetch `.then`/`.catch`/timeout, `cacheReadThrough`'s applyPrice, and the extension
+  scan's `foldBatch`/`nextChunk` (the fold + `cachePost` choke point). Last-submit-wins now renders
+  coherently; a superseded scan can neither fold onto nor poison the cache of the current build.
+- **S1 - reflected XSS chain (security lens, `r6-security.md`)**: document-derived NUMERIC fields
+  reached `innerHTML` unescaped and `trade_url`/`icon` were quote-escaped but not scheme-validated,
+  reachable via unallowlisted `?api`/`?stub`/`?worker` data-origin overrides, unblunted by a missing
+  CSP. Fix (all legs; each independently breaks the chain): (a) the overrides are DEV-GATED
+  (`qpOverride`/`devContext` - ignored in production, so a shared link can't repoint the data origin);
+  (b) every document-derived number is `Number()`-coerced at its sink (`index.html` banner level, gem
+  level/quality, tooltip sample_size/total_found, item count) and `cacheReadThrough` re-validates a
+  poisoned cache entry on READ (`num()` numerics + `https://www.pathofexile.com/` trade_url); (c)
+  every document-supplied URL is scheme-validated client-side (`safeHref`/`safeIcon` in `index.html`,
+  `rareTradeUrl`'s base check in core.js) before `href`/`src`/`window.open`; (d) `public/site/_headers`
+  ships a CSP + frame/`nosniff`/referrer/permissions headers (script-src keeps `'unsafe-inline'` for
+  the shipped inline `<script>` - documented tradeoff; legs a+b already break the exploit). Normal
+  poe.ninja/PoB flow unaffected (the API int()-coerces numerics server-side).
+Tests: `test_scanstatus.mjs` now **131/0** (added F1a build-swap + F1b zombie-scan/cache-poison
+regressions, +13; a parallel R6 fix added the minor-F3 scan-entrypoint-guard scenario); new
+`test_security.mjs` (**27/0**) locks all S1 legs (override dev-gating prod-vs-dev, cache re-validation,
+`rareTradeUrl`, extracted `safeHref`/`safeIcon`, numeric coercion). Picker 98, worker 55 unchanged.
+**F3 (minor, same race lens) now implemented** (`docs/bugtest/r6-fix2.md`): the scan-entrypoint guard
+lands at the single funnel `priceRowsViaExtension` (`core.js`: `if (scan.active) return {busy}`) so a 2nd
+scan from ANY entrypoint - the per-row ⚡auto (`priceViaExtension`), the picker Autoscan/re-search
+(`priceRaresCustom`/`priceRareCustom`) - is refused while one is live, instead of `scanBegin`->`scanReset`
+WIPING the running session + re-sending an already-dispatched row (a duplicate on-IP trade search;
+rate-limit budget is load-bearing). Plus matching `scanStatus().active` guards on the two ⚡ button
+handlers in `index.html` (2369/2407) so a pre-disabled button never sticks. Non-vacuous (scratchpad
+control: strip the guard -> session collapses 4->1 + a 2nd price message; restore -> intact). F1 gen-token
+was already present; this pass VERIFIED it complete (all continuations gated) rather than re-applying.
+R6 was NOT dry (2 majors), so LOOP-UNTIL-DRY continues: deploy, then re-sweep. (S2 CSP is folded into
+S1's fix; S3 extension-popup self-XSS / S4 api exception leak / S5 JSON nosniff are MINOR, out of this
+task's two-major scope - flagged for a later round.)

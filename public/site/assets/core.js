@@ -44,9 +44,24 @@
     try { return new URLSearchParams(window.location.search).get(name); } catch (e) { return null; }
   }
   function trimSlash(s) { return String(s || "").replace(/\/+$/, ""); }
-  var API_BASE = trimSlash(qp("api") || CFG.API_BASE || "");
-  var WORKER_BASE = trimSlash(qp("worker") || (CFG.WORKER_BASE === undefined ? "" : CFG.WORKER_BASE));
-  var STUB = qp("stub");                 // ?stub[=path] -> fetch a local build document instead of the API
+  // R6-S1: the ?api/?stub/?worker overrides repoint the build fetch (and the community cache) at an
+  // arbitrary origin, letting a crafted link supply the WHOLE build document from an attacker. Honour
+  // them ONLY in a dev context (localhost / 127.0.0.1 / *.local / file: — or an explicit
+  // CFG.ALLOW_QUERY_OVERRIDES flag); in production they are ignored, so a shared link can never
+  // repoint the data origin. Config values below are always trusted (they ship with the site).
+  function devContext() {
+    try {
+      var loc = (typeof window !== "undefined" && window.location) || {};
+      var h = loc.hostname || "", proto = loc.protocol || "";
+      return proto === "file:" || h === "localhost" || h === "127.0.0.1" || h === "::1" || h === "[::1]" ||
+             /(^|\.)localhost$/i.test(h) || /(^|\.)local$/i.test(h);
+    } catch (e) { return false; }
+  }
+  var ALLOW_OVERRIDES = !!(CFG && CFG.ALLOW_QUERY_OVERRIDES) || devContext();
+  function qpOverride(name) { return ALLOW_OVERRIDES ? qp(name) : null; }
+  var API_BASE = trimSlash(qpOverride("api") || CFG.API_BASE || "");
+  var WORKER_BASE = trimSlash(qpOverride("worker") || (CFG.WORKER_BASE === undefined ? "" : CFG.WORKER_BASE));
+  var STUB = qpOverride("stub");          // ?stub[=path] -> local build document instead of the API (dev only)
   var MAX_KEYS = CFG.CACHE_MAX_KEYS || 60;
   // Bound the build fetch so an unresponsive API (accepts the TCP connection but never replies)
   // can't strand the page in 'loading' forever (R4-4). Default 45s: generous enough never to trip
@@ -85,8 +100,16 @@
     tier: "min",
     enabled: {}, purchased: {}, leagues: [], recent: [],
     bridge: { active: false, version: null },
-    _sig: {}, _mock: false
+    _sig: {}, _mock: false,
+    gen: 0                          // R6-F1: build "generation" — bumped by reset(); async continuations gate on it
   };
+  // R6-F1 (race lens): every reset() stamps a new generation. Any async continuation captured under an
+  // OLDER build (its fetch .then/.catch/timeout, its cache read-through, its in-flight extension scan)
+  // checks `gen !== state.gen` and drops itself, so a superseded build/scan can never (a) clobber the
+  // render with the wrong build, (b) fold its prices onto the current build's same-index items, or
+  // (c) POST those cross-build prices into the SHARED community cache. See reset()/start().
+  var genSeq = 0;                   // monotonic generation counter
+  var curBuildAbort = null;         // the in-flight build fetch's AbortController (aborted when a newer build starts)
 
   // ---- prefs ----
   function loadPrefs() {
@@ -326,6 +349,13 @@
 
   // ---- reset / phase helpers ----
   function reset() {
+    // R6-F1: bump the generation FIRST so every still-in-flight continuation from the PRIOR build
+    // (build fetch, cache read-through, extension scan foldBatch) sees gen !== state.gen and drops
+    // itself instead of folding onto — or poisoning the shared cache of — the build we're loading now.
+    state.gen = ++genSeq;
+    // Abort the previous build's fetch so it doesn't waste bandwidth or resolve late (its .then/.catch
+    // are gen-guarded regardless, so aborting is a clean optimisation, not the correctness mechanism).
+    if (curBuildAbort) { try { curBuildAbort.abort(); } catch (e) {} curBuildAbort = null; }
     state.meta = null; state.items = []; state.priced = {}; state.rares = {}; state.warnings = [];
     state.progress = ""; state.error = null; state.enabled = {}; state.purchased = {}; state._sig = {};
     scanReset();     // drop any stale scan session so a new build starts with a clean status map
@@ -339,6 +369,7 @@
     opts = opts || {};
     if (source && source.url) state.source = source;
     state._mock = false; reset();
+    var gen = state.gen;              // R6-F1: this build's generation; every async continuation below gates on it
     state.phase = "loading"; emit("phase", "loading"); emit("state", state);
     var input = (source && source.url) || "";
 
@@ -376,8 +407,10 @@
     // timeout -> fail() with a "took too long" message. `settled` de-dupes so the timeout and a
     // late reply/abort can never both report. (R4-4)
     var ac = (typeof AbortController !== "undefined") ? new AbortController() : null;
+    curBuildAbort = ac;                       // R6-F1: expose so a newer build's reset() can abort this fetch
     var settled = false;
     var timer = setTimeout(function () {
+      if (gen !== state.gen) return;          // R6-F1: a newer build superseded us -> never report against it
       if (settled) return;
       settled = true;
       if (ac) { try { ac.abort(); } catch (e) {} }
@@ -388,15 +421,19 @@
     fetch(url, init || undefined)
       .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
       .then(function (res) {
-        if (settled) return;                 // already timed out -> ignore the late reply
+        if (gen !== state.gen) return;        // R6-F1: a newer build started -> drop this stale reply (never clobber it)
+        if (settled) return;                  // already timed out -> ignore the late reply
         settled = true; clearTimeout(timer);
+        if (curBuildAbort === ac) curBuildAbort = null;
         var j = res.j || {};
         if (j.ok === false || (!res.ok && j.ok !== true)) return fail((j && j.error) || "The build could not be loaded.");
         loadBuild(j);
       })
       .catch(function () {
-        if (settled) return;                 // the timeout (or its abort()) already reported the error
+        if (gen !== state.gen) return;        // R6-F1: our own abort() (a newer build started) or a stale error -> drop
+        if (settled) return;                  // the timeout (or its abort()) already reported the error
         settled = true; clearTimeout(timer);
+        if (curBuildAbort === ac) curBuildAbort = null;
         fail("Could not reach the pricing service. Check your connection, or try ?mock for a demo.");
       });
   }
@@ -641,6 +678,7 @@
   // that could benefit); server-priced gems/uniques already have numbers.
   function cacheReadThrough() {
     if (!cacheEnabled() || !_hasSubtle() || !state.meta) return;
+    var gen = state.gen;             // R6-F1: pin this build's generation for the async cache reply below
     var league = state.meta.league || "";
     var rows = manualRows().filter(function (r) { return !r.priced; });
     if (!rows.length) return;
@@ -656,6 +694,7 @@
       chunks.forEach(function (chunk) {
         var url = cacheEndpoint() + "?league=" + encodeURIComponent(league) + "&keys=" + encodeURIComponent(chunk.join(","));
         fetch(url).then(function (r) { return r.ok ? r.json() : {}; }).then(function (found) {
+          if (gen !== state.gen) return;   // R6-F1: build changed under us -> don't fold stale cache prices onto the new build
           Object.keys(found || {}).forEach(function (ck) {
             var rowKey = byCacheKey[ck]; if (rowKey == null) return;
             var rec = found[ck]; if (!rec || !rec.chaos) return;
@@ -664,8 +703,10 @@
               chaos: { min: num(rec.chaos.min), median: num(rec.chaos.median != null ? rec.chaos.median : rec.chaos.min), high: num(rec.chaos.high) },
               confidence: rec.confidence || "low", method: (rec.method || "cache"), source: "cache",
               note: "Community-submitted price — not verified by this site. Confirm via the trade link.",
-              sample_size: rec.sample_size || 0, total_found: rec.total_found || 0,
-              trade_url: rec.trade_url || undefined
+              // R6-S1: the ?worker override bypasses the worker's write-time sanitiser, so re-validate
+              // here too — a poisoned entry must not carry a non-numeric or a non-pathofexile trade_url.
+              sample_size: num(rec.sample_size) || 0, total_found: num(rec.total_found) || 0,
+              trade_url: (typeof rec.trade_url === "string" && /^https:\/\/www\.pathofexile\.com\//i.test(rec.trade_url)) ? rec.trade_url : undefined
             });   // passive fill: no {include:true} so a user's own decision isn't overridden
           });
         }).catch(function () {});
@@ -796,6 +837,16 @@
   // per the protocol — the extension prices the batch serially under its own limiter).
   function priceRowsViaExtension(rows) {
     if (!state.bridge.active) return Promise.resolve({ error: "no bridge" });
+    // R6-F3 (race lens): this is the single funnel for EVERY scan entrypoint — autoscan(), the per-row
+    // ⚡auto button (priceViaExtension), and the picker Autoscan / re-search (priceRaresCustom /
+    // priceRareCustom). If a scan is already live, starting another here would (a) scanBegin()->scanReset()
+    // WIPE the running session's order/chips/progress bar (BUG_sessionCollapsed) and (b) re-send rows the
+    // live scan already dispatched -> DUPLICATE on-IP trade searches + duplicate community-cache POSTs
+    // (rate-limit discipline is load-bearing — CLAUDE.md: violations -> temporary IP bans). Guarding at this
+    // one choke point closes all entrypoints at once and can't be forgotten by a present or future UI skin.
+    // Callers treat the resolved {busy} exactly like the {error:"no bridge"} above (no-op, fire-and-forget).
+    if (scan.active) return Promise.resolve({ error: "scan in progress", busy: true });
+    var gen = state.gen;             // R6-F1: pin the build this scan belongs to; late replies gate on it
     var byLeague = {};
     rows.forEach(function (r) {
       var it = r.item, p = r.price;
@@ -826,6 +877,12 @@
     if (scanRows.length) scanBegin(scanRows);
     var cachedCount = 0;
     function foldBatch(b) {
+      // R6-F1b: if a newer build loaded while this scan was in flight, this reply is a ZOMBIE from the
+      // superseded build. Dropping it here prevents (a) folding its prices onto the new build's
+      // same-index items (item.index is positional, so index 3's "Headhunter" price would land on
+      // whatever sits at index 3 now) and (b) cachePost() below POSTing those cross-build prices into
+      // the SHARED community cache under the new build's item identities (cross-user corruption).
+      if (gen !== state.gen) return;
       var toCache = [];
       var seen = {};
       if (b.resp && !b.resp.error) {
@@ -895,6 +952,10 @@
     }
     var idx = 0;
     function nextChunk() {
+      // R6-F1b: a newer build superseded this scan -> stop sending further chunks to the extension
+      // (wasted trade calls against a build the user has moved on from). No scanEnd(): the global scan
+      // object now belongs to the new build, so ending it here would kill the CURRENT build's scan.
+      if (gen !== state.gen) return Promise.resolve({ ok: false, superseded: true });
       if (idx >= chunks.length) { scanEnd(); return Promise.resolve({ ok: true, cached: cachedCount }); }
       var c = chunks[idx++];
       var keys = c.queries.map(function (qq) { return qq.key; });
@@ -1259,6 +1320,10 @@
     var payload = encodeURIComponent(JSON.stringify({ query: query, sort: { price: "asc" } }));
     var base = "";
     if (refUrl) { var i = String(refUrl).indexOf("?q="); base = i >= 0 ? String(refUrl).slice(0, i) : String(refUrl); }
+    // R6-S1: this URL flows to window.open()/href — a document-supplied refUrl must NEVER seed the
+    // base. Only a real pathofexile.com/trade URL may; anything else (e.g. javascript:) is discarded
+    // and the canonical trade URL is rebuilt below.
+    if (!/^https:\/\/www\.pathofexile\.com\//i.test(base)) base = "";
     if (!base) { var lg = (state.meta && state.meta.league) || "Standard";
       base = "https://www.pathofexile.com/trade/search/" + encodeURIComponent(lg); }
     return base + "?q=" + payload;

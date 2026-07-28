@@ -1136,6 +1136,14 @@
 <script>
 "use strict";
 const $=s=>document.querySelector(s), E=bpc.esc;
+/* R6-S1 reflected-XSS hardening. The build document can be attacker-supplied (the ?api/?stub/?worker
+ * overrides — now dev-gated in core.js — or a poisoned community-cache entry). E() blocks attribute
+ * breakout but NOT `javascript:`, and it is never applied to the numeric fields. So: coerce every
+ * document-derived NUMBER with Number(...) at its sink (a hostile string then becomes NaN -> the
+ * existing ||fallback, never HTML), and scheme-validate every document-derived URL before it reaches
+ * href / src / window.open. These are the client-side backstop the worker's write-time check can't be. */
+const safeHref = u => /^https:\/\/www\.pathofexile\.com\//i.test(u=String(u==null?'':u)) ? u : '';
+const safeIcon = u => /^https:\/\//i.test(u=String(u==null?'':u)) ? u : '';
 const CFG = window.BPC_CONFIG || {};
 
 /* canonical equipment slot -> doll grid-area class */
@@ -1218,7 +1226,7 @@ bpc.on('recent',bs=>{ recentData=Array.isArray(bs)?bs:[]; renderRecent(); });  /
 
 function mug(b){ return `<div class="pmug">${E((b.character||'?').slice(0,1).toUpperCase())}</div>
     <div class="pmeta"><div class="pname">${E(b.character||'Unknown')}</div>
-    <div class="psub">${E(b.char_class||'')} ${b.level?('lvl '+b.level):''}</div></div>`; }
+    <div class="psub">${E(b.char_class||'')} ${Number(b.level)?('lvl '+Number(b.level)):''}</div></div>`; }
 function renderRecent(){
   const wrap=$('#recentWrap');
   if(!recentData.length){ wrap.hidden=true; return; }
@@ -1287,7 +1295,7 @@ bpc.on('meta',m=>{
   $('#bName').innerHTML = /^https?:\/\//i.test(su)
     ? `<a class="name-link" href="${E(su)}" target="_blank" rel="noopener" title="View this build's source profile">${nm}</a>`
     : nm;
-  $('#bSub').innerHTML=`<b>${E(m['class']||'')}</b> &middot; Level ${m.level||'?'} &middot; ${E(m.league||'')}`;
+  $('#bSub').innerHTML=`<b>${E(m['class']||'')}</b> &middot; Level ${Number(m.level)||'?'} &middot; ${E(m.league||'')}`;
   if(m.divine_to_chaos){
     $('#rateLine').hidden=false;
     $('#rateLine').innerHTML=`1 ${bpc.curImg('div')} = ${bpc.nfmt(Math.round(m.divine_to_chaos),0)} ${bpc.curImg('chaos')}`;
@@ -1393,20 +1401,21 @@ function skillRowHTML(it){
   const priced=p.chaos && p.chaos.median!=null;
   const on=!!bpc.state.enabled[k];
   const open=skillsOpen.has(k);
-  const lvl=it.level||0, sock=(it.sockets!=null?it.sockets:0);
+  const lvl=Number(it.level)||0, sock=Number(it.sockets)||0;   // S1: coerce document-derived numerics
+  const ico=safeIcon(it.icon), tu=safeHref(p.trade_url);       // S1: scheme-validate document-derived URLs
   const total = priced ? p.chaos.median : null;   // headline == p.total_chaos (active + supports, granted excluded)
   return `<div class="skill ${on?'on':'off'} ${priced?'':'noprice'} ${open?'open':''}" data-k="${E(k)}">
       <div class="sk-head">
         <input type="checkbox" class="sk-inc" data-k="${E(k)}" ${on?'checked':''} ${priced?'':'disabled'} title="include in total">
         <span class="sk-tw">${open?'▾':'▸'}</span>
-        ${it.icon?`<img class="sk-ico" src="${E(it.icon)}" alt="" loading="lazy">`:'<span class="sk-ico ph">◆</span>'}
-        ${p.trade_url?`<a class="sk-name" href="${E(p.trade_url)}" target="_blank" rel="noopener" title="search this skill on trade (Lv ${lvl})">${E(it.name)}</a>`:`<span class="sk-name">${E(it.name)}</span>`}
+        ${ico?`<img class="sk-ico" src="${E(ico)}" alt="" loading="lazy">`:'<span class="sk-ico ph">◆</span>'}
+        ${tu?`<a class="sk-name" href="${E(tu)}" target="_blank" rel="noopener" title="search this skill on trade (Lv ${lvl})">${E(it.name)}</a>`:`<span class="sk-name">${E(it.name)}</span>`}
         ${it.granted?'<span class="sk-granted" title="item-provided skill — comes free with the host item, so excluded by default">granted</span>':''}
         <span class="sk-meta">Lv ${lvl}${sock?` · ${sock} sup`:''}</span>
         <span class="sk-price">${total!=null?bpc.priceHTML(total):'<span class="bpc-dash">—</span>'}</span>
       </div>
       <div class="sk-body">
-        <div class="sk-cut">priced from the public gem economy: active skill + every support gem${p.trade_url?` &middot; <a href="${E(p.trade_url)}" target="_blank" rel="noopener">view on trade &#8599;</a>`:''} <span class="sk-hint">(each gem by name / level / quality / corruption)</span></div>
+        <div class="sk-cut">priced from the public gem economy: active skill + every support gem${tu?` &middot; <a href="${E(tu)}" target="_blank" rel="noopener">view on trade &#8599;</a>`:''} <span class="sk-hint">(each gem by name / level / quality / corruption)</span></div>
         <ul class="sk-sups">${supportsHTML(it,p)}</ul>
       </div>
     </div>`;
@@ -1419,10 +1428,10 @@ function supportsHTML(it,p){
   const nested=(bd.gems||[]).slice(1);
   if(!nested.length) return '<li class="sup none">no support gems</li>';
   return nested.map(g=>{
-    const ic = g.icon ? `<img class="sup-ico" src="${E(g.icon)}" alt="" loading="lazy">` : '';
-    const nm = g.trade_url?`<a href="${E(g.trade_url)}" target="_blank" rel="noopener">${E(g.name)}</a>`:E(g.name);
-    const q=(g.quality?`/${g.quality}`:''), corr=(g.corrupted?' <span class="sup-tag">corrupted</span>':'');
-    const lv=(g.level?`<span class="sup-tag">Lv ${g.level}${q}</span>`:'');
+    const gi=safeIcon(g.icon), ic = gi ? `<img class="sup-ico" src="${E(gi)}" alt="" loading="lazy">` : '';
+    const gtu=safeHref(g.trade_url), nm = gtu?`<a href="${E(gtu)}" target="_blank" rel="noopener">${E(g.name)}</a>`:E(g.name);
+    const gq=Number(g.quality)||0, q=(gq?`/${gq}`:''), corr=(g.corrupted?' <span class="sup-tag">corrupted</span>':'');
+    const gl=Number(g.level)||0, lv=(gl?`<span class="sup-tag">Lv ${gl}${q}</span>`:'');
     const act=(!g.support?' <span class="sup-tag act">linked active</span>':'');
     // granted nested gem: excluded (chaos is null) -> struck 'granted' marker instead of a price
     const tail = g.granted
@@ -1462,9 +1471,10 @@ function iconCap(url){
 const CART_SVG='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.3"></circle><circle cx="18" cy="20" r="1.3"></circle><path d="M2.5 3.5H5l2.1 10.4a1.4 1.4 0 0 0 1.4 1.1h8.3a1.4 1.4 0 0 0 1.4-1.1L21 7H5.6"></path></svg>';
 function fillSlotContents(el,it){
   const k=String(it.index);
+  const sico=safeIcon(it.icon);   // S1: scheme-validate the document-derived icon URL before src
   const label = (it.group==='equipment'||it.group==='flask') ? (SHORT[it.slot]||it.slot) : '';
   const glyph = SLOT_GLYPH[it.slot]||SLOT_GLYPH[it.group]||'◆';
-  const cnt = it.count>1 ? `<span class="cnt">×${it.count}</span>` : '';
+  const cc=Number(it.count)||0, cnt = cc>1 ? `<span class="cnt">×${cc}</span>` : '';   // S1: coerce document-derived numeric before innerHTML
   // rares/magic get a "price it" pip that opens the manual pricer (trade link + paste + extension);
   // D-0019: a variant unique gets the same pip, opening ITS picker (locked defining mods + search)
   const vr = variantOf(it);
@@ -1472,11 +1482,11 @@ function fillSlotContents(el,it){
     ? `<button class="editbtn" data-edit="${E(k)}" title="price this rare — paste a buyout or open the trade search">✎</button>`
     : (vr ? `<button class="editbtn" data-edit="${E(k)}" title="view this unique's locked variant mods · refine + open the exact-variant search">✎</button>` : '');
   const vtag = vr ? `<span class="vtag" title="price-defining variant — locked into this item's trade search">${LOCK_SVG}${E(vr.label)}</span>` : '';
-  if(it.icon) el.classList.add('has-ico');
+  if(sico) el.classList.add('has-ico');
   el.innerHTML =
     `<div class="bezel"></div>`+
     (label?`<div class="label">${E(label)}</div>`:'')+
-    (it.icon?`<div class="ico-wrap"><img class="ico" src="${E(it.icon)}" alt="" loading="lazy" style="${iconCap(it.icon)}"></div>`:'')+
+    (sico?`<div class="ico-wrap"><img class="ico" src="${E(sico)}" alt="" loading="lazy" style="${iconCap(sico)}"></div>`:'')+
     `<div class="glyph">${glyph}</div>`+
     `<div class="iname">${E(it.name)}${vtag}</div>`+
     `<div class="incmark" title="Include / exclude this item's value in the total">✔</div>`+
@@ -1595,7 +1605,7 @@ $('#board').addEventListener('click',e=>{
   // everything else opens its ready-made trade search in a new tab.
   if(it && (it.category==='rare' || it.category==='magic')){ openManual(k); return; }
   if(it && isVariantUnique(it) && rareData(k)){ openPicker(k,{edit:true}); return; }
-  const u=cardTradeUrl(k);
+  const u=safeHref(cardTradeUrl(k));   // S1: never window.open a non-pathofexile (e.g. javascript:) URL
   if(u) window.open(u,'_blank','noopener');
 });
 
@@ -1676,10 +1686,12 @@ function showTip(slot){
     if(p.source==='cache'){
       // community cache is an OPEN store — anyone can POST. Never present it as a verified
       // price: neutral dot + explicit "unverified" (the green confidence dot is forgeable).
-      body+=`<div class="tt-conf"><span class="dot none"></span>community &middot; unverified${p.total_found?(' &middot; '+p.total_found+' listings when seeded'):''}</div>`;
+      const tf=Number(p.total_found)||0;   // S1: coerce document-derived numeric before innerHTML
+      body+=`<div class="tt-conf"><span class="dot none"></span>community &middot; unverified${tf?(' &middot; '+tf+' listings when seeded'):''}</div>`;
     } else {
       const srcLbl = p.source==='poe.ninja' ? 'poe.ninja' : p.source==='manual' ? 'you pasted this' : p.source==='trade' ? 'extension' : '';
-      body+=`<div class="tt-conf"><span class="dot ${E(p.confidence)}"></span>${E(p.confidence)} confidence${p.sample_size?(' &middot; '+p.sample_size+' samples'):''}${srcLbl?(' &middot; '+E(srcLbl)):''}</div>`;
+      const ss=Number(p.sample_size)||0;   // S1: coerce document-derived numeric before innerHTML
+      body+=`<div class="tt-conf"><span class="dot ${E(p.confidence)}"></span>${E(p.confidence)} confidence${ss?(' &middot; '+ss+' samples'):''}${srcLbl?(' &middot; '+E(srcLbl)):''}</div>`;
     }
     // D-0019 §3: unique-ninja-floor = ONE aggregate poe.ninja line across every variant of the
     // name — a low-confidence FLOOR, never this copy's price. Say so, visibly.
@@ -2285,7 +2297,7 @@ bpc.on('done', maybeAutoStart);
 function manualRowHTML(r){
   const it=r.item, k=r.key, p=r.price||{};
   const rc = it.category==='rare'?'r-rare':it.category==='magic'?'r-magic':it.category==='unique'?'r-unique':'';
-  const ico = it.icon ? `<img class="mr-ico" src="${E(it.icon)}" alt="" loading="lazy">` : `<span class="mr-ico ph">◆</span>`;
+  const mico=safeIcon(it.icon), ico = mico ? `<img class="mr-ico" src="${E(mico)}" alt="" loading="lazy">` : `<span class="mr-ico ph">◆</span>`;
   const slot = it.slot ? `<span class="mr-slot">${E(it.slot)}</span>` : '';
   // D-0019: variant uniques show their locked-variant label under the name, and (timeless only)
   // the owner-sanctioned "see what this seed does" deep-link next to the trade search.
@@ -2305,7 +2317,7 @@ function manualRowHTML(r){
             `<span class="mr-price">${bpc.priceHTML(cardEx(p))}</span>`+   // D-0016 item 4: follows the min/median/high selector
             `<button class="stone-btn mr-edit" data-mk="${E(k)}" type="button" style="padding:5px 10px;font-size:12px">re-price</button>`+ affixBtn + inspBtn;
   } else {
-    const openBtn = r.trade_url ? `<a class="stone-btn" href="${E(r.trade_url)}" target="_blank" rel="noopener" style="padding:6px 11px;font-size:13px">open search ↗</a>` : '';
+    const rtu=safeHref(r.trade_url), openBtn = rtu ? `<a class="stone-btn" href="${E(rtu)}" target="_blank" rel="noopener" style="padding:6px 11px;font-size:13px">open search ↗</a>` : '';
     const autoBtn = bpc.state.bridge.active ? `<button class="stone-btn search mr-auto" data-mk="${E(k)}" type="button" style="padding:6px 11px;font-size:13px" title="price this one via the extension">⚡ auto</button>` : '';
     right = openBtn + inspBtn +
       `<input class="mr-input" data-mk="${E(k)}" placeholder="35c · 2 div · paste whisper" spellcheck="false" autocomplete="off">`+
@@ -2354,7 +2366,7 @@ function applyRow(k){
 }
 $('#manualRows').addEventListener('click',e=>{
   const apply=e.target.closest('.mr-apply'); if(apply){ applyRow(apply.dataset.mk); return; }
-  const auto=e.target.closest('.mr-auto'); if(auto){ auto.textContent='…'; auto.disabled=true; bpc.priceViaExtension(auto.dataset.mk); return; }
+  const auto=e.target.closest('.mr-auto'); if(auto){ if(bpc.scanStatus().active) return; auto.textContent='…'; auto.disabled=true; bpc.priceViaExtension(auto.dataset.mk); return; }   // R6-F3: don't fight a live scan (else the button sticks at '…')
   const edit=e.target.closest('.mr-edit'); if(edit){ openManual(edit.dataset.mk); return; }
 });
 $('#manualRows').addEventListener('keydown',e=>{
@@ -2372,7 +2384,7 @@ function openManual(k){
   k=String(k);
   const it=itemByKey(k); if(!it) return;
   const p=bpc.state.priced[k]||{};
-  const tradeUrl = p.trade_url || it.trade_url || '';
+  const tradeUrl = safeHref(p.trade_url || it.trade_url || '');   // S1: scheme-validate before href
   let body=`<div class="mp-lead">Rares are priced on <b>your</b> machine — this site never runs the search itself.</div>`;
   body+=modsHTML(it.mods, lockedTextsOf(it));
   body+=`<div class="tt-div"><span class="dia">◆</span></div>`;
@@ -2392,7 +2404,7 @@ function openManual(k){
   $('#mpApply').onclick=doApply;
   if(inp) inp.addEventListener('keydown',ev=>{ if(ev.key==='Enter'){ ev.preventDefault(); doApply(); } });
   $('#mpCancel').onclick=closeManual;
-  const ext=$('#mpExt'); if(ext) ext.onclick=()=>{ ext.textContent='⚡ scanning…'; ext.disabled=true; Promise.resolve(bpc.priceViaExtension(k)).then(closeManual).catch(closeManual); };
+  const ext=$('#mpExt'); if(ext) ext.onclick=()=>{ if(bpc.scanStatus().active) return; ext.textContent='⚡ scanning…'; ext.disabled=true; Promise.resolve(bpc.priceViaExtension(k)).then(closeManual).catch(closeManual); };   // R6-F3: a live scan already prices these rows — don't double-send
   const clr=$('#mpClear'); if(clr) clr.onclick=ev=>{ ev.preventDefault(); bpc.clearManual(k); closeManual(); };
 }
 function closeManual(){ pickwrap.classList.remove('show'); pick.innerHTML=''; PK.queue=false; PK.key=null; }

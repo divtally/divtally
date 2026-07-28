@@ -437,6 +437,190 @@ function scenarioRecentCoercion() {
   })();
 }
 
+// ==================================================================================================
+//  R6-F1 (race lens) — the per-build generation token. Two live regressions of the MAJOR cluster:
+//  F1a wrong-build render, F1b zombie-scan cross-build price fold + community-cache poisoning.
+// ==================================================================================================
+
+// A bridge instance whose FAKE extension HOLDS its reply until the test delivers it, wired to a fake
+// SubtleCrypto + a fetch that CAPTURES cache POSTs — so we can prove a zombie scan neither folds onto
+// the new build nor POSTs poisoned entries to the shared cache. Prod-looking origin (no ?query
+// overrides), WORKER_BASE set so the community cache is enabled.
+function makeBridgeInstance(opts) {
+  opts = opts || {};
+  const listeners = [], lsMap = new Map(), posts = [], sent = [];
+  const win = {
+    BPC_CONFIG: { API_BASE: "", WORKER_BASE: opts.worker || "https://worker.test/cache" },
+    location: { search: "", origin: "https://divtally.com", href: "https://divtally.com/",
+                hostname: "divtally.com", protocol: "https:" },
+    addEventListener(type, cb) { if (type === "message") listeners.push(cb); },
+    removeEventListener(type, cb) { const i = listeners.indexOf(cb); if (i >= 0) listeners.splice(i, 1); },
+    postMessage(msg) { setTimeout(() => { const ev = { source: win, data: msg };
+      listeners.slice().forEach((cb) => { try { cb(ev); } catch (e) {} }); }, 0); },
+  };
+  win.window = win;
+  const localStorage = { getItem: (k) => (lsMap.has(k) ? lsMap.get(k) : null),
+    setItem: (k, v) => lsMap.set(k, String(v)), removeItem: (k) => lsMap.delete(k) };
+  // deterministic content-hash digest so cacheKey() resolves without WebCrypto (returns a 32-byte buffer)
+  const crypto = { subtle: { digest: (algo, bytes) => {
+    let h = 2166136261 >>> 0; for (let i = 0; i < bytes.length; i++) { h ^= bytes[i]; h = Math.imul(h, 16777619) >>> 0; }
+    const out = new Uint8Array(32); for (let i = 0; i < 32; i++) out[i] = (h >>> ((i % 4) * 8)) & 0xff;
+    return Promise.resolve(out.buffer);
+  } } };
+  const fetchImpl = (url, init) => {
+    if (init && init.method === "POST") { posts.push({ url: String(url), body: JSON.parse(init.body) }); }
+    return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });   // GET cache read -> empty
+  };
+  const sandbox = { window: win, self: win, console, setTimeout, clearTimeout, TextEncoder, URLSearchParams,
+                    localStorage, crypto, Date, Math, JSON, fetch: fetchImpl };
+  vm.runInNewContext(CORE_SRC, sandbox, { filename: "core.js" });
+  const bpc = win.bpc;
+  function toPage(msg) { win.postMessage(Object.assign({ source: "bpc-ext" }, msg)); }
+  // manual extension: activate the bridge on ping, capture price messages, HOLD price replies for the test
+  win.addEventListener("message", (ev) => {
+    const d = ev.data; if (!d || d.source !== "bpc-page") return;
+    sent.push(d);
+    if (d.type === "ping") toPage({ type: "pong", reqId: d.reqId, version: "1.2.0" });
+  });
+  return { bpc, win, sent, posts, deliver: (reqId, results) => toPage({ type: "price-result", reqId, results }) };
+}
+
+async function scenarioRaceBuildSwap() {
+  console.log("· scenario: R6-F1a — appraise A (held) then B (fast) renders B, and a late A reply can't clobber it");
+  let releaseA = null;
+  const docA = { ok: true, meta: { character: "AAA", source_url: "https://poe.ninja/char/AAA", league: "Standard", divine_to_chaos: 100 },
+    items: [ { index: 0, group: "equipment", slot: "Helmet", category: "unique", name: "A-Helm", price: { chaos: { min: 10, median: 10, high: 10 }, method: "unique", source: "poe.ninja" } },
+             { index: 1, group: "equipment", slot: "Belt", category: "unique", name: "A-Belt", price: { chaos: { min: 20, median: 20, high: 20 }, method: "unique", source: "poe.ninja" } } ],
+    rares: {}, warnings: [] };
+  const docB = { ok: true, meta: { character: "BBB", source_url: "https://poe.ninja/char/BBB", league: "Standard", divine_to_chaos: 100 },
+    items: [ { index: 0, group: "equipment", slot: "Helmet", category: "unique", name: "B-Helm", price: { chaos: { min: 99, median: 99, high: 99 }, method: "unique", source: "poe.ninja" } } ],
+    rares: {}, warnings: [] };
+  const fetchImpl = (url) => {
+    const u = decodeURIComponent(String(url));
+    if (u.indexOf("poe.ninja/char/AAA") >= 0) return new Promise((res) => { releaseA = () => res({ ok: true, json: () => Promise.resolve(docA) }); });
+    return Promise.resolve({ ok: true, json: () => Promise.resolve(docB) });
+  };
+  const { bpc } = makeNetInstance({ fetch: fetchImpl, timeoutMs: 5000 });
+  bpc.init();
+  bpc.startUrl("https://poe.ninja/char/AAA");   // A's fetch is HELD (releaseA not called yet)
+  bpc.startUrl("https://poe.ninja/char/BBB");   // B's fetch resolves immediately
+  await ticks(6);
+  eq(bpc.state.meta && bpc.state.meta.character, "BBB", "final render is B (the last build submitted)");
+  eq(bpc.totals().priced, 1, "B's single item is counted (not A's two) — the render is B's document");
+  ok(String(bpc.state.source.url).indexOf("BBB") >= 0, "state.source points at B (coherent with the visible build)");
+  if (releaseA) releaseA();                      // release A LATE — the gen guard must drop it
+  await ticks(6);
+  eq(bpc.state.meta.character, "BBB", "F1a: the late build-A reply is dropped (gen guard) — B stays rendered");
+  eq(bpc.totals().priced, 1, "F1a: still only B's one item counted — A did not fold in");
+  ok(String(bpc.state.source.url).indexOf("BBB") >= 0, "F1a: state.source still coherent (points at B, not A)");
+}
+
+async function scenarioRaceZombieScan() {
+  console.log("· scenario: R6-F1b — a held scan reply from build A can't fold onto build B or poison the shared cache");
+  const inst = makeBridgeInstance({});
+  const { bpc, sent, posts, deliver } = inst;
+  bpc.init();
+  await ticks(6);
+  ok(bpc.state.bridge.active === true, "bridge activates from pong");
+
+  // Build A: one unpriced rare at index 0 -> autoscan sends it; we HOLD the reply.
+  const A = { meta: { league: "Allflame", character: "Azn", divine_to_chaos: 100 },
+    items: [ { index: 0, group: "equipment", slot: "Belt", category: "rare", name: "A-Belt",
+      trade_query: { query: { status: { option: "online" }, type: "Belt" } } } ],
+    priced: { 0: { chaos: { min: null, median: null, high: null }, method: "none", note: "" } } };
+  bpc.loadMock(A);
+  await tick();
+  const scanP = bpc.autoscan();                  // do NOT await — the fake ext holds the reply
+  await ticks(3);
+  const priceMsg = sent.find((m) => m.type === "price");
+  ok(!!priceMsg, "A's autoscan sent a price message to the extension");
+  const heldReqId = priceMsg.reqId;
+
+  // Switch to Build B before A's reply lands. B carries a DIFFERENT item at the SAME positional index 0.
+  const B = { meta: { league: "Allflame", character: "Bex", divine_to_chaos: 100 },
+    items: [ { index: 0, group: "equipment", slot: "Belt", category: "unique", name: "Headhunter",
+      mods: { implicit: [], explicit: ["+40 to all Attributes"] },
+      price: { chaos: { min: 14000, median: 14613, high: 15000 }, method: "unique", source: "poe.ninja" } } ],
+    priced: { 0: { chaos: { min: 14000, median: 14613, high: 15000 }, method: "unique", source: "poe.ninja" } } };
+  bpc.loadMock(B);
+  await tick();
+  eq(bpc.state.meta.character, "Bex", "build B is loaded");
+  eq(bpc.state.priced["0"].chaos.median, 14613, "B's Headhunter shows its real 14613c before the zombie reply");
+  const postsBefore = posts.length;
+
+  // Deliver A's zombie reply (a fabricated 999c) against the still-pending reqId.
+  deliver(heldReqId, [{ key: "0", total: 5, amount: 999, currency: "chaos", listingId: "x" }]);
+  await ticks(4);
+  await scanP;                                    // the superseded scan chain resolves harmlessly
+
+  eq(bpc.state.priced["0"].chaos.median, 14613, "F1b: B's Headhunter price NOT folded to 999 (gen guard dropped the zombie fold)");
+  eq(bpc.state.priced["0"].source, "poe.ninja", "F1b: B's row keeps its poe.ninja source (not overwritten by the zombie 'trade' fold)");
+  eq(posts.length, postsBefore, "F1b: the zombie scan did NOT POST poisoned entries into the shared community cache");
+}
+
+// ==================================================================================================
+//  R6-F3 (race lens) — the scan-entrypoint guard. A 2nd scan fired from ANY entrypoint while one is
+//  live must be refused at the priceRowsViaExtension choke point, so it can neither WIPE the running
+//  session (scanBegin->scanReset) nor re-send an already-dispatched row (a duplicate on-IP trade call).
+// ==================================================================================================
+async function scenarioScanEntrypointGuard() {
+  console.log("· scenario: R6-F3 — a 2nd scan entrypoint can't wipe or double-send a live scan");
+  const inst = makeBridgeInstance({});
+  const { bpc, sent, deliver } = inst;
+  bpc.init();
+  await ticks(6);
+  ok(bpc.state.bridge.active === true, "bridge activates from pong");
+
+  // 4 unpriced rares -> autoscan sends them as 2 chunks (CHUNK=3); the fake ext HOLDS every reply,
+  // so the scan stays ACTIVE while we probe a second entrypoint.
+  const M = { meta: { league: "Allflame", character: "Multi", divine_to_chaos: 100 },
+    items: [0, 1, 2, 3].map((i) => ({ index: i, group: "equipment", slot: "Belt", category: "rare", name: "R" + i,
+      trade_query: { query: { status: { option: "online" }, type: "Belt" } } })),
+    priced: { 0: { chaos: { min: null, median: null, high: null }, method: "none", note: "" },
+              1: { chaos: { min: null, median: null, high: null }, method: "none", note: "" },
+              2: { chaos: { min: null, median: null, high: null }, method: "none", note: "" },
+              3: { chaos: { min: null, median: null, high: null }, method: "none", note: "" } } };
+  bpc.loadMock(M);
+  await tick();
+  const scanP = bpc.autoscan();                 // do NOT await — replies are held, so the scan stays live
+  await ticks(3);
+  ok(bpc.scanStatus().active === true, "the autoscan is live (replies held)");
+  eq(bpc.scanStatus().order.length, 4, "the live scan tracks all 4 rows");
+  const priceMsgsBefore = sent.filter((m) => m.type === "price").length;
+
+  // Fire a SECOND scan entrypoint mid-scan — the per-row ⚡auto (priceViaExtension) on a row the
+  // first scan already dispatched. PRE-FIX this ran scanReset() -> collapsed the session to 1 row and
+  // re-sent the row (a duplicate trade search).
+  const r = await bpc.priceViaExtension("2");
+  await ticks(2);
+  ok(r && r.busy === true, "F3: the 2nd entrypoint is REFUSED while a scan is active (resolves {busy})");
+  eq(bpc.scanStatus().order.length, 4, "F3: the live scan session is INTACT (not collapsed to 1 row)");
+  eq(bpc.scanStatus().active, true, "F3: the live scan is still active (scanReset did not wipe it)");
+  eq(sent.filter((m) => m.type === "price").length, priceMsgsBefore,
+     "F3: NO extra price message was sent — row 2 was not double-searched (rate-limit budget preserved)");
+
+  // The picker entrypoints funnel through the same choke point -> also refused mid-scan.
+  const rc = await bpc.priceRaresCustom([{ key: "3", query: { status: { option: "online" }, type: "Belt" } }]);
+  ok(rc && rc.busy === true, "F3: priceRaresCustom (picker Autoscan) is refused mid-scan too (one guard covers all)");
+  eq(sent.filter((m) => m.type === "price").length, priceMsgsBefore, "F3: still no extra price message after the picker attempt");
+
+  // Drain the held chunk replies so the live scan ends cleanly.
+  sent.filter((m) => m.type === "price").forEach((m) =>
+    deliver(m.reqId, (m.queries || []).map((q) => ({ key: q.key, total: 5, amount: 10, currency: "chaos", listingId: "x" }))));
+  await ticks(4);
+  await scanP;
+  eq(bpc.scanStatus().active, false, "the live scan ends after its held replies arrive");
+
+  // Positive control: with NO scan active, the very same entrypoint is allowed (the guard blocks
+  // OVERLAP only — it never permanently disables pricing).
+  const afterEnd = sent.filter((m) => m.type === "price").length;
+  bpc.priceViaExtension("2");                    // do NOT await (reply held) — just verify it was ALLOWED to start
+  await ticks(3);
+  ok(bpc.scanStatus().active === true, "positive control: with no scan active, the entrypoint starts a fresh scan");
+  ok(sent.filter((m) => m.type === "price").length > afterEnd,
+     "positive control: it actually sent a price message (guard blocks overlap, not legitimate reprices)");
+}
+
 function checkInlineScript() {
   console.log("· compile-check: index.html inline <script>");
   const html = fs.readFileSync(join(HERE, "index.html"), "utf8");
@@ -454,6 +638,9 @@ function checkInlineScript() {
   await scenarioSingle();
   await scenarioVariantPlaceholder();
   await scenarioBuildTimeout();
+  await scenarioRaceBuildSwap();
+  await scenarioRaceZombieScan();
+  await scenarioScanEntrypointGuard();
   scenarioWhisperSeparators();
   await scenarioRecentCoercion();
   console.log(`\n${passed} passed, ${failed} failed`);
