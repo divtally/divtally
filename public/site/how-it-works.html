@@ -114,7 +114,7 @@
     <table>
       <thead><tr><th>When</th><th>Request</th><th>Whose server</th></tr></thead>
       <tbody>
-        <tr><td>You appraise a build</td><td class="ep"><span class="m">GET/POST</span> <span id="epApi">{API_BASE}</span>/api/build</td><td>Ours (reads poe.ninja only)</td></tr>
+        <tr><td>You appraise a build</td><td class="ep"><span class="m">GET/POST</span> <span id="epApi">{API_BASE}</span>/api/build</td><td>Ours (reads poe.ninja; for pasted PoB links, also the paste service you linked &mdash; pobb.in / pastebin)</td></tr>
         <tr><td>Item &amp; currency icons render</td><td class="ep"><span class="m">GET</span> web.poecdn.com/&hellip; <span class="muted">(images)</span></td><td>GGG's public image CDN &mdash; <b>your</b> browser, pictures only</td></tr>
         <tr><td>Filling cached rare prices</td><td class="ep"><span class="m">GET</span> <span id="epWorker">{WORKER_BASE}</span>/cache</td><td>Ours (a dumb key/value store)</td></tr>
         <tr><td>A rare priced on your machine</td><td class="ep"><span class="m">POST</span> <span id="epWorker2">{WORKER_BASE}</span>/cache</td><td>Ours (writes your result for others)</td></tr>
@@ -123,7 +123,7 @@
       </tbody>
     </table>
   </div>
-  <p class="small muted">The build function reads only <code>poe.ninja</code>. The cache Worker reads and writes only its own key/value store. Item and currency pictures load as plain images from GGG's public CDN (<code>web.poecdn.com</code>) &mdash; no cookies, nothing about you. Fonts are served from this site, not Google. The only requests to <code>pathofexile.com</code> itself come from your own browser &mdash; a tab you opened, or the extension you chose to install.</p>
+  <p class="small muted">The build function reads <code>poe.ninja</code> &mdash; plus, only when you paste a PoB paste-link, the paste service you linked (<code>pobb.in</code> / <code>pastebin.com</code>) to fetch that code. The cache Worker reads and writes only its own key/value store. Item and currency pictures load as plain images from GGG's public CDN (<code>web.poecdn.com</code>) &mdash; no cookies, nothing about you. Fonts are served from this site, not Google. The only requests to <code>pathofexile.com</code> itself come from your own browser &mdash; a tab you opened, or the extension you chose to install.</p>
 
   <h2>What's stored, and where</h2>
   <h3>On your device (localStorage &mdash; never leaves your browser)</h3>
@@ -134,7 +134,7 @@
         <tr><td class="mono">bpc_manual:&hellip;</td><td>Prices you pasted for a build's rares, so they survive a reload.</td></tr>
         <tr><td class="mono">bpc_purchased:&hellip;</td><td>Which items you ticked as "already bought".</td></tr>
         <tr><td class="mono">bpc_recent_builds</td><td>The builds you looked up, for the "saved characters" shortcuts.</td></tr>
-        <tr><td class="mono">bpc_status / bpc_league / bpc_tier</td><td>Your control preferences.</td></tr>
+        <tr><td class="mono">bpc_status_v2 / bpc_league / bpc_tier</td><td>Your control preferences.</td></tr>
         <tr><td class="mono">bpc_cache_optout</td><td>Whether you've opted out of the shared cache (below).</td></tr>
       </tbody>
     </table>
@@ -164,7 +164,7 @@
   <ul>
     <li><span class="yes">Only</span> requests to <code>pathofexile.com/api/trade/*</code> and DivTally's own domain. Nothing else.</li>
     <li><span class="no">No</span> access to your tabs, browsing history, or other sites. <span class="no">No</span> cookies, <span class="no">no</span> login, <span class="no">no</span> <code>POESESSID</code>.</li>
-    <li>Store-only distribution (Chrome / Edge / Firefox), unminified, with the source readable in the repo and the store listing.</li>
+    <li>Distributed unminified through the browser stores (Chrome / Edge / Firefox &mdash; listings in review); until they are live, the identical build is published on the <a href="https://github.com/divtally/divtally/releases" target="_blank" rel="noopener">GitHub releases page</a>. Source readable in the repo either way.</li>
     <li>The site is fully usable without it &mdash; it only saves you the copy-paste.</li>
   </ul>
   <p class="small">Get it (once each store approves the listing): <span id="storeLinks" class="muted">links appear here when published</span>. Read the code: <a id="repoLink" href="#">the open-source repository</a>.</p>

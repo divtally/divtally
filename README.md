@@ -31,7 +31,7 @@ pip install -r requirements.txt
 .\bpc-web.cmd            # opens http://127.0.0.1:8765 in your browser
 ```
 
-Paste the character link, click **Estimate**, watch live progress, and get a styled
+Paste the character link, click **Appraise**, watch live progress, and get a styled
 table (confidence badges, per-item trade links, totals). Runs entirely on your machine.
 Options pass through, e.g. `.\bpc-web.cmd --port 9000 --no-browser`.
 
@@ -82,7 +82,7 @@ new setting**, so you can flip from In Person (Online) to Any (or switch leagues
 it re-price on the spot. This works for a build you pasted *and* for one you loaded from
 the Recent list.
 
-**Recent builds:** the page lists your 5 most recently searched builds; **See more**
+**Recent builds:** the page lists your 5 most recently searched builds; **+N more**
 expands to every cached snapshot (the same character priced on different days appears
 once per version). Click one to reload it **straight from your local cache** — this works
 even if the poe.ninja profile has since been deleted. **Loading a build shows its
@@ -204,7 +204,7 @@ you the available leagues and you can re-run with `--league`.
 
 The trade API is strict (violations cause temporary IP bans). The client reads GGG's
 `X-Rate-Limit` headers, stays well under every window, honours `Retry-After`, and caches
-results (reference data for a day, prices for ~30 min, league/rates for hours) so repeat
+results (reference data for a day, prices for ~30 min, league lists ~10 min and currency rates ~30 min) so repeat
 runs are fast and cheap. Because gem prices *and* currency rates come from poe.ninja (not
 the trade API), a build uses fewer trade searches than the item count alone would suggest.
 A full fresh build takes ~1–4 minutes; re-runs are near-instant. Nothing here requires

@@ -66,7 +66,7 @@ It's deliberately minimal and transparent:
   - No cookies, no tabs, no history, no analytics, no tracking, collects no personal data.
   - Uses a careful built-in rate limiter that stays well under the trade API's per-IP limits.
   - Unminified and fully open source — read every line before you install.
-  - Store-only distribution (no sideloading):
+  - Distributed through the browser stores (in review; identical build on GitHub releases meanwhile):
       Chrome:  <CHROME-URL>
       Edge:    <EDGE-URL>
       Firefox: <FIREFOX-URL>

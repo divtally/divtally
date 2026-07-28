@@ -6,8 +6,8 @@ The site URL (`https://divtally.com`) and the source repo
 (`https://github.com/divtally/divtally`, public) are both filled in — this copy is paste-ready.
 Not affiliated with Grinding Gear Games.
 
-Artifacts to upload: `public/dist/divtally-extension-chrome-edge-1.1.0.zip` (Chrome + Edge),
-`public/dist/divtally-extension-firefox-1.1.0.zip` (Firefox). Store fees: Chrome one-time $5 dev
+Artifacts to upload: `public/dist/divtally-extension-chrome-edge-1.2.1.zip` (Chrome + Edge),
+`public/dist/divtally-extension-firefox-1.2.1.zip` (Firefox). Store fees: Chrome one-time $5 dev
 registration; Edge free; Firefox AMO free.
 
 ---
@@ -126,7 +126,7 @@ or account name — always the fictional demo build (mock mode). Demo character 
 OBVIOUSLY fake (e.g. "Example Exile"), not merely plausible.**
 1. The DivTally site (stash skin) showing a full priced build with a rare/unique row
    live-priced by the bridge, and the "extension active" state visible.
-2. The extension popup tester after a successful price ("● active · v1.1.0", a chaos/divine
+2. The extension popup tester after a successful price ("● active · v1.2.1", a chaos/divine
    amount, and the "cheapest of N listings" line).
 3. The calm in-page upgrade card (does / never-does list) the site shows before install.
 4. (Optional) The `/how-it-works` transparency page (endpoints, storage, cache opt-out, rate-limit
