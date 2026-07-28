@@ -324,6 +324,119 @@ async function scenarioVariantPlaceholder() {
   ok(bpc.state.enabled["13"], "cache-priced row stays included after a failed re-scan");
 }
 
+// ---- a core.js instance wired to a controllable fetch + AbortController (R4-4 build timeout,
+//      R4S-1 build-load path). No extension bus needed; cache disabled (empty worker). ----
+function makeNetInstance(opts) {
+  opts = opts || {};
+  const lsMap = new Map();
+  const win = {
+    BPC_CONFIG: { API_BASE: "https://api.test.local", WORKER_BASE: "",
+                  BUILD_TIMEOUT_MS: opts.timeoutMs || 30 },
+    location: { search: "", origin: "https://test.local", href: "https://test.local/" },
+    addEventListener() {}, removeEventListener() {}, postMessage() {},
+  };
+  win.window = win;
+  const localStorage = {
+    getItem: (k) => (lsMap.has(k) ? lsMap.get(k) : null),
+    setItem: (k, v) => lsMap.set(k, String(v)),
+    removeItem: (k) => lsMap.delete(k),
+  };
+  class FakeAbortController {
+    constructor() { this.signal = { aborted: false, addEventListener() {}, removeEventListener() {} }; }
+    abort() { this.signal.aborted = true; }
+  }
+  const fetchImpl = opts.fetch || (() => new Promise(() => {}));
+  const sandbox = { window: win, self: win, console, setTimeout, clearTimeout, TextEncoder, URLSearchParams,
+                    localStorage, crypto: {}, Date, Math, JSON, fetch: fetchImpl,
+                    AbortController: FakeAbortController };
+  vm.runInNewContext(CORE_SRC, sandbox, { filename: "core.js" });
+  return { bpc: win.bpc, win, lsMap, setLS: (k, v) => lsMap.set(k, v) };
+}
+
+async function scenarioBuildTimeout() {
+  console.log("· scenario: R4-4 build fetch times out on an unresponsive API (never hangs)");
+  // (a) a server that accepts the connection but NEVER replies -> the fetch promise never settles
+  const inst = makeNetInstance({ fetch: () => new Promise(() => {}), timeoutMs: 20 });
+  const { bpc } = inst;
+  bpc.init();
+  bpc.startUrl("https://poe.ninja/hung");
+  eq(bpc.state.phase, "loading", "phase is 'loading' immediately after start()");
+  await ticks(45);                        // exceed the 20ms bound
+  eq(bpc.state.phase, "error", "R4-4: hung API resolves to 'error' (not stuck 'loading' forever)");
+  ok(/took too long/i.test(bpc.state.error || ""),
+     "R4-4: the error names the timeout, not a generic failure: " + bpc.state.error);
+  // (b) positive control: a RESPONSIVE API still loads to 'done' (the wrapper didn't break happy path)
+  const okDoc = { ok: true, meta: { character: "Ok" }, items: [], rares: {}, warnings: [] };
+  const inst2 = makeNetInstance({
+    timeoutMs: 5000,
+    fetch: () => Promise.resolve({ ok: true, json: () => Promise.resolve(okDoc) }),
+  });
+  inst2.bpc.init();
+  inst2.bpc.startUrl("https://poe.ninja/ok");
+  await ticks(6);
+  eq(inst2.bpc.state.phase, "done", "responsive API still loads to 'done' (happy path intact)");
+}
+
+function scenarioWhisperSeparators() {
+  console.log("· scenario: R4-5 whisper rejects ambiguous locale/thousands separators");
+  const { bpc } = makeNetInstance({});
+  const rate = 100;   // divine -> chaos
+  // silently-wrong separator inputs must now REJECT (null), not fold a fragment into the headline
+  ["1,000 chaos", "1 000 chaos", "1.000.000 chaos", "1'000 chaos", "35,5 chaos",
+   "1 000 000 chaos", "12'345 chaos", "listed for 1,000 chaos"].forEach((s) =>
+    ok(bpc.parseWhisper(s, rate) === null, `"${s}" rejected (was a silent wrong number)`));
+  // legitimate inputs still parse (no over-rejection): [input, expected chaos]
+  [["35 chaos", 35], ["1000 chaos", 1000], ["2.5 div", 250], ["35.5 chaos", 35.5],
+   ["0.5 div", 50], ["1/3 div", 100 / 3], ["~b/o 1500 chaos", 1500], ["listed for 1000 chaos", 1000],
+   ["10.25 chaos", 10.25], ["1.5 divine", 150]].forEach(([s, want]) => {
+    const p = bpc.parseWhisper(s, rate);
+    const got = p ? (p.chaos == null ? p.amount : p.chaos) : null;
+    ok(p && Math.abs(got - want) < 1e-6, `"${s}" -> ${want} (got ${got})`);
+  });
+  // a GGG whisper carrying stash coords must not false-reject on the unrelated "left 12, top 3"
+  const g = bpc.parseWhisper(
+    'buy your Foo listed for 20 chaos in Standard (stash "~b/o 20 chaos"; position: left 12, top 3)', rate);
+  ok(g && g.chaos === 20, "GGG whisper w/ coords still parses 20 chaos (no false reject): " + (g && g.chaos));
+  ok(bpc.parseWhisper("no price here", rate) === null, "non-price text still returns null");
+}
+
+function scenarioRecentCoercion() {
+  console.log("· scenario: R4S-1 corrupt bpc_recent_builds self-heals (wrong-type -> [])");
+  // valid-JSON WRONG-TYPE values must heal to [] on read, like unparseable garbage already does
+  ['"hello"', "42", '{"k":1}', "true", "}{ not json"].forEach((raw) => {
+    const inst = makeNetInstance({});
+    const { bpc } = inst;
+    inst.setLS("bpc_recent_builds", raw);
+    let ev, threw = false;
+    bpc.on("recent", (r) => { ev = r; });
+    try { bpc.init(); } catch (e) { threw = true; }
+    ok(!threw, `init() does not throw on bpc_recent_builds=${raw}`);
+    ok(Array.isArray(bpc.state.recent) && bpc.state.recent.length === 0, `state.recent heals to [] for ${raw}`);
+    ok(Array.isArray(ev), `'recent' event carries an array for ${raw} (renderRecent-safe)`);
+  });
+  // a legitimate array is preserved untouched
+  const inst2 = makeNetInstance({});
+  inst2.setLS("bpc_recent_builds", JSON.stringify([{ key: "u", url: "u", character: "C" }]));
+  inst2.bpc.init();
+  eq(inst2.bpc.state.recent.length, 1, "a valid recents array is preserved");
+  // pushRecent hardening: a wrong-type state.recent forced AFTER load (external mid-session
+  // corruption) must NOT crash the build load into a false network error -- emit('done') still fires
+  const okDoc = { ok: true, meta: { character: "Z", source_url: "https://poe.ninja/z" },
+                  items: [], rares: {}, warnings: [] };
+  const inst3 = makeNetInstance({
+    timeoutMs: 5000,
+    fetch: () => Promise.resolve({ ok: true, json: () => Promise.resolve(okDoc) }),
+  });
+  inst3.bpc.init();
+  inst3.bpc.state.recent = "hello";       // force wrong-type post-load
+  return (async () => {
+    inst3.bpc.startUrl("https://poe.ninja/z");
+    await ticks(6);
+    eq(inst3.bpc.state.phase, "done", "R4S-1: build load completes despite wrong-type state.recent");
+    ok(Array.isArray(inst3.bpc.state.recent), "state.recent is an array after the guarded pushRecent");
+  })();
+}
+
 function checkInlineScript() {
   console.log("· compile-check: index.html inline <script>");
   const html = fs.readFileSync(join(HERE, "index.html"), "utf8");
@@ -340,6 +453,9 @@ function checkInlineScript() {
   await scenarioOld();
   await scenarioSingle();
   await scenarioVariantPlaceholder();
+  await scenarioBuildTimeout();
+  scenarioWhisperSeparators();
+  await scenarioRecentCoercion();
   console.log(`\n${passed} passed, ${failed} failed`);
   process.exit(failed ? 1 : 0);
 })();

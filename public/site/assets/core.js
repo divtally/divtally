@@ -48,6 +48,11 @@
   var WORKER_BASE = trimSlash(qp("worker") || (CFG.WORKER_BASE === undefined ? "" : CFG.WORKER_BASE));
   var STUB = qp("stub");                 // ?stub[=path] -> fetch a local build document instead of the API
   var MAX_KEYS = CFG.CACHE_MAX_KEYS || 60;
+  // Bound the build fetch so an unresponsive API (accepts the TCP connection but never replies)
+  // can't strand the page in 'loading' forever (R4-4). Default 45s: generous enough never to trip
+  // a legitimately slow build, short enough to recover a truly hung connection. Overridable via
+  // config or ?buildTimeout for tests.
+  var BUILD_TIMEOUT_MS = Number(qp("buildTimeout")) || CFG.BUILD_TIMEOUT_MS || 45000;
 
   var STATUS_LABEL = {
     available: "Instant Buyout and In Person", securable: "Instant Buyout",
@@ -364,14 +369,36 @@
     if (state.refresh) { state.refresh = false; emit("control", { name: "refresh", value: false }); }
     emit("progress", "fetching the build from poe.ninja…");
 
+    // The build fetch must not hang forever: an API that accepts the TCP connection but never
+    // sends an HTTP response (firewall DROP, half-open/overloaded server, LB gateway timeout)
+    // would otherwise leave the page stuck in 'loading' with the spinner and no recovery. Bound it
+    // with an AbortController + timer (mirrors the bridge/chunk timeout discipline, D-0012); on
+    // timeout -> fail() with a "took too long" message. `settled` de-dupes so the timeout and a
+    // late reply/abort can never both report. (R4-4)
+    var ac = (typeof AbortController !== "undefined") ? new AbortController() : null;
+    var settled = false;
+    var timer = setTimeout(function () {
+      if (settled) return;
+      settled = true;
+      if (ac) { try { ac.abort(); } catch (e) {} }
+      fail("The pricing service took too long to respond. Check your connection, or try ?mock for a demo.");
+    }, BUILD_TIMEOUT_MS);
+    if (ac) { init = init || {}; init.signal = ac.signal; }
+
     fetch(url, init || undefined)
       .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
       .then(function (res) {
+        if (settled) return;                 // already timed out -> ignore the late reply
+        settled = true; clearTimeout(timer);
         var j = res.j || {};
         if (j.ok === false || (!res.ok && j.ok !== true)) return fail((j && j.error) || "The build could not be loaded.");
         loadBuild(j);
       })
-      .catch(function () { fail("Could not reach the pricing service. Check your connection, or try ?mock for a demo."); });
+      .catch(function () {
+        if (settled) return;                 // the timeout (or its abort()) already reported the error
+        settled = true; clearTimeout(timer);
+        fail("Could not reach the pricing service. Check your connection, or try ?mock for a demo.");
+      });
   }
   function startUrl(url) { if (url && url.trim()) start({ url: url.trim() }); }
   function startCache(key) {
@@ -496,12 +523,26 @@
     if (text == null) return null;
     var t = String(text).toLowerCase().replace(/[⁄]/g, "/");   // normalise the fraction slash
     var tail = "\\s*" + CUR_RE + "\\b";
-    function findFirst(re) { var m = t.match(re); return m ? { amount: m[1], cur: m[2] } : null; }
+    // capture the amount's absolute index in `t` too: the prefixes ("listed for", "~b/o",
+    // "~price") carry no digits, so indexOf lands on the amount, not an earlier char.
+    function findFirst(re) { var m = t.match(re); return m ? { amount: m[1], cur: m[2], at: m.index + m[0].indexOf(m[1]) } : null; }
     // priority: the machine "listed for" phrase, then a ~b/o / ~price note, then any bare "N cur".
     var hit = findFirst(new RegExp("listed for\\s*" + AMT_RE + tail))
            || findFirst(new RegExp("~\\s*(?:b/?o|price)\\s*" + AMT_RE + tail))
            || findFirst(new RegExp(AMT_RE + tail));
     if (!hit) return null;
+    // Reject locale/thousands separators embedded in the number. GGG's own whispers never use
+    // them; only manual entry does. When a separator splits the real number the regex captures
+    // only a FRAGMENT ("1,000"->"000", "1 000"->"000", "35,5"->"5", "1.000.000"->"000.000"): the
+    // matched run is flanked by a grouping separator that itself sits between digits. Rather than
+    // silently fold a wrong value into the headline as a confident price, reject -> applyWhisper
+    // re-prompts with "couldn't read a price". (R4-5)
+    var SEP = ",.'" + "\u2019\u0020\u00A0\u2009\u202F";   // comma dot apostrophes space nbsp thin narrow (grouping seps)
+    function _sep(c) { return !!c && SEP.indexOf(c) >= 0; }
+    function _dig(c) { return !!c && c >= "0" && c <= "9"; }
+    var _s = hit.at, _e = hit.at + String(hit.amount).length;
+    if (_sep(t.charAt(_s - 1)) && _dig(t.charAt(_s - 2))) return null;   // digit<sep>[fragment]
+    if (_sep(t.charAt(_e)) && _dig(t.charAt(_e + 1))) return null;       // [number]<sep>digit
     var amount = _num(hit.amount);
     if (amount == null || amount < 0) return null;
     var currency = CUR_ALIAS[hit.cur] || hit.cur;
@@ -1252,7 +1293,14 @@
 
   // ---- recent builds (localStorage; the public site has no /api/cache) ----
   function loadRecent() {
-    try { state.recent = JSON.parse(lsget("bpc_recent_builds") || "[]") || []; } catch (e) { state.recent = []; }
+    // Type-coerce on read: a valid-JSON WRONG-TYPE value (string/number/object — from external
+    // corruption, profile-sync mangling, or a future schema change) must heal to [] just like
+    // unparseable garbage already does. Otherwise a later (state.recent||[]).filter(...) throws
+    // inside loadBuild, aborting emit('manual')/emit('done') and unwinding to fail() so EVERY
+    // build load ends in a false "could not reach the pricing service" error that persists across
+    // reloads (R4S-1). Mirrors the type-safety the bpc_status_v2 / bpc_tier / bpc_manual keys have.
+    var parsed; try { parsed = JSON.parse(lsget("bpc_recent_builds") || "[]"); } catch (e) { parsed = null; }
+    state.recent = Array.isArray(parsed) ? parsed : [];
     emit("recent", state.recent);
   }
   function pushRecent(meta) {
@@ -1261,7 +1309,7 @@
     if (!url) return;                                   // PoB imports have no shareable URL -> not saved
     var key = url;
     var entry = { key: key, url: url, character: meta.character || "Unknown", char_class: meta["class"] || "", level: meta.level || 0, ts: Date.now() };
-    var list = (state.recent || []).filter(function (b) { return b.key !== key; });
+    var list = (Array.isArray(state.recent) ? state.recent : []).filter(function (b) { return b && b.key !== key; });
     list.unshift(entry);
     state.recent = list.slice(0, 24);
     lsset("bpc_recent_builds", JSON.stringify(state.recent));

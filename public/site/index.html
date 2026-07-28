@@ -1214,7 +1214,7 @@ let recentExpanded=false, recentData=[], removedShown=false;
 function lsArr(k){ try{ return JSON.parse(localStorage.getItem(k)||'[]')||[]; }catch(e){ return []; } }
 function lsSave(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
 let pinned=lsArr('bpc_recent_pinned'), removed=lsArr('bpc_recent_removed');
-bpc.on('recent',bs=>{ recentData=bs||[]; renderRecent(); });
+bpc.on('recent',bs=>{ recentData=Array.isArray(bs)?bs:[]; renderRecent(); });  /* array-guard: a wrong-type recent must not crash renderRecent's .filter (R4S-1) */
 
 function mug(b){ return `<div class="pmug">${E((b.character||'?').slice(0,1).toUpperCase())}</div>
     <div class="pmeta"><div class="pname">${E(b.character||'Unknown')}</div>

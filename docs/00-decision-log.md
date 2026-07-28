@@ -379,3 +379,35 @@ the fixed core.js onto the real divtally.com + the real extension (no deploy) - 
 to link-only, headline `included 26->25, priced 28->27, min 1924.628c->1869.628c` (exactly the 55c
 removed), Bubonic Trail control still 1.0c, hands-free 13/13, clean console, `totalMs 67 480`. 15/15
 live assertions PASS. Coordinator deploys after.
+
+## D-0020 R4 - edge/adversarial fixes applied (2026-07-28)
+Round 4 (edge/adversarial lens) fixed; full notes in `docs/bugtest/r4-fix1.md`. 5 blocker/major
+findings across three evidence sweeps (`r4-offline.md`, `r4-state.md`; `r4-i18n.md` found only a
+cosmetic phone-overflow minor, deferred). All harnesses green, contracts additive (no response field
+added/renamed/removed). Two touch DOCUMENTED pricing behaviour on the **PoB input path** (both fixed
+in the vendored twins `public/api/_lib/pob.py` + `bpc/pob.py`):
+- **PoB gem corruption (R4-1)**: PoB encodes gem corruption IMPLICITLY (level 21 / quality 23, no
+  explicit attr - verified across a real export's 35 gems). The PoB path inferred it only for gear, so
+  every gem came out `corrupted:false` and matched the cheap uncorrupted poe.ninja line (~25% low on
+  gem-heavy builds). Now `corrupted = level>20 or quality>20` (+ explicit marker, defensive), so the
+  gem matches the correct corrupted economy line - parity with the poe.ninja path.
+- **PoB weapon-swap exclusion (R4-2, Locked D-0018)**: the PoB path flagged nothing swap, so swap
+  weapons AND their socketed gems were summed (aurab +136%) and the toggle couldn't remove them. Now
+  `"Weapon 1/2 Swap"` items + their skill gems carry `raw.inventoryId = Weapon2/Offhand2` (what
+  `response._is_swap` reads), excluded-by-default + toggle-able like swap gear. Proven end-to-end on
+  the fixture char: 7 swap rows, 50c of swap gems excluded from the headline (`priced_items 24 not 29`).
+Three site-JS robustness fixes (`public/site/assets/core.js` + `index.html`):
+- **Build-fetch timeout (R4-4, blocker)**: an unresponsive API (accepts TCP, never replies) left the
+  page stuck `loading` forever. Wrapped the build fetch in an `AbortController` + bounded timer
+  (default 45s) -> `fail("took too long")`; mirrors the D-0012 bridge/chunk timeout discipline.
+- **Whisper locale separators (R4-5)**: `"1,000 chaos"->0`, `"35,5 chaos"->5` etc. folded a wrong
+  fragment into the headline as a confident price. Now a grouping separator embedded in the number is
+  rejected -> the existing "couldn't read a price" re-prompt (never fabricate a number we can't derive).
+- **Corrupt `bpc_recent_builds` wrong-type (R4S-1)**: a valid-JSON non-array made EVERY build load die
+  in a false persistent "could not reach the pricing service" error. Now type-coerced on read
+  (`Array.isArray(parsed) ? parsed : []`) + `pushRecent`/`renderRecent` hardened - matches the
+  type-safety the other bpc_* keys already have.
+Tests: `test_scanstatus.mjs` 64->106 (build-timeout / whisper-separator / recent-coercion scenarios);
+`tests.py` gains PoB corruption+swap parse-layer assertions. R4-3/R4-6/R4-7/R4I-1 (minors/info/cosmetic)
+flagged, out of this round's five-finding scope. Next per D-0020: deploy, then Round 5 (regression +
+acceptance) - R4 was not dry (5 majors), so LOOP-UNTIL-DRY continues.

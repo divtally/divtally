@@ -422,6 +422,68 @@ _unlinked = _pob._parse_sockets("R-G B W")
 check("pob unlinked groups max_link=2", _unlinked[1], 2)
 check("pob unlinked groups total=4", _unlinked[2], 4)
 
+# ---- R4-1 / R4-2: PoB gem CORRUPTION inference + weapon-SWAP flagging (parse layer) ----
+# PoB encodes gem corruption implicitly (level>20 or quality>20, no explicit attr) and sockets
+# swap skills in "Weapon 1/2 Swap" slots. Both must reach the same swap-exclusion + corrupted
+# economy line the poe.ninja path uses. raw.inventoryId in (Weapon2, Offhand2) == swap (mirrors
+# response._is_swap); corrupted picks the dearer poe.ninja corrupted line.
+_pobsc_xml = ('<?xml version="1.0"?><PathOfBuilding>'
+              '<Build level="95" className="Witch"/>'
+              '<Items activeItemSet="1">'
+              '<Item id="1">\nRarity: RARE\nMain Wand\nProphecy Wand\nItem Level: 80\nImplicits: 0\n</Item>'
+              '<Item id="2">\nRarity: RARE\nSwap Bow\nThicket Bow\nItem Level: 80\nImplicits: 0\n</Item>'
+              '<Item id="3">\nRarity: RARE\nSwap Ward\nPlank Kite Shield\nItem Level: 80\nImplicits: 0\n</Item>'
+              '<ItemSet id="1">'
+              '<Slot name="Weapon 1" itemId="1"/>'
+              '<Slot name="Weapon 1 Swap" itemId="2"/>'
+              '<Slot name="Weapon 2 Swap" itemId="3"/>'
+              '</ItemSet></Items>'
+              '<Skills activeSkillSet="1"><SkillSet id="1">'
+              '<Skill slot="Body Armour" enabled="true">'
+              '<Gem nameSpec="Vortex" skillId="Vortex" level="21" quality="20" enabled="true"/>'
+              '<Gem nameSpec="Hypothermia Support" skillId="SupportHypothermia" level="20" quality="23" enabled="true"/>'
+              '<Gem nameSpec="Controlled Destruction Support" skillId="SupportControlledDestruction" level="20" quality="20" enabled="true"/>'
+              '</Skill>'
+              '<Skill slot="Weapon 1 Swap" enabled="true">'
+              '<Gem nameSpec="Eclipse" skillId="Eclipse" level="20" quality="0" enabled="true"/>'
+              '</Skill>'
+              '</SkillSet></Skills></PathOfBuilding>')
+_pobsc_code = _b64.urlsafe_b64encode(_zlib.compress(_pobsc_xml.encode())).decode()
+_m_sc, _it_sc = _pob.parse(_pobsc_code, {"all": {"Prophecy Wand", "Thicket Bow", "Plank Kite Shield"},
+                                         "by_group": {"Armour": {"Plank Kite Shield"}}})
+def _byname_sc(nm):
+    return next((i for i in _it_sc if (i.name or i.base_type) == nm), None)
+def _inv_sc(it):
+    return (it.raw or {}).get("inventoryId") if it else None
+_main_w = next((i for i in _it_sc if i.name == "Main Wand"), None)
+_swap_bow = next((i for i in _it_sc if i.name == "Swap Bow"), None)
+_swap_wd = next((i for i in _it_sc if i.name == "Swap Ward"), None)
+check("R4-2 main-hand NOT swap-flagged", _inv_sc(_main_w), "Weapon")
+check("R4-2 swap main-hand -> Weapon2 (swap)", _inv_sc(_swap_bow), "Weapon2")
+check("R4-2 swap off-hand (armour base) -> Offhand2 (swap, not downgraded)", _inv_sc(_swap_wd), "Offhand2")
+_gems_sc = [i for i in _it_sc if i.category == "gem"]
+_vortex = next((g for g in _gems_sc if g.base_type == "Vortex"), None)
+_hypo = next((g for g in _gems_sc if g.base_type == "Hypothermia Support"), None)
+_cd = next((g for g in _gems_sc if g.base_type == "Controlled Destruction Support"), None)
+_eclipse = next((g for g in _gems_sc if g.base_type == "Eclipse"), None)
+check("R4-1 level-21 gem inferred corrupted", _vortex.corrupted if _vortex else None, True)
+check("R4-1 quality-23 gem inferred corrupted", _hypo.corrupted if _hypo else None, True)
+check("R4-1 L20/Q20 gem NOT corrupted", _cd.corrupted if _cd else None, False)
+check("R4-2 swap-socketed gem is swap-flagged (Weapon 1 Swap -> Weapon2)", _inv_sc(_eclipse), "Weapon2")
+check("R4-2 main-skill gem NOT swap-flagged", _inv_sc(_vortex), None)
+# swap gems are still EMITTED (excluded-by-default + toggle-able), not dropped
+check("R4-2 swap gem still present in items (toggle-able, not dropped)", _eclipse is not None, True)
+# an explicit corrupted="true" marker is honoured even at level/quality <= 20 (defensive)
+_pobcx = ('<?xml version="1.0"?><PathOfBuilding><Build level="1"/><Items activeItemSet="1">'
+          '<ItemSet id="1"/></Items><Skills activeSkillSet="1"><SkillSet id="1">'
+          '<Skill slot="Helmet" enabled="true">'
+          '<Gem nameSpec="Anger" skillId="Anger" level="20" quality="0" corrupted="true" enabled="true"/>'
+          '</Skill></SkillSet></Skills></PathOfBuilding>')
+_cx_code = _b64.urlsafe_b64encode(_zlib.compress(_pobcx.encode())).decode()
+_cx_gems = [i for i in _pob.parse(_cx_code, {"all": set(), "by_group": {}})[1] if i.category == "gem"]
+check("R4-1 explicit corrupted attr honoured at L20/Q0 (defensive)",
+      (_cx_gems[0].corrupted if _cx_gems else None), True)
+
 # ---- shared Pricer with offline fakes (no trade calls) for query-assembly + guardrail tests ----
 from bpc.pricing import SEARCH_BUDGET as _BUDGET
 class _FakeStatsRare:

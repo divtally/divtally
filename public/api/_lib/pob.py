@@ -42,8 +42,8 @@ _SLOT_MAP = {
     "Ring 3": ("equipment", "Ring", "Ring"),
     "Weapon 1": ("equipment", "Weapon", "Weapon"),
     "Weapon 2": ("equipment", "Weapon", "Off-hand"),
-    "Weapon 1 Swap": ("equipment", "Weapon", "Weapon (swap)"),
-    "Weapon 2 Swap": ("equipment", "Weapon", "Off-hand (swap)"),
+    "Weapon 1 Swap": ("equipment", "Weapon2", "Weapon (swap)"),
+    "Weapon 2 Swap": ("equipment", "Offhand2", "Off-hand (swap)"),
 }
 for _i in range(1, 6):
     _SLOT_MAP[f"Flask {_i}"] = ("flask", "Flask", "Flask")
@@ -249,7 +249,9 @@ def parse(code_or_xml: str, types: dict) -> Tuple[BuildMeta, List[Item]]:
         base = parsed["base"]
         if slot and slot in _SLOT_MAP:
             group, inv, disp = _SLOT_MAP[slot]
-            if slot.startswith("Weapon 2") and base in armour_types:
+            # Only the MAIN-set off-hand remaps a shield/focus to "Offhand"; the swap off-hand
+            # ("Weapon 2 Swap") keeps its "Offhand2" swap id so D-0018 exclusion still applies (R4-2).
+            if slot == "Weapon 2" and base in armour_types:
                 inv, disp = "Offhand", "Off-hand"     # shield / focus, not a weapon
         elif is_jewel or base in jewel_types:
             group, inv, disp = "jewel", "PassiveJewels", "Jewel"
@@ -280,6 +282,13 @@ def parse(code_or_xml: str, types: dict) -> Tuple[BuildMeta, List[Item]]:
         for sk in gem_scope.findall("Skill"):
             if sk.get("source"):                # granted by an item or the tree
                 continue
+            # D-0018: skills socketed in the weapon-SWAP set are excluded from totals by default
+            # (mirrors the poe.ninja path, whose character doc omits swap-set skills). Flag each
+            # such gem `swap` via a Weapon2/Offhand2 inventoryId so response._is_swap + the site's
+            # weapon-swap toggle both apply, exactly like swap gear does (R4-2).
+            sk_slot = sk.get("slot") or ""
+            swap_inv = ("Weapon2" if sk_slot.startswith("Weapon 1") else "Offhand2") \
+                if "Swap" in sk_slot else None
             for gem in sk.findall("Gem"):
                 if (gem.get("enabled") or "").lower() == "false":
                     continue
@@ -296,9 +305,19 @@ def parse(code_or_xml: str, types: dict) -> Tuple[BuildMeta, List[Item]]:
                     qual = int(gem.get("quality") or 0)
                 except (TypeError, ValueError):
                     qual = 0
+                # PoB encodes gem corruption IMPLICITLY: a corrupted gem is level 21 or quality 23
+                # (no explicit attribute -- verified across a real export's 35 gems, incl. L20/Q23
+                # and L21/Q20, none carrying a corrupt attr). Infer it so the gem matches the
+                # correct (dearer) poe.ninja corrupted economy line, not the cheap uncorrupted one
+                # -- parity with the poe.ninja path, which reads corruption from socket data (R4-1).
+                # Honour an explicit marker too, should a future/variant export ever add one.
+                gc = (gem.get("corrupted") or "").strip().lower()
+                corrupted = (lvl > 20 or qual > 20 or gc in ("true", "1", "yes"))
                 items.append(Item(name="", base_type=name, type_line=name, frame_type=4,
                                   rarity="Gem", category=CAT_GEM, group="gem", slot="",
-                                  support=support, gem_level=lvl, gem_quality=qual, raw={}))
+                                  support=support, gem_level=lvl, gem_quality=qual,
+                                  corrupted=corrupted,
+                                  raw=({"inventoryId": swap_inv} if swap_inv else {})))
 
     meta = BuildMeta(account="", character="Path of Building import",
                      league="", char_class=klass, level=level, pob_export="")
