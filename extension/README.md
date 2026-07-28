@@ -1,5 +1,7 @@
 # DivTally Browser Extension
 
+> **Download packaged builds:** https://github.com/divtally/divtally/releases (same files submitted to the stores). Store installs are recommended once the listings go live - they auto-update.
+
 This extension prices **rares/uniques** for the public DivTally website by calling
 the official PoE1 trade API **from your own browser and IP**. That's the only safe way to do
 live rare pricing on a public site: the trade API blocks browser pages (CORS) and bans a shared
