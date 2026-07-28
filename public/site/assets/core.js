@@ -1011,13 +1011,17 @@
   // D-0016 item 3 — map the API's affix `priority` (contract §3: required·nice·notimp·skip) onto
   // the site's THREE tiers. `notimp` -> nice-to-have (NOT not-needed): D-0015 forbids the tool
   // auto-EXCLUDING on a low score; nice keeps it searched (count group, default N=all ⇒ still
-  // required). `skip` is only ever assigned to unsearchable affixes (never emitted). No hint ->
-  // required (strictest; preserves the all-affix default + the offline test fixtures).
+  // required). `skip` -> not-needed ONLY when the row is UNSEARCHABLE (no stat_id — it can never
+  // be a filter); a SEARCHABLE `skip` row is treated like `notimp` (still searched). querybuild
+  // assigns `skip` to EVERY non-skill-level unique mod AND the unique pseudo total (all
+  // searchable) — mapping those to not-needed silently auto-excluded them (D-0020 R3-2, breaching
+  // D-0015: 51/53 uniques dropped filters). No hint -> required (strictest; preserves the
+  // all-affix default + the offline test fixtures).
   function _siteTierOf(a) {
     var pr = a && a.priority;
     if (pr === "required") return "required";
     if (pr === "nice" || pr === "notimp") return "nice";
-    if (pr === "skip") return "notneeded";
+    if (pr === "skip") return (a && a.stat_id) ? "nice" : "notneeded";
     return "required";
   }
   // The default picks for a rare: all searchable affixes ticked with their prefilled min/max, every
@@ -1084,13 +1088,19 @@
       affixes.forEach(function (a, i) {
         if (a.kind !== "stat") return;
         if (!a.searchable || !a.stat_id) return;          // unsearchable is NEVER emitted
-        if (usePseudo && a.resist) return;                // folded into a pseudo total below
         // D-0019 — a variant-DEFINING mod is the item's identity: ALWAYS emitted as a required
-        // filter (in the first/AND group), never unticked or excluded by the picker (D-0015). Its
+        // filter (in the first/AND group), never unticked, excluded, OR folded into a pseudo total.
+        // D-0020 R3-1: emit it BEFORE the resist-fold, so a defining RESISTANCE (Purity Watcher's
+        // Eye, Viridian Grand Spectrum) is never folded into the pseudo total and dropped. Its
         // value is locked to the item's own roll (option / exact seed / count) via _definingFilter.
         if (a.defining) { if (gi === 0) filters.push(_definingFilter(a)); return; }
+        if (usePseudo && a.resist) return;                // folded into a pseudo total below
         var pk = _pickOf(picks.affix, i, a); if (!pk.ticked) return;
         if ((pk.group != null ? pk.group : 0) !== gi) return;
+        // F1 (D-0020 R3) — a non-defining OPTION stat (cluster-jewel "grant: X" / "Allocates X"
+        // enchant) emits GGG's wire form {id:base, value:{option}}; it has no magnitude filter, so
+        // pk.min/max are ignored (mirrors _definingFilter's option branch).
+        if (a.option != null) { filters.push({ id: a.stat_id, value: { option: a.option } }); return; }
         filters.push(_statFilter(a.stat_id, pk.min, pk.max));
       });
       if (usePseudo) pseudos.forEach(function (p, j) {
@@ -1138,8 +1148,8 @@
     var req = 0, nice = 0;
     affixes.forEach(function (a, i) {
       if (a.kind !== "stat" || !a.searchable || !a.stat_id) return;
-      if (usePseudo && a.resist) return;
-      if (a.defining) { req++; return; }                  // D-0019: a defining mod is always required
+      if (a.defining) { req++; return; }                  // D-0019/R3-1: defining counted BEFORE the fold
+      if (usePseudo && a.resist) return;                  // (so a defining resist still creates the AND group)
       var t = tOf(picks.affix, i, a); if (t === "required") req++; else if (t === "nice") nice++;
     });
     if (usePseudo) pseudos.forEach(function (p, j) {

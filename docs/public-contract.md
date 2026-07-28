@@ -42,6 +42,21 @@ map-count/-variant/-base matches). Non-registry uniques are unchanged. See
   mistakes now return **400 `bad_input`** (per §4), not 502 `ninja_error` (which stays reserved
   for genuine poe.ninja fetch failures).
 
+**Additive/corrective update 2026-07-28 (D-0020 Round 3 — query truth):** all schema-compatible.
+- **Option-stat wire form (F1)**: OPTION stats stored in the bundled schema as a flattened
+  `base|opt` id (cluster-jewel "Added Small Passive Skills grant: X", "Allocates X" enchants) are
+  now emitted as GGG's split form `{"id":base,"value":{"option":N}}` in the default rare query AND
+  as the picker `affixes[].option` field (§2.6) — previously the verbatim piped `base|opt` id.
+- **Singular jewel-socket (F2)**: a Medium Cluster Jewel's singular "1 Added Passive Skill is a
+  Jewel Socket" now maps to `enchant.stat_4079888060` (was dropped as unsearchable — only the
+  plural stat existed), so the socket is required by the search instead of relaxing it.
+- **League name prefix (L1)**: a league-decorated unique name (Allflame's "Foulborn <unique>") is
+  stripped to the BASE unique name in the trade `name`/`trade_url` (the decorated name is rejected
+  400 "Unknown item name"; the base name returns the decorated listings). `item.name` is unchanged
+  (poe.ninja prices the decorated line). Client-side (`core.js`): a variant-**defining** resistance
+  is no longer folded into the pseudo total (R3-1); the survey/default picker no longer auto-
+  excludes searchable unique mods + the pseudo resistance total (R3-2) — both restoring D-0015.
+
 ---
 
 ## 0. The hard invariant (read first)
@@ -259,7 +274,7 @@ and the tool hides nothing.
 | `prefer` | bool | ticked-by-default in the picker (rares: every searchable affix; uniques: only build-defining `+# to Level of all … Skills` rolls **and D-0019 variant-defining mods**) |
 | `priority` | enum | default tier — `required` · `nice` · `notimp` · `skip` (a `defining` mod is always `required`) |
 | `defining` | bool | **D-0019** — this mod is a variant-DEFINING mod of a registered unique (the aura combo, the Allocates notable, the timeless seed, the socket/passive count …). Always `searchable:true`, `prefer:true`, `priority:"required"`; the picker should lock/highlight it. `false` on every ordinary affix and every non-registry item |
-| `option` | int | **D-0019, defining OPTION mods only** — the trade `value.option` for an "Allocates X" / ring-size / keystone-radius mod. When present, `stat_id` is the **base** id (pipe stripped) and the filter is `{"id":stat_id,"value":{"option":option}}`; `default_min`/`default_max` are both `null` (no numeric bound). Absent otherwise |
+| `option` | int | the trade `value.option` for an OPTION stat — "Allocates X" / cluster-jewel "Added Small Passive Skills grant: X" / ring-size / keystone-radius. Present on **defining** OPTION mods (D-0019) **and on ordinary searchable OPTION affixes** whose bundled schema id is a flattened `base\|opt` (**D-0020 R3 F1**). When present, `stat_id` is the **base** id (pipe stripped) and the filter is `{"id":stat_id,"value":{"option":option}}`; `default_min`/`default_max` are both `null` (no numeric bound). Absent otherwise |
 | `exact` | bool | **D-0019, defining EXACT mods only** (timeless seed, socket/passive count) — search `min == max == default_min` (a different seed/count is a different item). `default_max` stays `null` (so the ≤1-bound rule holds); the client sets `max = min`. Absent/`false` otherwise |
 | `reason` | string | why unsearchable (e.g. `"no trade filter matches this mod"`), else `""` |
 

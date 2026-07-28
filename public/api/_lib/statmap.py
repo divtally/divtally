@@ -8,9 +8,30 @@ VENDORED from bpc/statmap.py. ONLY CHANGE vs the original: `StatMapper.__init__`
 the stats-data DICT directly (from refdata.stats_data(), the bundled file) instead of a
 TradeClient -- the public build has no trade client. All matching logic is verbatim.
 """
+import re
 from typing import Dict, List, Optional, Tuple
 
 from . import util
+
+# Some count-of-N mods render SINGULAR at count 1 ("1 Added Passive Skill is a Jewel Socket") but
+# the trade schema carries ONLY the PLURAL stat text ("# Added Passive Skills are Jewel Sockets" =
+# enchant.stat_4079888060). The singular pattern never equals the plural, and because the mod is an
+# ENCHANT the mapper never falls back -> a Medium Cluster Jewel's single jewel socket was silently
+# DROPPED from the query (D-0020 R3 F2; same singular/plural class as the R1 Bubonic Trail
+# abyssal-socket fix). Normalise the known singular PATTERN(s) to their plural schema form before
+# the id lookup in `match()`. The count is preserved (the leading '#' is untouched), so
+# util.first_number still reads the item's count for the picker prefill. Done in `match()` (not
+# `_build`) so the pattern maps themselves are unchanged (slim == full mapper equality holds).
+_SINGULAR_TO_PLURAL = [
+    (re.compile(r"# Added Passive Skill is a Jewel Socket\b"),
+     "# Added Passive Skills are Jewel Sockets"),
+]
+
+
+def _normalise_pattern(pat: str) -> str:
+    for rx, repl in _SINGULAR_TO_PLURAL:
+        pat = rx.sub(repl, pat)
+    return pat
 
 # Keyword priority for choosing which matched mods to constrain on (higher = keep).
 # These are the affixes that actually drive a PoE1 rare's price.
@@ -108,7 +129,7 @@ class StatMapper:
         (reduced<->increased, negate=True) so a 'reduced' roll matches its 'increased' stat.
         Enchants never fall back to the explicit map -- searching an enchant as an explicit
         returns nothing and hangs the appraisal."""
-        pat = util.mod_to_pattern(mod_text)
+        pat = _normalise_pattern(util.mod_to_pattern(mod_text))
         if group:
             gm = self._groups.get(group)
             if gm:

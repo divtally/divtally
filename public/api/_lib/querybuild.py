@@ -198,6 +198,39 @@ def _res_fold_members(affixes: List[dict]) -> Tuple[List[dict], List[dict]]:
     return elem, chaos
 
 
+def _split_option(sid: Optional[str]) -> Tuple[Optional[str], Optional[int]]:
+    """A flattened ``base|opt`` trade stat id -> ``(base_id, option:int)``; a plain id ->
+    ``(id, None)``. The bundled schema pre-flattens OPTION stats (Allocates X / cluster-jewel
+    "Added Small Passive Skills grant: X" enchants) into one entry per option, with the option
+    baked after a pipe (``enchant.stat_3948993189|31``). GGG's trade SEARCH wants the SPLIT form
+    ``{"id": base, "value": {"option": N}}`` -- a verbatim ``base|opt`` id is an undocumented alias
+    (D-0020 R3 F1 / variant-stats.md sec 0.1). ``_apply_defining`` already splits for variants;
+    this is the same split for the ordinary affix path."""
+    if sid and "|" in sid:
+        base, _, opt = sid.partition("|")
+        try:
+            return base, int(opt)
+        except ValueError:
+            return sid, None
+    return sid, None
+
+
+# Some leagues DECORATE unique drops with a name PREFIX (Allflame's "Foulborn Esh's Mirror").
+# The trade `name` field must be the BASE unique name: the decorated name is REJECTED live with
+# HTTP 400 "Unknown item name" (breaking the whole search + the trade link), while the base name
+# returns the decorated listings -- they index under the base name (D-0020 R3 L1, confirmed live:
+# base "Esh's Mirror" -> 990 listings). Applied ONLY to the trade query `name`; `item.name` keeps
+# the decoration for poe.ninja pricing (poe.ninja enumerates the decorated "Foulborn ..." lines).
+_LEAGUE_NAME_PREFIXES = ("Foulborn ",)
+
+
+def _base_unique_name(name: str) -> str:
+    for pfx in _LEAGUE_NAME_PREFIXES:
+        if name and name.startswith(pfx):
+            return name[len(pfx):]
+    return name
+
+
 def _build_stat_groups(groups: List[dict]) -> List[dict]:
     """Convert a picker group payload into trade query.stats group objects (VERBATIM)."""
     out: List[dict] = []
@@ -412,6 +445,7 @@ class PublicPricer:
             src = item.mod_src[i] if i < len(item.mod_src) else None
             grp = "enchant" if src == "enchant" else None
             sid, neg = self.mapper.match(line, group=grp)
+            sid, opt = _split_option(sid)   # F1: flattened base|opt schema id -> base + value.option
             ok = bool(sid)
             v = util.first_number(line)
             if ok and neg and v is not None:
@@ -434,6 +468,14 @@ class PublicPricer:
                 "defining": bool(is_def),
                 "reason": "" if ok else "no trade filter matches this mod",
             }
+            # F1 (D-0020 R3): an OPTION stat (cluster-jewel "grant: X" / "Allocates X" enchant) is
+            # stored as a flattened `base|opt` id; carry GGG's wire form here -- base id in stat_id,
+            # the option split out, and no numeric prefill (an option stat has no magnitude bound),
+            # mirroring _apply_defining. Skip when defining: _apply_defining (below) re-derives the
+            # option/exact from the LOCKED variant value and must win.
+            if opt is not None and not is_def:
+                row["option"] = opt
+                row["default_min"] = row["default_max"] = None
             if is_def:
                 self._apply_defining(row, locked[i])
             affixes.append(row)
@@ -517,7 +559,9 @@ class PublicPricer:
 
         def _statf(o):
             f = {"id": o["stat_id"]}
-            if o.get("negated") and o.get("value") is not None:
+            if o.get("option") is not None:
+                f["value"] = {"option": o["option"]}   # F1: option stat -> {id:base, value:{option}}
+            elif o.get("negated") and o.get("value") is not None:
                 f["value"] = {"max": int(o["value"])}
             return f
         stat_filters = [_statf(o) for o in stat_opts]
@@ -566,7 +610,8 @@ class PublicPricer:
                 if f.get("id") and f["id"] not in have:
                     have.add(f["id"])
                     vfilters.append(f)
-        query = {"status": self._status(), "name": item.name, "type": item.base_type,
+        query = {"status": self._status(), "name": _base_unique_name(item.name),
+                 "type": item.base_type,
                  "stats": [{"type": "and", "filters": vfilters}]}
         links = self._links_filter(item)
         if links:
