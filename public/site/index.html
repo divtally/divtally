@@ -542,6 +542,15 @@
   .tt-mod.imp{color:#9aa0d8;}
   .tt-modsep{height:1px; background:linear-gradient(90deg,transparent,var(--bz1),transparent); margin:7px 0;}
 
+  /* hero extension CTA (owner: "big appetizing button that stands out") */
+  .ext-cta{display:inline-flex; flex-direction:column; align-items:center; gap:3px; text-decoration:none;
+    padding:13px 36px 11px; border-radius:8px; border:1px solid var(--bz-hi);
+    background:linear-gradient(180deg, var(--bz3), var(--bz1));
+    box-shadow:0 0 14px rgba(200,170,110,.35), inset 0 1px 0 rgba(255,255,255,.25);
+    transition:box-shadow .15s, transform .15s;}
+  .ext-cta:hover{box-shadow:0 0 22px rgba(232,212,166,.55), inset 0 1px 0 rgba(255,255,255,.3); transform:translateY(-1px);}
+  .ext-cta .cta-main{font-family:var(--display); font-size:18px; letter-spacing:.03em; color:#160f08;}
+  .ext-cta .cta-sub{font-family:var(--serif); font-style:italic; font-size:13px; color:rgba(22,15,8,.75);}
   /* ---------- D-0019: variant uniques (locked defining mods · timeless jewels) ---------- */
   .lockg{vertical-align:-1px; opacity:.92; flex:0 0 auto;}
   /* the human variant label under the item name (tooltip head sub-line, like .base) */
@@ -983,7 +992,12 @@
   <div class="intro" id="intro">
     <h2>What does this build cost?</h2>
     <p>Paste a build link or a build import code below. Gems and uniques are priced from public economy data; rares you price yourself with one click or a pasted buyout. <a href="/how-it-works.html" style="color:var(--bz3); white-space:nowrap">How it works&nbsp;&rarr;</a></p>
-    <p style="font-size:14px; color:var(--mut); margin:6px 0 0;">Hands-free rare pricing: <a id="heroExtLink" href="https://github.com/divtally/divtally/releases" target="_blank" rel="noopener" style="color:var(--bz3)">get the DivTally browser extension</a></p>
+    <div style="margin:14px 0 2px; text-align:center;">
+      <a id="heroExtLink" class="ext-cta" href="https://github.com/divtally/divtally/releases" target="_blank" rel="noopener">
+        <span class="cta-main">&#10515; Get the DivTally Browser Extension</span>
+        <span class="cta-sub">hands-free rare pricing &middot; free &middot; open source</span>
+      </a>
+    </div>
   </div>
 
   <!-- ===== live pricing indicator (above the board) ===== -->
@@ -1910,6 +1924,7 @@ function pkHeader(step, links){
 function pkFooter(inQueue,pos,remain,already){
   let h=`<div class="pbtns">`;
   if(inQueue && pos>0) h+=`<button class="stone-btn skip" data-pk="back" type="button">&larr; Back</button>`;
+  h+=`<a class="stone-btn plink" data-pk="opensearch" href="#" title="Open this exact search on the official trade site — browse and buy the real listings">open search ↗</a>`;
   h+=`<button class="stone-btn skip" data-pk="skip" type="button">Skip${inQueue?" (don't price)":''}</button>`;
   h+=`<button class="stone-btn search" data-pk="search" type="button">${already?'Re-search this item':'Search this item'}</button>`;
   h+=`</div>`;
@@ -2108,6 +2123,12 @@ pick.addEventListener('click',e=>{
   if(act==='tosurvey'){ pkSync(); PKM.view='survey'; renderPicker(); return; }
   if(act==='addgroup'){ pkSync(); PKM.groups.push({type:'count',min:''}); renderPicker(); return; }
   if(act==='rmgroup'){ pkSync(); pkRemoveGroup(+btn.dataset.gi); renderPicker(); return; }
+  if(act==='opensearch'){ e.preventDefault();
+    if(PKM){ pkSync(); const q=pkBuildQuery();
+      const url=bpc.rareTradeUrl(q, (bpc.state.priced[PKM.key]&&bpc.state.priced[PKM.key].trade_url)||PKM.it.trade_url);
+      bpc.setRareQuery(PKM.key, q, url);
+      window.open(url, '_blank', 'noopener'); }
+    return; }
   if(act==='search'){ doPickerSearch(); return; }
   if(act==='skip'){ doPickerSkip(); return; }
   if(act==='back'){ doPickerBack(); return; }
@@ -2182,7 +2203,7 @@ function maybeAutoStart(){
   if(!autoAutoOn()) return;
   if(bpc.scanStatus().active) return;                  // respect an in-progress scan
   const bk=buildKey(); if(!bk || autoFired.has(bk)) return;
-  if(!bpc.manualRows().some(r=>!r.priced)) return;     // nothing to price (e.g. the cache filled it in)
+  if(!bpc.manualRows().some(bpc.needsScan)) return;    // nothing to price (floor-priced variant uniques count as unfinished)
   autoFired.add(bk);                                    // guard BEFORE launching (never loops / re-triggers)
   bpc.autoscan();
 }

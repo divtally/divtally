@@ -860,7 +860,15 @@
     }
     return nextChunk();
   }
-  function autoscan() { return priceRowsViaExtension(manualRows().filter(function (r) { return !r.priced; })); }
+  // A variant unique's poe.ninja floor/range is a PLACEHOLDER, not its price (owner report
+  // 2026-07-27: "why did i have to click each unique jewel to price it?") - autoscan treats
+  // such rows as unfinished until their exact locked-mod search has run (source becomes 'trade').
+  function needsScan(r) {
+    if (!r.priced) return true;
+    var p = r.price || {};
+    return !!(r.item && r.item.variant && /^unique-ninja/.test(p.method || ""));
+  }
+  function autoscan() { return priceRowsViaExtension(manualRows().filter(needsScan)); }
   function priceViaExtension(key) {
     var r = manualRows().find(function (x) { return x.key === String(key); });
     return r ? priceRowsViaExtension([r]) : Promise.resolve({ error: "no such row" });
@@ -1264,7 +1272,7 @@
     start: start, startUrl: startUrl, startCache: startCache, rerun: rerun, researchAll: researchAll,
     setControl: setControl, loadPrefs: loadPrefs,
     price: price, priceHTML: priceHTML, curImg: curImg, nfmt: nfmt, esc: esc, divRate: divRate, tierEx: tierEx,
-    totals: totals, setEnabled: setEnabled, setIncludeSwap: setIncludeSwap, includeSwap: includeSwap, setGroupEnabled: setGroupEnabled, isPriced: isPriced, itemsByGroup: itemsByGroup,
+    totals: totals, setEnabled: setEnabled, setIncludeSwap: setIncludeSwap, includeSwap: includeSwap, needsScan: needsScan, setGroupEnabled: setGroupEnabled, isPriced: isPriced, itemsByGroup: itemsByGroup,
     gemGroups: gemGroups, gemBreakdown: gemBreakdown, gemHost: gemHost,
     setPurchased: setPurchased, isPurchased: isPurchased,
     // public pricing
