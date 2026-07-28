@@ -12,6 +12,17 @@ The function lives in `public/api/` (self-contained Vercel Python project); see
 as a user option; a new `rares[].scopes` field exposes both (§2.5, §2.6.1). Uniques are
 unchanged. See `docs/notes-v2-api.md`.
 
+**Additive update 2026-07-27 (D-0019 — variant-unique registry):** variant-defining uniques
+(Forbidden Flesh/Flame, Watcher's Eye, timeless jewels, Voices, abyssal-socket uniques,
+Impresence, Mageblood, …) are now priced by the **owned variant**, not by name alone. Additive,
+back-compatible fields: a per-item **`variant`** block (§2.8); the unique's `trade_query` gains
+the **required defining-mod filters** built from the build's own copy (Allocates-option split,
+exact timeless seed `min==max`, exact socket/passive count, aura-combo); `rares[].affixes` gain
+**`defining`** / **`option`** / **`exact`** (§2.6); and two new `price.method`s
+(**`unique-ninja-floor`**, and the existing `unique-ninja-variant` now also covers registry
+map-count/-variant/-base matches). Non-registry uniques are unchanged. See
+`docs/notes-variant-querybuild.md`.
+
 ---
 
 ## 0. The hard invariant (read first)
@@ -128,6 +139,10 @@ Present when the item has sockets/links (a 5/6-link drives price):
 Non-gem rows add `mods`: `{ "implicit": string[], "explicit": string[] }` (rich-text
 stripped) when the item has any.
 
+**Variant-registered unique rows** add `variant` (object, §2.8) — what makes this copy a
+price-variant and the defining stats that were pinned into its `trade_query`. Present only for
+uniques in the D-0019 registry; absent on every other row.
+
 **Gem rows** add: `level`, `quality` (int), `corrupted` (bool), `granted` (bool — the
 active skill is item-provided, so excluded from its price total), `supports` (array of
 `{name, level, quality, corrupted, icon, support, granted}`), and host grouping fields
@@ -217,8 +232,11 @@ and the tool hides nothing.
 | `negated` | bool | the roll is a "reduced" value carried on the opposite-polarity "increased" stat → filter as a max, not a min |
 | `resist` | bool | this mod folds into a `pseudo` resistance total (the picker hides it when the pseudo toggle is on) |
 | `group` | string | the mod's trade stat group: `explicit` · `crafted` · `fractured` · `enchant` · `veiled` · `scourge` · `crucible`; `equip` for defence totals; `pseudo` for pseudo entries. Defaults to `explicit` for PoB imports (which carry no per-mod group) |
-| `prefer` | bool | ticked-by-default in the picker (rares: every searchable affix; uniques: only build-defining `+# to Level of all … Skills` rolls) |
-| `priority` | enum | default tier — `required` · `nice` · `notimp` · `skip` |
+| `prefer` | bool | ticked-by-default in the picker (rares: every searchable affix; uniques: only build-defining `+# to Level of all … Skills` rolls **and D-0019 variant-defining mods**) |
+| `priority` | enum | default tier — `required` · `nice` · `notimp` · `skip` (a `defining` mod is always `required`) |
+| `defining` | bool | **D-0019** — this mod is a variant-DEFINING mod of a registered unique (the aura combo, the Allocates notable, the timeless seed, the socket/passive count …). Always `searchable:true`, `prefer:true`, `priority:"required"`; the picker should lock/highlight it. `false` on every ordinary affix and every non-registry item |
+| `option` | int | **D-0019, defining OPTION mods only** — the trade `value.option` for an "Allocates X" / ring-size / keystone-radius mod. When present, `stat_id` is the **base** id (pipe stripped) and the filter is `{"id":stat_id,"value":{"option":option}}`; `default_min`/`default_max` are both `null` (no numeric bound). Absent otherwise |
+| `exact` | bool | **D-0019, defining EXACT mods only** (timeless seed, socket/passive count) — search `min == max == default_min` (a different seed/count is a different item). `default_max` stays `null` (so the ≤1-bound rule holds); the client sets `max = min`. Absent/`false` otherwise |
 | `reason` | string | why unsearchable (e.g. `"no trade filter matches this mod"`), else `""` |
 
 **`PseudoOption`** — a combined resistance total the picker can search instead of the item's
@@ -296,6 +314,41 @@ carries the two search scopes so a picker can let the user choose which to run:
 ### 2.7 `warnings[]`
 Array of human-readable strings (empty in v1.0; reserved for soft issues).
 
+### 2.8 item `variant` — the variant-unique block (D-0019)
+Present on an item row **only** for a unique in the variant registry
+(`api/_data/variant_uniques.json`; runtime reads that file, never the network). It states what
+makes this copy a *price-variant* and which stats were pinned into its `trade_query`, so a UI
+can render/lock the defining mods and explain the price.
+
+```jsonc
+"variant": {
+  "class": "seed-jewel",             // seed-jewel | notable-jewel | socket-defined |
+                                     //   roll-defined | mod-variant
+  "label": "Caspiro seed 29120",     // human summary of THIS copy's variant
+  "locked_stats": [                  // the REQUIRED defining filters (a subset of trade_query.stats)
+    { "stat_id": "explicit.pseudo_timeless_jewel_caspiro",
+      "value": { "min": 29120, "max": 29120 },   // {option:N} | {min:N,max:N} | {min:N} | null
+      "text": "Commissioned 29120 coins to commemorate Caspiro" } ]
+}
+```
+
+- **`class`** — how the variant is encoded (and how it is priced): `seed-jewel` (timeless; exact
+  displayed-seed `min==max`, conqueror in the stat id; ninja floor-only), `notable-jewel`
+  (Forbidden/Impossible-Escape/Thread-of-Hope OPTION stat; ninja floor-only), `socket-defined`
+  (exact abyssal/passive count; ninja `map-count`), `roll-defined` (Watcher's-Eye aura combo,
+  own-rolls uniques; ninja floor-only, capped low), `mod-variant` (element/base forms poe.ninja
+  enumerates; ninja `map-variant`/`map-base`; `locked_stats` may be `[]` when the ninja line
+  itself is the price).
+- **`label`** — a concise, deterministic description built from the copy alone (e.g.
+  `"Berserker"`, `"affected by Hatred, Anger"`, `"7 Added Small Passives"`,
+  `"Kaom seed 15000"`); for a `mod-variant` it may be filled from the matched ninja variant.
+- **`locked_stats[]`** — the defining filters, each `{stat_id, value, text}`. `value` mirrors the
+  emitted trade filter: `{"option":N}` for an OPTION mod (search `{"id":stat_id,"value":{"option":N}}`),
+  `{"min":N,"max":N}` for an EXACT seed/count, `{"min":N}` for an aura/own roll, or `null`. These
+  are ADDITIVE (D-0015): they are the *new required* filters the item's `trade_query` now carries
+  — nothing the item rolled is dropped. The matching `rares[].affixes` rows are flagged
+  `defining:true` (with `option`/`exact` as applicable, §2.6).
+
 ---
 
 ## 3. Enums
@@ -303,10 +356,23 @@ Array of human-readable strings (empty in v1.0; reserved for soft issues).
 **`price.method`**
 - `skill` — gem group priced from poe.ninja.
 - `unique-ninja` — unique priced by exact name (single poe.ninja line).
-- `unique-ninja-variant` — a specific poe.ninja variant matched to the item's mods.
-- `unique-ninja-range` — several variants; `chaos.{min,median,high}` is the spread across
-  them (exact roll unclear — verify via `trade_url`). Always `confidence:"low"`.
-- `unique-unpriced` — name not on poe.ninja (or unnamed). No number; use `trade_query`.
+- `unique-ninja-variant` — a specific poe.ninja variant matched to the item. Non-registry: the
+  variant `label` tokens are covered by the item's mods. **D-0019 registry:** the line for the
+  OWNED variant, selected deterministically — by socket/passive **count** (`map-count`, e.g.
+  Voices "7 passives"; the observed abyssal count when the label isn't literal), by variant
+  **label** vs the copy's mods (`map-variant`, e.g. Impresence "Lightning"), or by **base**
+  (`map-base`, e.g. Grand Spectrum).
+- `unique-ninja-floor` — **D-0019** — poe.ninja lists only ONE aggregate line for a
+  variant-registered name whose variants it cannot split (timeless seed, "Allocates X" notable,
+  Watcher's-Eye aura combo, and other roll-defined uniques). `chaos.{min,median,high}` are that
+  **floor** (the cheapest line = the min of the range across all variants); always
+  `confidence:"low"`. The real price is this row's exact-variant `trade_query` (the trade link).
+- `unique-ninja-range` — **(non-registry only)** several variants of a name not in the registry;
+  `chaos.{min,median,high}` is the spread across them (exact roll unclear — verify via
+  `trade_url`). Always `confidence:"low"`.
+- `unique-unpriced` — name not on poe.ninja (or unnamed), **or** a registry variant whose exact
+  owned variant poe.ninja does not enumerate (never a cheapest-any-variant number — D-0019). No
+  number; use `trade_query`.
 - `rare-unpriced` — rares are never server-priced; use `trade_query`.
 - `magic-unpriced` — magic items; use `trade_query`.
 - `none` — normal item, not priced.
@@ -315,8 +381,9 @@ Array of human-readable strings (empty in v1.0; reserved for soft issues).
 `none` (no query, no number).
 
 **`price.confidence`**: `high` · `medium` · `low` · `none`. For gems/uniques it reflects
-the poe.ninja `listingCount` (≥5 high, ≥2 medium, else low); `unique-ninja-range` is always
-`low`.
+the poe.ninja `listingCount` (≥5 high, ≥2 medium, else low); `unique-ninja-range` and
+`unique-ninja-floor` are always `low` (D-0019: the floor/range is a bound, not a match on the
+exact variant, so its huge aggregate listing count never earns a high rating).
 
 **`affixes[].priority`** (default picker tier): `required` · `nice` · `notimp` · `skip`.
 

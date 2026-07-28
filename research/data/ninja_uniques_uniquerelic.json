@@ -1,0 +1,507 @@
+{
+ "lines": [
+  {
+   "id": 107858,
+   "name": "The Original Scripture",
+   "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvUmVsaWNzL1JlbGljVW5pcXVlNHgxIiwidyI6NCwiaCI6MSwic2NhbGUiOjF9XQ/e6e8bfb6e4/RelicUnique4x1.png",
+   "baseType": "Papyrus Relic",
+   "itemClass": 3,
+   "sparkLine": {
+    "totalChange": 0,
+    "data": []
+   },
+   "explicitModifiers": [
+    {
+     "text": "The Herald of the Scourge drops the Original Sin",
+     "optional": false
+    },
+    {
+     "text": "Cannot have Inspiration",
+     "optional": false
+    },
+    {
+     "text": "Maximum Resolve is 1",
+     "optional": false
+    },
+    {
+     "text": "Cannot be used with Forbidden Tomes below level 83",
+     "optional": false
+    },
+    {
+     "text": "This item is destroyed when applied to a Sanctum",
+     "optional": false
+    }
+   ],
+   "flavourText": "\"It's all here. The lie at the core of my faith. Maxarius was not the first chosen of Innocence. Maxarius was Innocence himself. A charlatan, a liar, and a power-seeker.\" - Lycia, the Heretic",
+   "chaosValue": 27910,
+   "exaltedValue": 27633,
+   "divineValue": 232.0,
+   "count": 2,
+   "detailsId": "the-original-scripture-relic",
+   "listingCount": 2
+  },
+  {
+   "id": 107850,
+   "name": "The Gilded Chalice",
+   "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvUmVsaWNzL1JlbGljVW5pcXVlMXgzIiwidyI6MSwiaCI6Mywic2NhbGUiOjF9XQ/7a0ff8a041/RelicUnique1x3.png",
+   "baseType": "Processional Relic",
+   "itemClass": 3,
+   "sparkLine": {
+    "totalChange": 79,
+    "data": [
+     null,
+     null,
+     null,
+     null,
+     0,
+     -8.25,
+     79
+    ]
+   },
+   "explicitModifiers": [
+    {
+     "text": "Duplicates up to 4 random Offer Rewards upon defeating the Herald of the Scourge",
+     "optional": false
+    },
+    {
+     "text": "Cannot recover Resolve",
+     "optional": false
+    },
+    {
+     "text": "Cannot be used with Forbidden Tomes below level 75",
+     "optional": false
+    },
+    {
+     "text": "This item is destroyed when applied to a Sanctum",
+     "optional": false
+    }
+   ],
+   "flavourText": "\"He took the newcomers' symbol and made it his own. Finally, they flocked to him. Finally, he had the power and wealth he so desired.\" - Lycia, the Heretic",
+   "chaosValue": 143.2,
+   "exaltedValue": 141.8,
+   "divineValue": 1.19,
+   "count": 38,
+   "detailsId": "the-gilded-chalice-relic",
+   "listingCount": 38
+  },
+  {
+   "id": 107855,
+   "name": "The Chains of Castigation",
+   "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvUmVsaWNzL0NvcmVSZWxpY1VuaXF1ZTF4MyIsInciOjEsImgiOjMsInNjYWxlIjoxfV0/0640b266e6/CoreRelicUnique1x3.png",
+   "baseType": "Processional Relic",
+   "itemClass": 3,
+   "sparkLine": {
+    "totalChange": -35.71,
+    "data": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     0,
+     -35.71
+    ]
+   },
+   "explicitModifiers": [
+    {
+     "text": "The Herald of the Scourge drops Sandstorm Visage",
+     "optional": false
+    },
+    {
+     "text": "Rooms are unknown on the Sanctum Map",
+     "optional": false
+    },
+    {
+     "text": "Cannot be used with Forbidden Tomes below level 75",
+     "optional": false
+    },
+    {
+     "text": "This item is destroyed when applied to a Sanctum",
+     "optional": false
+    }
+   ],
+   "flavourText": "\"The mysterious traveller saw the vilified brother chained to a cliff, where all could point and shout and deride him. In one fell swing, she cracked the mountainside, freeing him.\" - Lycia, the Heretic",
+   "chaosValue": 90.0,
+   "exaltedValue": 89.11,
+   "divineValue": 0.75,
+   "count": 33,
+   "detailsId": "the-chains-of-castigation-relic",
+   "listingCount": 33
+  },
+  {
+   "id": 107849,
+   "name": "The Hour of Divinity",
+   "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvUmVsaWNzL1JlbGljVW5pcXVlMXgyIiwidyI6MSwiaCI6Miwic2NhbGUiOjF9XQ/f39ebcc337/RelicUnique1x2.png",
+   "baseType": "Censer Relic",
+   "itemClass": 3,
+   "sparkLine": {
+    "totalChange": 245,
+    "data": [
+     null,
+     null,
+     null,
+     null,
+     0,
+     -10,
+     245
+    ]
+   },
+   "explicitModifiers": [
+    {
+     "text": "Duplicates up to 2 random Offer Rewards upon defeating the Herald of the Scourge",
+     "optional": false
+    },
+    {
+     "text": "Cannot have Boons",
+     "optional": false
+    },
+    {
+     "text": "This item is destroyed when applied to a Sanctum",
+     "optional": false
+    }
+   ],
+   "flavourText": "\"They ascended together, one unwillingly. The vilified became black as coal, and the lauded, golden. After a lifetime of ambition, he finally had his heart's desire. It only cost him his brother.\" - Lycia, the Heretic",
+   "chaosValue": 69.0,
+   "exaltedValue": 68.32,
+   "divineValue": 0.57,
+   "count": 25,
+   "detailsId": "the-hour-of-divinity-relic",
+   "listingCount": 25
+  },
+  {
+   "id": 107853,
+   "name": "The Second Sacrament",
+   "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvUmVsaWNzL1JlbGljVW5pcXVlMXg0IiwidyI6MSwiaCI6NCwic2NhbGUiOjF9XQ/adaa7ec07c/RelicUnique1x4.png",
+   "baseType": "Candlestick Relic",
+   "itemClass": 3,
+   "sparkLine": {
+    "totalChange": -23.04,
+    "data": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     0,
+     -23.04
+    ]
+   },
+   "explicitModifiers": [
+    {
+     "text": "The Herald of the Scourge deals 100% more Damage",
+     "optional": false
+    },
+    {
+     "text": "The Herald of the Scourge takes 75% less Damage",
+     "optional": false
+    },
+    {
+     "text": "The Herald of the Scourge drops the Winds of Fate",
+     "optional": false
+    },
+    {
+     "text": "Cannot be used with Forbidden Tomes below level 83",
+     "optional": false
+    },
+    {
+     "text": "This item is destroyed when applied to a Sanctum",
+     "optional": false
+    }
+   ],
+   "flavourText": "\"He took many of his people's traditions and gilded them, hollowed them. They rejected his new religion, and he and his followers were forced to depart the mountains for lands unknown.\" - Lycia, the Heretic",
+   "chaosValue": 29.4,
+   "exaltedValue": 29.11,
+   "divineValue": 0.24,
+   "count": 31,
+   "detailsId": "the-second-sacrament-relic",
+   "listingCount": 31
+  },
+  {
+   "id": 107848,
+   "name": "The Blood of Innocence",
+   "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvUmVsaWNzL0NvcmVSZWxpY1VuaXF1ZTF4MiIsInciOjEsImgiOjIsInNjYWxlIjoxfV0/a9230e3b96/CoreRelicUnique1x2.png",
+   "baseType": "Censer Relic",
+   "itemClass": 3,
+   "sparkLine": {
+    "totalChange": 590.5,
+    "data": [
+     null,
+     null,
+     null,
+     null,
+     0,
+     376.2,
+     590.5
+    ]
+   },
+   "explicitModifiers": [
+    {
+     "text": "The Herald of the Scourge drops the Balance of Terror",
+     "optional": false
+    },
+    {
+     "text": "The Herald of the Scourge deals 50% more Damage",
+     "optional": false
+    },
+    {
+     "text": "The Herald of the Scourge takes 50% less Damage",
+     "optional": false
+    },
+    {
+     "text": "This item is destroyed when applied to a Sanctum",
+     "optional": false
+    }
+   ],
+   "flavourText": "\"After weeks of being pursued, the veiled traveller made her stand in a sandstorm. Somehow, she wounded a god. Innocence relented; his brother and the traveller made good their escape.\" - Lycia, the Heretic",
+   "chaosValue": 29.0,
+   "exaltedValue": 28.71,
+   "divineValue": 0.24,
+   "count": 143,
+   "detailsId": "the-blood-of-innocence-relic",
+   "listingCount": 143
+  },
+  {
+   "id": 107851,
+   "name": "The First Crest",
+   "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvUmVsaWNzL1JlbGljVW5pcXVlMngyIiwidyI6MiwiaCI6Miwic2NhbGUiOjF9XQ/15bd9eec94/RelicUnique2x2.png",
+   "baseType": "Coffer Relic",
+   "variant": "Relics",
+   "itemClass": 3,
+   "sparkLine": {
+    "totalChange": 60,
+    "data": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     0,
+     60
+    ]
+   },
+   "explicitModifiers": [
+    {
+     "text": "Aureus Coins are converted to Relics upon defeating the Herald of the Scourge",
+     "optional": false
+    },
+    {
+     "text": "This item is destroyed when applied to a Sanctum",
+     "optional": false
+    }
+   ],
+   "flavourText": "\"In pursuit of divinity, he tried many times to found a religion. Few followed his initial symbols and proverbs. He needed something greater. A symbol none could deny.\" - Lycia, the Heretic",
+   "chaosValue": 8.0,
+   "exaltedValue": 7.92,
+   "divineValue": 0.07,
+   "count": 61,
+   "detailsId": "the-first-crest-relics-relic",
+   "listingCount": 61
+  },
+  {
+   "id": 107844,
+   "name": "The First Crest",
+   "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvUmVsaWNzL1JlbGljVW5pcXVlMngyIiwidyI6MiwiaCI6Miwic2NhbGUiOjF9XQ/15bd9eec94/RelicUnique2x2.png",
+   "baseType": "Coffer Relic",
+   "variant": "Tainted Currency",
+   "itemClass": 3,
+   "sparkLine": {
+    "totalChange": -79.59,
+    "data": [
+     null,
+     null,
+     null,
+     null,
+     0,
+     -79.59,
+     -79.59
+    ]
+   },
+   "explicitModifiers": [
+    {
+     "text": "Aureus Coins are converted to Tainted Currency upon defeating the Herald of the Scourge",
+     "optional": false
+    },
+    {
+     "text": "This item is destroyed when applied to a Sanctum",
+     "optional": false
+    }
+   ],
+   "flavourText": "\"In pursuit of divinity, he tried many times to found a religion. Few followed his initial symbols and proverbs. He needed something greater. A symbol none could deny.\" - Lycia, the Heretic",
+   "chaosValue": 1.0,
+   "exaltedValue": 0.99,
+   "divineValue": 0.01,
+   "count": 29,
+   "detailsId": "the-first-crest-tainted-currency-relic",
+   "listingCount": 29
+  },
+  {
+   "id": 107845,
+   "name": "The Power and the Promise",
+   "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvUmVsaWNzL0NvcmVSZWxpY1VuaXF1ZTN4MSIsInciOjMsImgiOjEsInNjYWxlIjoxfV0/b7de2a9095/CoreRelicUnique3x1.png",
+   "baseType": "Tome Relic",
+   "itemClass": 3,
+   "sparkLine": {
+    "totalChange": -94.74,
+    "data": [
+     null,
+     null,
+     null,
+     null,
+     0,
+     -73.68,
+     -94.74
+    ]
+   },
+   "explicitModifiers": [
+    {
+     "text": "The Herald of the Scourge drops Eternal Damnation",
+     "optional": false
+    },
+    {
+     "text": "Cannot have Inspiration",
+     "optional": false
+    },
+    {
+     "text": "Cannot recover Resolve",
+     "optional": false
+    },
+    {
+     "text": "Cannot be used with Forbidden Tomes below level 80",
+     "optional": false
+    },
+    {
+     "text": "This item is destroyed when applied to a Sanctum",
+     "optional": false
+    }
+   ],
+   "flavourText": "\"Building on the fear and hatred that deified him, Innocence threatened an eternity of flames for nonbelievers. The newcomers wailed and threw themselves at his feet in the thousands.\" - Lycia, the Heretic",
+   "chaosValue": 1.0,
+   "exaltedValue": 0.99,
+   "divineValue": 0.01,
+   "count": 61,
+   "detailsId": "the-power-and-the-promise-relic",
+   "listingCount": 61
+  },
+  {
+   "id": 107846,
+   "name": "The Broken Censer",
+   "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvUmVsaWNzL1JlbGljVW5pcXVlM3gxIiwidyI6MywiaCI6MSwic2NhbGUiOjF9XQ/97c059a9f1/RelicUnique3x1.png",
+   "baseType": "Tome Relic",
+   "itemClass": 3,
+   "sparkLine": {
+    "totalChange": -50,
+    "data": [
+     null,
+     null,
+     null,
+     null,
+     0,
+     -50.0,
+     -50
+    ]
+   },
+   "explicitModifiers": [
+    {
+     "text": "The Herald of the Scourge drops 2 additional Forbidden Tomes",
+     "optional": false
+    },
+    {
+     "text": "Rooms are unknown on the Sanctum Map",
+     "optional": false
+    },
+    {
+     "text": "Cannot be used with Forbidden Tomes below level 75",
+     "optional": false
+    },
+    {
+     "text": "This item is destroyed when applied to a Sanctum",
+     "optional": false
+    }
+   ],
+   "flavourText": "\"His followers were too small in number to spark divinity, so he turned to a greater power: hatred. He vilified his brother, sparking zealotry, and the change finally began.\" - Lycia, the Heretic",
+   "chaosValue": 1.0,
+   "exaltedValue": 0.99,
+   "divineValue": 0.01,
+   "count": 28,
+   "detailsId": "the-broken-censer-relic",
+   "listingCount": 28
+  },
+  {
+   "id": 107847,
+   "name": "The First Crest",
+   "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvUmVsaWNzL1JlbGljVW5pcXVlMngyIiwidyI6MiwiaCI6Miwic2NhbGUiOjF9XQ/15bd9eec94/RelicUnique2x2.png",
+   "baseType": "Coffer Relic",
+   "variant": "Experience",
+   "itemClass": 3,
+   "sparkLine": {
+    "totalChange": 0,
+    "data": [
+     null,
+     null,
+     null,
+     null,
+     0,
+     0,
+     0
+    ]
+   },
+   "explicitModifiers": [
+    {
+     "text": "Aureus Coins are converted to Experience upon defeating the Herald of the Scourge",
+     "optional": false
+    },
+    {
+     "text": "This item is destroyed when applied to a Sanctum",
+     "optional": false
+    }
+   ],
+   "flavourText": "\"In pursuit of divinity, he tried many times to found a religion. Few followed his initial symbols and proverbs. He needed something greater. A symbol none could deny.\" - Lycia, the Heretic",
+   "chaosValue": 1.0,
+   "exaltedValue": 0.99,
+   "divineValue": 0.01,
+   "count": 12,
+   "detailsId": "the-first-crest-experience-relic",
+   "listingCount": 12
+  },
+  {
+   "id": 107852,
+   "name": "The Night Lamp",
+   "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvUmVsaWNzL1JlbGljVW5pcXVlMngxIiwidyI6MiwiaCI6MSwic2NhbGUiOjF9XQ/2a6a7e317d/RelicUnique2x1.png",
+   "baseType": "Urn Relic",
+   "itemClass": 3,
+   "sparkLine": {
+    "totalChange": 0,
+    "data": [
+     null,
+     null,
+     null,
+     null,
+     0,
+     0,
+     0
+    ]
+   },
+   "explicitModifiers": [
+    {
+     "text": "The Herald of the Scourge drops an additional Forbidden Tome",
+     "optional": false
+    },
+    {
+     "text": "No Resolve Mitigation, chance to Avoid Resolve loss or Resolve Aegis",
+     "optional": false
+    },
+    {
+     "text": "This item is destroyed when applied to a Sanctum",
+     "optional": false
+    }
+   ],
+   "flavourText": "\"The newcomers were terrified of fire. He used their fear to control them, to lay the seeds of unquestioning faith. He claimed only his god could protect them.\" - Lycia, the Heretic",
+   "chaosValue": 1.0,
+   "exaltedValue": 0.99,
+   "divineValue": 0.01,
+   "count": 77,
+   "detailsId": "the-night-lamp-relic",
+   "listingCount": 77
+  }
+ ]
+}

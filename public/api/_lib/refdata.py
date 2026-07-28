@@ -27,6 +27,7 @@ _CANDIDATE_DIRS = [
 
 _stats_cache: Optional[dict] = None
 _items_cache: Optional[dict] = None
+_variant_cache: Optional[dict] = None
 
 
 def _find(filename: str) -> str:
@@ -54,6 +55,22 @@ def _items_data() -> dict:
         with open(_find("trade_items.json"), encoding="utf-8") as f:
             _items_cache = json.load(f)
     return _items_cache
+
+
+def variant_data() -> dict:
+    """The variant-unique registry (`_data/variant_uniques.json`), the D-0019 generated
+    artifact. Bundled and read from disk exactly like the stat/item dictionaries -- the
+    runtime NEVER fetches it. `{ '_meta': {...}, 'items': [ {name, class, base, defining,
+    ninja_variant_rule, confidence_policy, ...}, ... ] }`. Missing file -> empty registry
+    (variant handling degrades to the pre-D-0019 name+base behaviour, never an error)."""
+    global _variant_cache
+    if _variant_cache is None:
+        try:
+            with open(_find("variant_uniques.json"), encoding="utf-8") as f:
+                _variant_cache = json.load(f)
+        except (FileNotFoundError, ValueError):
+            _variant_cache = {"_meta": {}, "items": []}
+    return _variant_cache
 
 
 def item_types() -> dict:

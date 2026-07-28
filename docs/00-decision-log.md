@@ -205,6 +205,35 @@ is a technical transparency disclosure, not marketing; strip on owner request. P
 identity: repo-local user = DivTally <divtally@gmail.com>, full history rewritten to it
 pre-publish (personal email never ships in public metadata).
 
+## D-0019 - Variant-unique registry + timeless jewel handling (Locked, 2026-07-27)
+Owner: items like Forbidden Flesh with defining unique affixes must be searched WITH the specific
+mod (from the build's own copy), not name-only; compile the list with heavy subagent fan-out;
+prefer building OUR OWN item database over internet sources; timeless jewels are worse - research
+why. Plan: (1) registry harvested from primary data (poe.ninja Unique* overviews' variant
+enumeration + the trade stats/filters schema; wiki/poedb only as flagged cross-check);
+(2) generated artifact public/api/_data/variant_uniques.json + rebuildable tool; (3) querybuild:
+registry items get REQUIRED defining-mod filters (option-stats like "Allocates X" incl.), ninja
+price matched to the exact variant line; timeless jewels searched by exact seed (min=max) +
+keystone variant; unmatchable -> link + no number as ever; (4) picker shows defining mods;
+(5) adversarial verify incl. a sole-trade-budget live spot-check agent.
+**Timeless amendment (owner 2026-07-27): lean on community tools for timeless-jewel cost info.**
+Sanctioned as a LABELED source tier for timeless jewels only: seed-outcome calculators (what a
+seed does) + community valuation data (which seeds carry premiums) may inform a
+"community estimate" price class - always displayed as such (distinct confidence/badge), never
+blended with live-listing numbers; exact-seed trade search + link remain the ground truth.
+SCOUT RESULT (2026-07-27, docs/research/timeless-community-tools.md): NO public machine-readable
+per-seed price feed exists anywhere (TFT's file is name-level like ninja, and unlicensed - do not
+redistribute); community leaning therefore = (1) the Vilsol calculator "see what this seed does"
+DEEP-LINK per timeless row (URL confirmed from source; GPL only bites if we vendor their data -
+we consume a URL string only; Elegant Hubris seed encoding [INFERRED - verify before ship]),
+(2) the labeled low-confidence name-level floor we already have. Per-seed VALUE remains
+discoverable only by our exact-seed live search - which is the D-0019 design.
+**Source-tier policy (owner + 2026-07-27 poedb note):** registry build-step tiers = poe.ninja API
++ trade schema (primary) > poedb.tw (datamined/primary-derived - gap-filler, entries tagged
+`source: poedb`) > wiki/community ([NOT FROM SOURCE], cross-check only). Runtime uses ONLY our
+committed JSON. Endgame option if gaps persist: own game-file extraction via pathofexile-dat
+(the owner's poe2-datamine pattern) - parked in backlog, not speculative-built.
+
 ## D-0018 - Scan pacing, currency rates map, weapon-swap exclusion (Locked, 2026-07-27)
 Three owner asks from live testing:
 - **Breathing room between searches** (ext v1.2.1): the limiter obeyed GGG's windows but

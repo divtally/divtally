@@ -89,6 +89,13 @@ def validate_contract(doc, *, source):
         u = it.get("trade_url") or ""
         if u:
             check(f"item[{idx}] trade_url is /trade/search", "/trade/search/" in u and "/api/" not in u, u[:80])
+        # D-0019 (contract 2.8): a variant-registered unique carries a `variant` block.
+        if "variant" in it:
+            vb = it["variant"]
+            check(f"item[{idx}].variant shape",
+                  isinstance(vb, dict) and "class" in vb and "label" in vb
+                  and isinstance(vb.get("locked_stats"), list), str(vb)[:90])
+            check(f"item[{idx}].variant only on uniques", it.get("category") == "unique")
     rares = doc.get("rares") or {}
     for k, v in rares.items():
         for f in ("status", "name", "kind", "scope", "scope_q", "affixes", "pseudo"):
@@ -122,9 +129,11 @@ def validate_contract(doc, *, source):
         for a in v.get("affixes") or []:
             # picker-ready affix payload: every entry self-describes for the client picker
             for f in ("kind", "text", "stat_id", "value", "default_min", "default_max",
-                      "searchable", "negated", "group"):
+                      "searchable", "negated", "group", "defining"):
                 check(f"rares[{k}] affix.{f} present", f in a, f"{a.get('text')!r} missing {f}")
-            # a searchable affix prefills exactly one of min/max; unsearchable prefills neither
+            # a searchable affix prefills exactly one of min/max; unsearchable prefills neither.
+            # A defining EXACT row (seed/socket count) carries `exact:true` = search min==max at
+            # default_min, so it still prefills a single bound (D-0019).
             if a.get("searchable"):
                 nn = (a.get("default_min") is not None) + (a.get("default_max") is not None)
                 check(f"rares[{k}] affix prefills <=1 bound", nn <= 1, f"{a.get('text')!r}")
@@ -320,6 +329,239 @@ def phase_a():
     check("bad input -> error_type", bool(body.get("error_type")))
 
 
+def phase_variant():
+    """D-0019 variant-unique registry, hermetic (no network): the copy's variant-DEFINING
+    trade filters, the registry-driven poe.ninja match (floor-cap / map-count / map-variant /
+    unmatched->link), the picker's defining flags, and the item-row variant block. Fixtures
+    are synthetic uniques + a mock poe.ninja unique overview (offline)."""
+    print("\n== PHASE VARIANT: D-0019 registry wiring (offline) ==")
+    from _lib import querybuild as qb
+    from _lib.models import Item as I, CAT_UNIQUE, BuildMeta
+    mapper = statmap.StatMapper(refdata.stats_data())
+
+    def mk(name, base, mods, group="jewel"):
+        return I(name=name, base_type=base, type_line=base, frame_type=3, rarity="Unique",
+                 category=CAT_UNIQUE, group=group, slot="Jewel",
+                 explicit_mods=mods, mod_src=["explicit"] * len(mods), raw={})
+
+    econ = poeninja.PoeNinjaEconomy("TestLeague")
+    econ._uniques = {
+        "forbidden flesh": [{"name": "Forbidden Flesh", "baseType": "Cobalt Jewel",
+                             "variant": None, "chaosValue": 30.0, "listingCount": 863, "count": 863}],
+        "watcher's eye": [{"name": "Watcher's Eye", "baseType": "Prismatic Jewel",
+                           "variant": None, "chaosValue": 50.0, "listingCount": 11320, "count": 11320}],
+        "lethal pride": [{"name": "Lethal Pride", "baseType": "Timeless Jewel", "variant": None,
+                          "chaosValue": 67.5, "listingCount": 6189, "count": 6189}],
+        "voices": [
+            {"name": "Voices", "baseType": "Large Cluster Jewel", "variant": "3 passives",
+             "chaosValue": 7030, "listingCount": 15, "count": 15},
+            {"name": "Voices", "baseType": "Large Cluster Jewel", "variant": "5 passives",
+             "chaosValue": 507.0, "listingCount": 84, "count": 84},
+            {"name": "Voices", "baseType": "Large Cluster Jewel", "variant": "7 passives",
+             "chaosValue": 5.0, "listingCount": 312, "count": 312}],
+        "shroud of the lightless": [   # NOTE: "1 Jewel" LABEL carries 3 abyssal sockets (non-literal)
+            {"name": "Shroud of the Lightless", "baseType": "Carnal Armour", "variant": "1 Jewel",
+             "chaosValue": 360.9, "listingCount": 13, "count": 13},
+            {"name": "Shroud of the Lightless", "baseType": "Carnal Armour", "variant": "2 Jewels",
+             "chaosValue": 3.0, "listingCount": 346, "count": 346}],
+        "impresence": [
+            {"name": "Impresence", "baseType": "Onyx Amulet", "variant": "Chaos",
+             "chaosValue": 90.0, "listingCount": 493, "count": 493},
+            {"name": "Impresence", "baseType": "Onyx Amulet", "variant": "Lightning",
+             "chaosValue": 2.0, "listingCount": 323, "count": 323}],
+    }
+    types = {"Cobalt Jewel", "Prismatic Jewel", "Timeless Jewel", "Large Cluster Jewel",
+             "Carnal Armour", "Onyx Amulet"}
+    P = qb.PublicPricer("TestLeague", econ, mapper, types, status="available")
+
+    def stats_of(r):
+        return (r.extra.get("trade_query") or {}).get("query", {}).get("stats", [{}])[0].get("filters", [])
+
+    # ---- Forbidden Flesh: Allocates OPTION filter present + exact-variant ninja match ----
+    ff = mk("Forbidden Flesh", "Cobalt Jewel",
+            ["Allocates Berserker if you have the matching modifier on Forbidden Flame"])
+    r = P.price_unique_ninja(ff)
+    ffilt = stats_of(r)
+    check("Forbidden Flesh: Allocates option filter present (split base|option form)",
+          any(f.get("id") == "explicit.stat_1190333629"
+              and (f.get("value") or {}).get("option") == 4194 for f in ffilt), str(ffilt))
+    check("Forbidden Flesh: ninja floor matched + capped LOW (not high @863 listings)",
+          r.method == "unique-ninja-floor" and r.confidence == "low" and r.extra["source"] == "poe.ninja",
+          f"{r.method}/{r.confidence}/{r.extra.get('source')}")
+    check("Forbidden Flesh: variant block class+label",
+          r.extra["variant_info"]["class"] == "notable-jewel"
+          and r.extra["variant_info"]["label"] == "Berserker", str(r.extra.get("variant_info")))
+
+    # ---- Watcher's Eye 2-mod: both aura filters present, generic ES mod not required ----
+    we = mk("Watcher's Eye", "Prismatic Jewel", [
+        "+35 to maximum Energy Shield",
+        "Damage Penetrates 10% Cold Resistance while affected by Hatred",
+        "+30% to Critical Strike Multiplier while affected by Anger"])
+    r = P.price_unique_ninja(we)
+    wids = [f["id"] for f in stats_of(r)]
+    check("Watcher's Eye 2-mod: both aura filters present",
+          "explicit.stat_1222888897" in wids and "explicit.stat_3627458291" in wids, str(wids))
+    check("Watcher's Eye 2-mod: exactly the 2 aura mods locked (generic ES not required)",
+          len(wids) == 2, str(wids))
+    check("Watcher's Eye: floor-capped LOW", r.method == "unique-ninja-floor" and r.confidence == "low")
+
+    # ---- Lethal Pride: seed min==max + keystone(conqueror) id ----
+    lp = mk("Lethal Pride", "Timeless Jewel",
+            ["Commanded leadership over 15000 warriors under Kaom\nPassives in radius are Conquered by the Karui"])
+    r = P.price_unique_ninja(lp)
+    sf = stats_of(r)
+    check("Lethal Pride: exact seed filter (min==max) on the conqueror id",
+          len(sf) == 1 and sf[0]["id"] == "explicit.pseudo_timeless_jewel_kaom"
+          and sf[0]["value"] == {"min": 15000, "max": 15000}, str(sf))
+    check("Lethal Pride: floor-capped LOW (no per-seed ninja price)",
+          r.method == "unique-ninja-floor" and r.confidence == "low")
+    check("Lethal Pride: variant label carries conqueror + seed",
+          r.extra["variant_info"]["label"] == "Kaom seed 15000", str(r.extra["variant_info"]["label"]))
+
+    # ---- Voices: exact COUNT filter + map-count ninja match (7 passives -> its line) ----
+    vo = mk("Voices", "Large Cluster Jewel", ["Adds 7 Small Passive Skills which grant nothing"])
+    r = P.price_unique_ninja(vo)
+    vf = stats_of(r)
+    check("Voices: exact count filter min==max==7",
+          len(vf) == 1 and vf[0]["id"] == "explicit.stat_1085446536"
+          and vf[0]["value"] == {"min": 7, "max": 7}, str(vf))
+    check("Voices: map-count picked the '7 passives' ninja line",
+          r.method == "unique-ninja-variant" and abs((r.tier.median or 0) - 5.0) < 1e-6,
+          f"{r.method}/{r.tier.median}")
+
+    # ---- Shroud: map-count via OBSERVED abyssal_count (label '1 Jewel' is non-literal) ----
+    sh = mk("Shroud of the Lightless", "Carnal Armour",
+            ["Has 3 Abyssal Sockets", "+20 to maximum Energy Shield"], group="equipment")
+    r = P.price_unique_ninja(sh)
+    check("Shroud: 3 abyssal sockets -> '1 Jewel' line via observed abyssal_count (non-literal label)",
+          r.method == "unique-ninja-variant" and abs((r.tier.median or 0) - 360.9) < 1e-6,
+          f"{r.method}/{r.tier.median}")
+
+    # ---- Impresence: map-variant by mod text; unmatchable -> unpriced + link ----
+    im = P.price_unique_ninja(mk("Impresence", "Onyx Amulet",
+                                 ["Adds 20 to 40 Lightning Damage", "Grants Level 20 Conductivity"]))
+    check("Impresence: map-variant picked 'Lightning' line",
+          im.method == "unique-ninja-variant" and abs((im.tier.median or 0) - 2.0) < 1e-6,
+          f"{im.method}/{im.tier.median}")
+    imu = P.price_unique_ninja(mk("Impresence", "Onyx Amulet", ["some unrelated text"]))
+    check("Impresence unmatchable -> unpriced + link (never cheapest-any-variant)",
+          imu.method == "unique-unpriced" and imu.extra["source"] == "none" and bool(imu.trade_url),
+          f"{imu.method}/{imu.extra.get('source')}/url={bool(imu.trade_url)}")
+
+    # ---- non-registry unique still uses the legacy path (name/variant/range) ----
+    econ._uniques["nonvariant belt"] = [{"name": "Nonvariant Belt", "baseType": "Heavy Belt",
+                                         "variant": None, "chaosValue": 12.0, "listingCount": 7, "count": 7}]
+    nv = P.price_unique_ninja(mk("Nonvariant Belt", "Heavy Belt", ["+40 to maximum Life"], group="equipment"))
+    check("non-registry unique keeps legacy name-match (not floor)",
+          nv.method == "unique-ninja" and nv.confidence == "high", f"{nv.method}/{nv.confidence}")
+
+    # ---- picker payload + item-row variant block via the FULL response ----
+    from _lib import response as resp
+    items = [ff, we, lp, vo, sh]
+    results = P.price_build(items)
+    meta = BuildMeta(account="t", character="t", league="TestLeague")
+    doc = resp.build_response(meta, results, P, "TestLeague", "poe.ninja")
+    cats = validate_contract(doc, source="poe.ninja")   # reuse the full contract validator
+    check("variant fixtures are uniques", cats == {"unique"}, str(cats))
+    rows = {it["name"].split(",")[0]: it for it in doc["items"]}
+    check("every variant row carries a variant block",
+          all("variant" in rows[n] for n in ("Forbidden Flesh", "Watcher's Eye", "Lethal Pride", "Voices")),
+          str([n for n in rows if "variant" not in rows[n]]))
+    # the picker marks defining mods (Forbidden option row, Voices exact-count row)
+    rr = doc["rares"]
+    ff_idx = str(rows["Forbidden Flesh"]["index"])
+    ff_def = [a for a in rr[ff_idx]["affixes"] if a.get("defining")]
+    check("picker: Forbidden defining affix flagged required+prefer+option",
+          len(ff_def) == 1 and ff_def[0]["priority"] == "required" and ff_def[0]["prefer"] is True
+          and ff_def[0].get("option") == 4194, str(ff_def))
+    vo_idx = str(rows["Voices"]["index"])
+    vo_def = [a for a in rr[vo_idx]["affixes"] if a.get("defining")]
+    check("picker: Voices defining affix flagged exact (min==max prefill)",
+          len(vo_def) == 1 and vo_def[0].get("exact") is True and vo_def[0]["default_min"] == 7,
+          str(vo_def))
+    lp_idx = str(rows["Lethal Pride"]["index"])
+    lp_def = [a for a in rr[lp_idx]["affixes"] if a.get("defining")]
+    check("picker: Lethal Pride seed row is searchable + exact (was unmatched full-line)",
+          len(lp_def) == 1 and lp_def[0]["searchable"] is True and lp_def[0].get("exact") is True
+          and lp_def[0]["reason"] == "", str(lp_def))
+
+    # ---- D-0019 MAJOR-1 regression: the non-aura roll/mod-variant families. EVERY family
+    # carries from.match=="family-all", so the old blanket `if family_all` forced these into
+    # the aura branch -- dropping their defining filters and stamping label="aura variant".
+    # Each must now emit its INTENDED defining filter + a correct label. (Closes MINOR-1: the
+    # missing presence/reservation/non-"while affected by" coverage that let MAJOR-1 ship green.)
+    from _lib import variantreg
+
+    def variant_of(name, base, mods):
+        return variantreg.build_variant(mk(name, base, mods), variantreg.lookup(name, base), mapper)
+
+    # Megalomaniac (emit=presence): AND the three '1 Added Passive Skill is <Notable>' flags --
+    # NOT the base 'Adds N Passive Skills' grant, and never 'aura variant'.
+    mega = variant_of("Megalomaniac", "Medium Cluster Jewel", [
+        "Adds 5 Passive Skills",
+        "1 Added Passive Skill is Touch of Cruelty",
+        "1 Added Passive Skill is Prismatic Heart",
+        "1 Added Passive Skill is Fuel the Fight"])
+    check("Megalomaniac: exactly the 3 notable presence filters (min=1), base grant excluded",
+          {f["id"] for f in mega["filters"]} == {"explicit.stat_2780712583",
+              "explicit.stat_2342448236", "explicit.stat_3599340381"}
+          and all(f.get("value") == {"min": 1} for f in mega["filters"]), str(mega["filters"]))
+    check("Megalomaniac: label names the notables, NOT 'aura variant'",
+          mega["label"] != "aura variant" and "Touch of Cruelty" in mega["label"], mega["label"])
+
+    # Aul's Uprising (reservation family; the registry rep id is a DIFFERENT reservation mod, so
+    # def_ids misses and it falls to own-rolls) -- which STILL captures the '<Aura> has no
+    # Reservation' mod as a filter, and must not be mislabelled 'aura variant'.
+    auls = variant_of("Aul's Uprising", "Onyx Amulet", ["Grace has no Reservation",
+                                                        "+40 to maximum Life"])
+    check("Aul's Uprising: '<Aura> has no Reservation' captured + not 'aura variant'",
+          any(f["id"] == "explicit.stat_2930404958" for f in auls["filters"])
+          and auls["label"] != "aura variant", f"{auls['label']!r} {auls['filters']}")
+
+    # The Light of Meaning (mod-variant): REAL copies carry the "Passive Skills in Radius also
+    # grant <X>" family (15 members, serialised as from.family_ids), NOT the fictional "increased
+    # Effect ... in Radius" the old test fed -- that string resolves to the wrong legacy id
+    # stat_607548408 (which is Might of the Meek's mod; 0 of 913 live Light-of-Meaning listings
+    # carry it -- docs/verify/variants-r1.md sec 3). The copy's SPECIFIC family member must be
+    # emitted by its OWN id: the real defining filter and LoM's only price handle (it has no ninja
+    # variant lines). These real strings FAIL if the registry regresses to stat_607548408 (the old
+    # fixture passed on both the wrong AND the right registry -- coverage of a fiction).
+    lom = variant_of("The Light of Meaning", "Prismatic Jewel", [
+        "Passive Skills in Radius also grant 7% increased Evasion Rating"])
+    check("The Light of Meaning: real 'grant <X>' member emitted by its own id (min-roll), not legacy",
+          lom["filters"] == [{"id": "explicit.stat_3761482453", "value": {"min": 7}}]
+          and all(f["id"] != "explicit.stat_607548408" for f in lom["filters"])
+          and lom["label"] not in ("aura variant", ""), str(lom["filters"]) + " / " + lom["label"])
+    lom2 = variant_of("The Light of Meaning", "Prismatic Jewel", [
+        "Passive Skills in Radius also grant +6 to maximum Mana"])
+    check("The Light of Meaning: a different family member (mana) emits ITS own id, never the legacy",
+          lom2["filters"] == [{"id": "explicit.stat_3382199855", "value": {"min": 6}}],
+          str(lom2["filters"]))
+
+    # Vessel of Vinktar (mod-variant, rep is 1-of-18; the copy names a different lightning mod):
+    # no defining filter is derivable from the rep, so ninja map-variant prices it -- the only
+    # requirement is that it is no longer mislabelled 'aura variant'.
+    vov = variant_of("Vessel of Vinktar", "Topaz Flask", [
+        "Adds 30 to 90 Lightning Damage to Spells", "25% increased Lightning Damage"])
+    check("Vessel of Vinktar: no bogus 'aura variant' label (ninja map-variant prices it)",
+          vov["label"] != "aura variant", repr(vov["label"]))
+
+    # end-to-end: the presence label survives to the item-row variant block via
+    # price_unique_ninja's floor path (the ninja-variant label overwrite must NOT fire on floor).
+    econ._uniques["megalomaniac"] = [{"name": "Megalomaniac", "baseType": "Medium Cluster Jewel",
+                                     "variant": None, "chaosValue": 25.5, "listingCount": 9641,
+                                     "count": 9641}]
+    rm = P.price_unique_ninja(mk("Megalomaniac", "Medium Cluster Jewel", [
+        "1 Added Passive Skill is Touch of Cruelty",
+        "1 Added Passive Skill is Prismatic Heart",
+        "1 Added Passive Skill is Fuel the Fight"]))
+    check("Megalomaniac: floor-capped LOW + presence label reaches variant_info (not overwritten)",
+          rm.method == "unique-ninja-floor" and rm.confidence == "low"
+          and "Touch of Cruelty" in rm.extra["variant_info"]["label"]
+          and rm.extra["variant_info"]["label"] != "aura variant",
+          f"{rm.method}/{rm.confidence}/{rm.extra.get('variant_info', {}).get('label')!r}")
+
+
 def phase_b():
     if os.environ.get("BPC_SKIP_LIVE") == "1":
         print("\n== PHASE B: SKIPPED (BPC_SKIP_LIVE=1) =="); return
@@ -372,6 +614,7 @@ def phase_b():
 
 def main():
     phase_a()
+    phase_variant()
     phase_b()
     out = os.environ.get("BPC_TEST_OUT", tempfile.gettempdir())
     for name, key in (("sample_response_offline.json", "_SAMPLE_DOC"),

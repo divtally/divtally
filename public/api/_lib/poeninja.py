@@ -347,20 +347,26 @@ class PoeNinjaEconomy:
     def _variant_tokens(s: str) -> set:
         return {t for t in re.split(r"[^a-z0-9]+", (s or "").lower()) if len(t) >= 3}
 
-    def unique_price(self, name: str, mod_text: str = "", base_type: str = "") -> Optional[dict]:
-        """Price a unique BY NAME off the merged poe.ninja unique overviews. Best-effort for
-        variant uniques (Watcher's Eye, Impresence, Mageblood, ...):
+    def unique_price(self, name: str, mod_text: str = "", base_type: str = "",
+                     reg_rule: Optional[dict] = None, owned_count: Optional[int] = None
+                     ) -> Optional[dict]:
+        """Price a unique BY NAME off the merged poe.ninja unique overviews.
 
-          * exactly one line for the name          -> point estimate (matched='name').
-          * several lines but one clearly matches   -> that variant (matched='variant'):
-            picked when its `variant` string tokens are contained in the item's mod text and
-            it is the sole strong match (e.g. Impresence 'Lightning', Mageblood '5 Flasks').
-          * several lines, ambiguous                -> a RANGE across variants (matched='range',
-            min..high of the variant chaos values) with a low-confidence note -- never a
-            fabricated point estimate (the 'no misleading number' guardrail).
+        When `reg_rule` (a variant_uniques.json `ninja_variant_rule`) is given, matching is
+        REGISTRY-DRIVEN (D-0019) -- it selects the poe.ninja line for the OWNED variant per the
+        rule's strategy, and returns None (=> caller shows a trade link, never a
+        cheapest-any-variant number) when the exact variant isn't enumerated:
+          * floor-only  -> the single aggregate line as a LOW floor (matched='floor').
+          * map-count   -> the line matching the copy's socket/passive count (matched='variant').
+          * map-variant -> the line whose `variant` label the copy's mods cover (matched='variant').
+          * map-base    -> the line on the copy's base type (matched='variant').
+
+        Without `reg_rule` (non-registry uniques) the legacy best-effort applies:
+          * one line -> point (matched='name'); several + one strong token match -> that
+            variant; else a min..high RANGE (matched='range') at low confidence.
 
         Returns {matched, variant, chaos_min, chaos_median, chaos_high, listing_count,
-        n_variants, count} in CHAOS, or None if the name is not listed on poe.ninja."""
+        n_variants, count} in CHAOS, or None if not priceable off poe.ninja."""
         lines = self._load_uniques().get((name or "").lower())
         if not lines:
             return None
@@ -376,6 +382,8 @@ class PoeNinjaEconomy:
         if not vals:
             return None
         n = len(lines)
+        if reg_rule is not None:
+            return self._registry_price(lines, vals, n, reg_rule, mod_text, base_type, owned_count)
         if n == 1:
             ln = lines[0]
             return {"matched": "name", "variant": ln.get("variant") or "",
@@ -405,6 +413,101 @@ class PoeNinjaEconomy:
                 "chaos_min": vals[0], "chaos_median": util.median(vals),
                 "chaos_high": util.percentile(vals, 90), "listing_count": 0,
                 "n_variants": n, "count": sum(ln.get("count") or 0 for ln in lines)}
+
+    # ---- registry-driven variant selection (D-0019) --------------------------
+    def _registry_price(self, lines, vals, n, reg_rule, mod_text, base_type,
+                        owned_count) -> Optional[dict]:
+        strat = reg_rule.get("strategy") or "floor-only"
+        if strat == "floor-only":
+            # cheapest line = the floor across all of this name's variants (the caller caps
+            # confidence to LOW; the exact variant is priced via the trade link).
+            fl = min((ln for ln in lines if isinstance(ln.get("chaosValue"), (int, float))),
+                     key=lambda ln: ln["chaosValue"], default=None)
+            if fl is None:
+                return None
+            c = float(fl["chaosValue"])
+            return {"matched": "floor", "variant": fl.get("variant") or "",
+                    "chaos_min": c, "chaos_median": c, "chaos_high": c,
+                    "listing_count": fl.get("listingCount") or 0, "n_variants": n,
+                    "count": sum(ln.get("count") or 0 for ln in lines)}
+        if strat == "map-count":
+            ln = self._match_count_line(lines, reg_rule, owned_count)
+        elif strat == "map-variant":
+            ln = self._match_variant_line(lines, mod_text)
+        elif strat == "map-base":
+            ln = self._match_base_line(lines, base_type)
+        else:
+            ln = None
+        return self._point_line(ln, n) if ln else None
+
+    @staticmethod
+    def _point_line(ln: dict, n: int) -> Optional[dict]:
+        c = ln.get("chaosValue")
+        if not isinstance(c, (int, float)):
+            return None
+        c = float(c)
+        return {"matched": "variant", "variant": ln.get("variant") or "",
+                "chaos_min": c, "chaos_median": c, "chaos_high": c,
+                "listing_count": ln.get("listingCount") or 0, "n_variants": n,
+                "count": ln.get("count") or 0}
+
+    @staticmethod
+    def _match_count_line(lines, reg_rule, owned_count) -> Optional[dict]:
+        """Socket/passive-count uniques: map the copy's OBSERVED count to a line. poe.ninja's
+        '<N> Jewel(s)' label is NOT always the literal count (Shroud of the Lightless's '1
+        Jewel' line carries 3 abyssal sockets), so map through the registry's harvested
+        observed_variants[].abyssal_count first, then fall back to the live label's integer."""
+        if owned_count is None:
+            return None
+        target = None
+        for ov in reg_rule.get("observed_variants") or []:
+            c = ov.get("abyssal_count")
+            if c is None:
+                c = util.first_number(ov.get("variant", ""))
+            if c is not None and int(c) == int(owned_count):
+                target = ov.get("variant")
+                break
+        if target is not None:
+            for ln in lines:
+                if (ln.get("variant") or "") == target:
+                    return ln
+        for ln in lines:
+            c = util.first_number(ln.get("variant", ""))
+            if c is not None and int(c) == int(owned_count):
+                return ln
+        return None
+
+    def _match_variant_line(self, lines, mod_text) -> Optional[dict]:
+        """Element/form uniques (Impresence, ...): the line whose `variant` label tokens are
+        covered by the copy's mod text and is the sole strong match. No confident match -> None
+        (=> unpriced + link, never a fabricated/cheapest number)."""
+        item_tokens = self._variant_tokens(mod_text)
+        if not item_tokens:
+            return None
+        scored = []
+        for ln in lines:
+            vt = self._variant_tokens(ln.get("variant") or "")
+            cover = len(vt & item_tokens) / len(vt) if vt else 0.0
+            scored.append((cover, ln))
+        scored.sort(key=lambda t: t[0], reverse=True)
+        top_cover, top_ln = scored[0]
+        second = scored[1][0] if len(scored) > 1 else 0.0
+        if top_cover >= 0.6 and top_cover > second and isinstance(top_ln.get("chaosValue"), (int, float)):
+            return top_ln
+        return None
+
+    @staticmethod
+    def _match_base_line(lines, base_type) -> Optional[dict]:
+        """Base-variant uniques (Grand Spectrum, Precursor's Emblem, Combat Focus): the line on
+        the copy's exact base type (most-listed when several share it)."""
+        if not base_type:
+            return None
+        bt = base_type.lower()
+        cands = [ln for ln in lines if (ln.get("baseType") or "").lower() == bt
+                 and isinstance(ln.get("chaosValue"), (int, float))]
+        if not cands:
+            return None
+        return max(cands, key=lambda ln: ln.get("listingCount") or 0)
 
 
 # ---- normalisation (VERBATIM from bpc/poeninja.py; pure poe.ninja transform) ----------

@@ -1,5 +1,11 @@
 # Backlog (RULE 7)
 
+## B-002: Own game-file item database (parked 2026-07-27)
+If the D-0019 registry (ninja harvest + poedb gap-fill) proves insufficient: extract item/mod/
+variant data from the PoE1 game files ourselves via pathofexile-dat (the owner's
+C:\scripts\poe2-datamine pipeline is the template). Fully primary, zero third-party runtime or
+build-step dependency; refresh per patch. Build only on demonstrated registry gaps.
+
 New feature ideas parked until the owner explicitly greenlights them. The initial goal is parity
 with the parent project, on PoE1.
 

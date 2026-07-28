@@ -48,10 +48,11 @@ def _price_obj(r: PriceResult, div_rate: Optional[float]) -> dict:
         "sample_size": r.sample_size, "total_found": r.total_found,
     }
     # merge the category-specific extra (gem breakdown, unique variant info, ...) EXCEPT
-    # trade_query (promoted to the item level) and host_* (already on the gem row).
+    # trade_query (promoted to the item level), host_* (already on the gem row), and
+    # variant_info (promoted to the item level as `variant`, D-0019 / contract 2.8).
     for k, v in (r.extra or {}).items():
         if k in ("trade_query", "source", "host_slot", "host_name", "host_base",
-                 "host_unique", "host_inventory_id"):
+                 "host_unique", "host_inventory_id", "variant_info"):
             continue
         price[k] = v
     return price
@@ -88,6 +89,11 @@ def _item_row(i: int, r: PriceResult, div_rate: Optional[float]) -> dict:
     row["price"] = _price_obj(r, div_rate)
     row["trade_url"] = r.trade_url or ""
     row["trade_query"] = (r.extra or {}).get("trade_query")
+    # D-0019 (contract 2.8): variant-registered uniques expose what makes them a variant, so a
+    # UI can render the defining/locked mods. Absent for non-variant uniques and all other rows.
+    vinfo = (r.extra or {}).get("variant_info")
+    if vinfo:
+        row["variant"] = vinfo
     return row
 
 

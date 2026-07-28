@@ -1,0 +1,2122 @@
+{
+  "_meta": {
+    "schema": "divtally.variant_uniques/1",
+    "generated": "2026-07-27T21:01:44-0500",
+    "generator": "tools/build_variant_registry.py",
+    "decision": "D-0019 (variant-unique registry + timeless-jewel handling)",
+    "ninja_league": "Allflame",
+    "ninja_endpoint": "https://poe.ninja/poe1/api/economy/stash/current/item/overview",
+    "ninja_types": [
+      "UniqueWeapon",
+      "UniqueArmour",
+      "UniqueAccessory",
+      "UniqueFlask",
+      "UniqueJewel",
+      "UniqueMap",
+      "UniqueRelic",
+      "UniqueTincture"
+    ],
+    "ninja_harvest_mode": "cached-dumps",
+    "ninja_harvest_status": {
+      "UniqueWeapon": "cached",
+      "UniqueArmour": "cached",
+      "UniqueAccessory": "cached",
+      "UniqueFlask": "cached",
+      "UniqueJewel": "cached",
+      "UniqueMap": "cached",
+      "UniqueRelic": "cached",
+      "UniqueTincture": "cached"
+    },
+    "stats_schema": "public/api/_data/trade_stats.json",
+    "items_dump": "research/data/trade_items.json",
+    "runtime_use": "Runtime reads ONLY this file for variant recipes; no network.",
+    "source_tier_policy": "PRIMARY = poe.ninja Unique* API + bundled trade stat schema (every defining stat_id validated against trade_stats.json). CROSS-CHECK = community roster (variant-crosscheck.md), merged ONLY where the recipe resolves; such rows carry a crosscheck_tags [NOT FROM SOURCE - <where>] flag. Wiki/community claims are never presented as primary.",
+    "classes": [
+      "seed-jewel",
+      "notable-jewel",
+      "socket-defined",
+      "roll-defined",
+      "mod-variant",
+      "links"
+    ],
+    "class_notes": {
+      "seed-jewel": "timeless jewels; exact displayed-seed (min=max) + conqueror id; ninja floor-only.",
+      "notable-jewel": "OPTION stat (Allocates / keystone radius / ring size); pre-flattened base|opt; ninja floor-only.",
+      "socket-defined": "exact abyssal-socket / added-passive COUNT; ninja enumerates count lines (map by observed count, labels not always literal).",
+      "roll-defined": "value = which/what the copy rolled (aura combo, notables, own rolls); ninja floors it; price from the build copy's mods.",
+      "mod-variant": "poe.ninja enumerates discrete variant/base lines; map the owned copy to the line; that line's chaosValue is the price.",
+      "links": "5L/6L price variance (237 uniques this league) is handled GENERICALLY by the engine's max_link>=5 filter (D-0003); NOT enumerated here. Items that also vary by links carry also_links:true."
+    },
+    "foulborn_note": "The 237 league-transient 'Foulborn ' rolled-mod copies (variant-ninja.md sec 6, [INFERRED] league noise, group under a different name) are EXCLUDED from this durable registry; regenerate per league.",
+    "coverage": {
+      "registry_items": 40,
+      "by_class": {
+        "seed-jewel": 5,
+        "notable-jewel": 4,
+        "socket-defined": 7,
+        "roll-defined": 6,
+        "mod-variant": 18
+      },
+      "by_source": {
+        "ninja-harvest": 10,
+        "primary-stat": 19,
+        "crosscheck": 11
+      },
+      "defining_stat_ids": 40,
+      "defining_stat_ids_all_resolve": true,
+      "durable_ninja_multi_variant": 12,
+      "durable_ninja_base_variant": 3,
+      "durable_ninja_all_present": true,
+      "crosscheck_dropped": [],
+      "excluded_foulborn_names": 237,
+      "links_variant_names_handled_by_engine": 183,
+      "ninja_names_harvested": 1406
+    }
+  },
+  "items": [
+    {
+      "name": "Brutal Restraint",
+      "class": "seed-jewel",
+      "base": [
+        "Timeless Jewel"
+      ],
+      "source": "primary-stat",
+      "variant_sensitive": true,
+      "defining": [
+        {
+          "stat_id": "explicit.pseudo_timeless_jewel_asenath",
+          "kind": "seed",
+          "conqueror": "Asenath",
+          "live": true,
+          "from": {
+            "group": "explicit",
+            "match": "seed-line",
+            "pattern": "Denoted service of # dekhara in the akhara of Asenath",
+            "emit": "seed-exact",
+            "x20": false,
+            "note": "parse the DISPLAYED seed integer from the item's seed line (split combined mod on newline; drop the 'Conquered by' line); emit {id, value:{min:seed, max:seed}}. Displayed value == filter value (no transform)."
+          }
+        },
+        {
+          "stat_id": "explicit.pseudo_timeless_jewel_balbala",
+          "kind": "seed",
+          "conqueror": "Balbala",
+          "live": true,
+          "from": {
+            "group": "explicit",
+            "match": "seed-line",
+            "pattern": "Denoted service of # dekhara in the akhara of Balbala",
+            "emit": "seed-exact",
+            "x20": false,
+            "note": "parse the DISPLAYED seed integer from the item's seed line (split combined mod on newline; drop the 'Conquered by' line); emit {id, value:{min:seed, max:seed}}. Displayed value == filter value (no transform)."
+          }
+        },
+        {
+          "stat_id": "explicit.pseudo_timeless_jewel_deshret",
+          "kind": "seed",
+          "conqueror": "Deshret",
+          "live": false,
+          "from": {
+            "group": "explicit",
+            "match": "seed-line",
+            "pattern": "Denoted service of # dekhara in the akhara of Deshret",
+            "emit": "seed-exact",
+            "x20": false,
+            "note": "parse the DISPLAYED seed integer from the item's seed line (split combined mod on newline; drop the 'Conquered by' line); emit {id, value:{min:seed, max:seed}}. Displayed value == filter value (no transform)."
+          }
+        },
+        {
+          "stat_id": "explicit.pseudo_timeless_jewel_nasima",
+          "kind": "seed",
+          "conqueror": "Nasima",
+          "live": true,
+          "from": {
+            "group": "explicit",
+            "match": "seed-line",
+            "pattern": "Denoted service of # dekhara in the akhara of Nasima",
+            "emit": "seed-exact",
+            "x20": false,
+            "note": "parse the DISPLAYED seed integer from the item's seed line (split combined mod on newline; drop the 'Conquered by' line); emit {id, value:{min:seed, max:seed}}. Displayed value == filter value (no transform)."
+          }
+        }
+      ],
+      "ninja_variant_rule": {
+        "strategy": "floor-only",
+        "axis": "seed",
+        "match": "poe.ninja has NO seed/conqueror split -- one aggregate line per NAME. Do NOT match a variant. Use the name-line only as a low-confidence FLOOR; the real price is the exact-seed trade search.",
+        "observed_variants": [],
+        "ninja_floor_chaos": 26.0,
+        "ninja_floor_listings": 7342,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "floor-low",
+        "cap": "low",
+        "trade": "exact-seed-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "poe.ninja lists ONE null-variant line = cheapest of ALL seeds & conquerors; hard-cap it to LOW and label it a floor. Price by the exact-seed (min=max) trade filter; 0 buyouts is the honest answer."
+      },
+      "notes": "Two same-name jewels with different seeds are different items; name-only pricing is meaningless (timeless-jewels.md)."
+    },
+    {
+      "name": "Elegant Hubris",
+      "class": "seed-jewel",
+      "base": [
+        "Timeless Jewel"
+      ],
+      "source": "primary-stat",
+      "variant_sensitive": true,
+      "defining": [
+        {
+          "stat_id": "explicit.pseudo_timeless_jewel_cadiro",
+          "kind": "seed",
+          "conqueror": "Cadiro",
+          "live": true,
+          "from": {
+            "group": "explicit",
+            "match": "seed-line",
+            "pattern": "Commissioned # coins to commemorate Cadiro",
+            "emit": "seed-exact",
+            "x20": true,
+            "note": "parse the DISPLAYED seed integer from the item's seed line (split combined mod on newline; drop the 'Conquered by' line); emit {id, value:{min:seed, max:seed}}. Elegant Hubris DISPLAYS internal_seed*20 -- the trade stat matches the displayed value, so use the displayed number as-is."
+          }
+        },
+        {
+          "stat_id": "explicit.pseudo_timeless_jewel_caspiro",
+          "kind": "seed",
+          "conqueror": "Caspiro",
+          "live": true,
+          "from": {
+            "group": "explicit",
+            "match": "seed-line",
+            "pattern": "Commissioned # coins to commemorate Caspiro",
+            "emit": "seed-exact",
+            "x20": true,
+            "note": "parse the DISPLAYED seed integer from the item's seed line (split combined mod on newline; drop the 'Conquered by' line); emit {id, value:{min:seed, max:seed}}. Elegant Hubris DISPLAYS internal_seed*20 -- the trade stat matches the displayed value, so use the displayed number as-is."
+          }
+        },
+        {
+          "stat_id": "explicit.pseudo_timeless_jewel_chitus",
+          "kind": "seed",
+          "conqueror": "Chitus",
+          "live": false,
+          "from": {
+            "group": "explicit",
+            "match": "seed-line",
+            "pattern": "Commissioned # coins to commemorate Chitus",
+            "emit": "seed-exact",
+            "x20": true,
+            "note": "parse the DISPLAYED seed integer from the item's seed line (split combined mod on newline; drop the 'Conquered by' line); emit {id, value:{min:seed, max:seed}}. Elegant Hubris DISPLAYS internal_seed*20 -- the trade stat matches the displayed value, so use the displayed number as-is."
+          }
+        },
+        {
+          "stat_id": "explicit.pseudo_timeless_jewel_victario",
+          "kind": "seed",
+          "conqueror": "Victario",
+          "live": true,
+          "from": {
+            "group": "explicit",
+            "match": "seed-line",
+            "pattern": "Commissioned # coins to commemorate Victario",
+            "emit": "seed-exact",
+            "x20": true,
+            "note": "parse the DISPLAYED seed integer from the item's seed line (split combined mod on newline; drop the 'Conquered by' line); emit {id, value:{min:seed, max:seed}}. Elegant Hubris DISPLAYS internal_seed*20 -- the trade stat matches the displayed value, so use the displayed number as-is."
+          }
+        }
+      ],
+      "ninja_variant_rule": {
+        "strategy": "floor-only",
+        "axis": "seed",
+        "match": "poe.ninja has NO seed/conqueror split -- one aggregate line per NAME. Do NOT match a variant. Use the name-line only as a low-confidence FLOOR; the real price is the exact-seed trade search.",
+        "observed_variants": [],
+        "ninja_floor_chaos": 121.2,
+        "ninja_floor_listings": 7009,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "floor-low",
+        "cap": "low",
+        "trade": "exact-seed-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "poe.ninja lists ONE null-variant line = cheapest of ALL seeds & conquerors; hard-cap it to LOW and label it a floor. Price by the exact-seed (min=max) trade filter; 0 buyouts is the honest answer."
+      },
+      "flags": [
+        "elegant-hubris-displayed-seed-x20"
+      ],
+      "notes": "Two same-name jewels with different seeds are different items; name-only pricing is meaningless (timeless-jewels.md)."
+    },
+    {
+      "name": "Glorious Vanity",
+      "class": "seed-jewel",
+      "base": [
+        "Timeless Jewel"
+      ],
+      "source": "primary-stat",
+      "variant_sensitive": true,
+      "defining": [
+        {
+          "stat_id": "explicit.pseudo_timeless_jewel_ahuana",
+          "kind": "seed",
+          "conqueror": "Ahuana",
+          "live": true,
+          "from": {
+            "group": "explicit",
+            "match": "seed-line",
+            "pattern": "Bathed in the blood of # sacrificed in the name of Ahuana",
+            "emit": "seed-exact",
+            "x20": false,
+            "note": "parse the DISPLAYED seed integer from the item's seed line (split combined mod on newline; drop the 'Conquered by' line); emit {id, value:{min:seed, max:seed}}. Displayed value == filter value (no transform)."
+          }
+        },
+        {
+          "stat_id": "explicit.pseudo_timeless_jewel_doryani",
+          "kind": "seed",
+          "conqueror": "Doryani",
+          "live": true,
+          "from": {
+            "group": "explicit",
+            "match": "seed-line",
+            "pattern": "Bathed in the blood of # sacrificed in the name of Doryani",
+            "emit": "seed-exact",
+            "x20": false,
+            "note": "parse the DISPLAYED seed integer from the item's seed line (split combined mod on newline; drop the 'Conquered by' line); emit {id, value:{min:seed, max:seed}}. Displayed value == filter value (no transform)."
+          }
+        },
+        {
+          "stat_id": "explicit.pseudo_timeless_jewel_xibaqua",
+          "kind": "seed",
+          "conqueror": "Xibaqua",
+          "live": true,
+          "from": {
+            "group": "explicit",
+            "match": "seed-line",
+            "pattern": "Bathed in the blood of # sacrificed in the name of Xibaqua",
+            "emit": "seed-exact",
+            "x20": false,
+            "note": "parse the DISPLAYED seed integer from the item's seed line (split combined mod on newline; drop the 'Conquered by' line); emit {id, value:{min:seed, max:seed}}. Displayed value == filter value (no transform)."
+          }
+        },
+        {
+          "stat_id": "explicit.pseudo_timeless_jewel_zerphi",
+          "kind": "seed",
+          "conqueror": "Zerphi",
+          "live": false,
+          "from": {
+            "group": "explicit",
+            "match": "seed-line",
+            "pattern": "Bathed in the blood of # sacrificed in the name of Zerphi",
+            "emit": "seed-exact",
+            "x20": false,
+            "note": "parse the DISPLAYED seed integer from the item's seed line (split combined mod on newline; drop the 'Conquered by' line); emit {id, value:{min:seed, max:seed}}. Displayed value == filter value (no transform)."
+          }
+        }
+      ],
+      "ninja_variant_rule": {
+        "strategy": "floor-only",
+        "axis": "seed",
+        "match": "poe.ninja has NO seed/conqueror split -- one aggregate line per NAME. Do NOT match a variant. Use the name-line only as a low-confidence FLOOR; the real price is the exact-seed trade search.",
+        "observed_variants": [],
+        "ninja_floor_chaos": 29.8,
+        "ninja_floor_listings": 9766,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "floor-low",
+        "cap": "low",
+        "trade": "exact-seed-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "poe.ninja lists ONE null-variant line = cheapest of ALL seeds & conquerors; hard-cap it to LOW and label it a floor. Price by the exact-seed (min=max) trade filter; 0 buyouts is the honest answer."
+      },
+      "notes": "Two same-name jewels with different seeds are different items; name-only pricing is meaningless (timeless-jewels.md)."
+    },
+    {
+      "name": "Lethal Pride",
+      "class": "seed-jewel",
+      "base": [
+        "Timeless Jewel"
+      ],
+      "source": "primary-stat",
+      "variant_sensitive": true,
+      "defining": [
+        {
+          "stat_id": "explicit.pseudo_timeless_jewel_akoya",
+          "kind": "seed",
+          "conqueror": "Akoya",
+          "live": true,
+          "from": {
+            "group": "explicit",
+            "match": "seed-line",
+            "pattern": "Commanded leadership over # warriors under Akoya",
+            "emit": "seed-exact",
+            "x20": false,
+            "note": "parse the DISPLAYED seed integer from the item's seed line (split combined mod on newline; drop the 'Conquered by' line); emit {id, value:{min:seed, max:seed}}. Displayed value == filter value (no transform)."
+          }
+        },
+        {
+          "stat_id": "explicit.pseudo_timeless_jewel_kaom",
+          "kind": "seed",
+          "conqueror": "Kaom",
+          "live": true,
+          "from": {
+            "group": "explicit",
+            "match": "seed-line",
+            "pattern": "Commanded leadership over # warriors under Kaom",
+            "emit": "seed-exact",
+            "x20": false,
+            "note": "parse the DISPLAYED seed integer from the item's seed line (split combined mod on newline; drop the 'Conquered by' line); emit {id, value:{min:seed, max:seed}}. Displayed value == filter value (no transform)."
+          }
+        },
+        {
+          "stat_id": "explicit.pseudo_timeless_jewel_kiloava",
+          "kind": "seed",
+          "conqueror": "Kiloava",
+          "live": false,
+          "from": {
+            "group": "explicit",
+            "match": "seed-line",
+            "pattern": "Commanded leadership over # warriors under Kiloava",
+            "emit": "seed-exact",
+            "x20": false,
+            "note": "parse the DISPLAYED seed integer from the item's seed line (split combined mod on newline; drop the 'Conquered by' line); emit {id, value:{min:seed, max:seed}}. Displayed value == filter value (no transform)."
+          }
+        },
+        {
+          "stat_id": "explicit.pseudo_timeless_jewel_rakiata",
+          "kind": "seed",
+          "conqueror": "Rakiata",
+          "live": true,
+          "from": {
+            "group": "explicit",
+            "match": "seed-line",
+            "pattern": "Commanded leadership over # warriors under Rakiata",
+            "emit": "seed-exact",
+            "x20": false,
+            "note": "parse the DISPLAYED seed integer from the item's seed line (split combined mod on newline; drop the 'Conquered by' line); emit {id, value:{min:seed, max:seed}}. Displayed value == filter value (no transform)."
+          }
+        }
+      ],
+      "ninja_variant_rule": {
+        "strategy": "floor-only",
+        "axis": "seed",
+        "match": "poe.ninja has NO seed/conqueror split -- one aggregate line per NAME. Do NOT match a variant. Use the name-line only as a low-confidence FLOOR; the real price is the exact-seed trade search.",
+        "observed_variants": [],
+        "ninja_floor_chaos": 67.5,
+        "ninja_floor_listings": 6189,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "floor-low",
+        "cap": "low",
+        "trade": "exact-seed-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "poe.ninja lists ONE null-variant line = cheapest of ALL seeds & conquerors; hard-cap it to LOW and label it a floor. Price by the exact-seed (min=max) trade filter; 0 buyouts is the honest answer."
+      },
+      "notes": "Two same-name jewels with different seeds are different items; name-only pricing is meaningless (timeless-jewels.md)."
+    },
+    {
+      "name": "Militant Faith",
+      "class": "seed-jewel",
+      "base": [
+        "Timeless Jewel"
+      ],
+      "source": "primary-stat",
+      "variant_sensitive": true,
+      "defining": [
+        {
+          "stat_id": "explicit.pseudo_timeless_jewel_avarius",
+          "kind": "seed",
+          "conqueror": "Avarius",
+          "live": true,
+          "from": {
+            "group": "explicit",
+            "match": "seed-line",
+            "pattern": "Carved to glorify # new faithful converted by High Templar Avarius",
+            "emit": "seed-exact",
+            "x20": false,
+            "note": "parse the DISPLAYED seed integer from the item's seed line (split combined mod on newline; drop the 'Conquered by' line); emit {id, value:{min:seed, max:seed}}. Displayed value == filter value (no transform)."
+          }
+        },
+        {
+          "stat_id": "explicit.pseudo_timeless_jewel_dominus",
+          "kind": "seed",
+          "conqueror": "Dominus",
+          "live": true,
+          "from": {
+            "group": "explicit",
+            "match": "seed-line",
+            "pattern": "Carved to glorify # new faithful converted by High Templar Dominus",
+            "emit": "seed-exact",
+            "x20": false,
+            "note": "parse the DISPLAYED seed integer from the item's seed line (split combined mod on newline; drop the 'Conquered by' line); emit {id, value:{min:seed, max:seed}}. Displayed value == filter value (no transform)."
+          }
+        },
+        {
+          "stat_id": "explicit.pseudo_timeless_jewel_maxarius",
+          "kind": "seed",
+          "conqueror": "Maxarius",
+          "live": true,
+          "from": {
+            "group": "explicit",
+            "match": "seed-line",
+            "pattern": "Carved to glorify # new faithful converted by High Templar Maxarius",
+            "emit": "seed-exact",
+            "x20": false,
+            "note": "parse the DISPLAYED seed integer from the item's seed line (split combined mod on newline; drop the 'Conquered by' line); emit {id, value:{min:seed, max:seed}}. Displayed value == filter value (no transform)."
+          }
+        },
+        {
+          "stat_id": "explicit.pseudo_timeless_jewel_venarius",
+          "kind": "seed",
+          "conqueror": "Venarius",
+          "live": false,
+          "from": {
+            "group": "explicit",
+            "match": "seed-line",
+            "pattern": "Carved to glorify # new faithful converted by High Templar Venarius",
+            "emit": "seed-exact",
+            "x20": false,
+            "note": "parse the DISPLAYED seed integer from the item's seed line (split combined mod on newline; drop the 'Conquered by' line); emit {id, value:{min:seed, max:seed}}. Displayed value == filter value (no transform)."
+          }
+        }
+      ],
+      "ninja_variant_rule": {
+        "strategy": "floor-only",
+        "axis": "seed",
+        "match": "poe.ninja has NO seed/conqueror split -- one aggregate line per NAME. Do NOT match a variant. Use the name-line only as a low-confidence FLOOR; the real price is the exact-seed trade search.",
+        "observed_variants": [],
+        "ninja_floor_chaos": 11.0,
+        "ninja_floor_listings": 8657,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "floor-low",
+        "cap": "low",
+        "trade": "exact-seed-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "poe.ninja lists ONE null-variant line = cheapest of ALL seeds & conquerors; hard-cap it to LOW and label it a floor. Price by the exact-seed (min=max) trade filter; 0 buyouts is the honest answer."
+      },
+      "notes": "Two same-name jewels with different seeds are different items; name-only pricing is meaningless (timeless-jewels.md). SECOND axis: Militant Faith also grants Devotion + converts a passive to a keystone, with separately-searchable 'per 10 Devotion' explicit stats (seed+conqueror pin is primary; keystone/Devotion is an optional picker refinement -- timeless-jewels.md sec 6)."
+    },
+    {
+      "name": "Forbidden Flame",
+      "class": "notable-jewel",
+      "base": [
+        "Crimson Jewel"
+      ],
+      "source": "primary-stat",
+      "variant_sensitive": true,
+      "defining": [
+        {
+          "stat_id": "explicit.stat_2460506030",
+          "kind": "option",
+          "axis": "ascendancy-notable",
+          "option_count": 165,
+          "from": {
+            "group": "explicit",
+            "match": "option-by-name",
+            "pattern": "Allocates <Notable> if you have the matching modifier on Forbidden Flame",
+            "emit": "option-split",
+            "note": "find the item's explicit mod containing the axis name; StatMapper returns the pre-split id 'base|opt'; emit {id: base, value:{option: opt}}"
+          }
+        }
+      ],
+      "ninja_variant_rule": {
+        "strategy": "floor-only",
+        "axis": "floor",
+        "match": "poe.ninja lists ONE null-variant floor line for this name; use it only as a low-confidence floor. The real price is the defining-mod trade search on the build's own copy.",
+        "observed_variants": [],
+        "ninja_floor_chaos": 20.0,
+        "ninja_floor_listings": 1108,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "floor-low",
+        "cap": "low",
+        "trade": "defining-filter-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "The Allocates-<notable> option IS the price identity; must pair-match the Forbidden Flesh's notable. poe.ninja floors it."
+      },
+      "notes": "Buy as a matching pair naming the SAME ascendancy notable (Flame+Flesh)."
+    },
+    {
+      "name": "Forbidden Flesh",
+      "class": "notable-jewel",
+      "base": [
+        "Cobalt Jewel"
+      ],
+      "source": "primary-stat",
+      "variant_sensitive": true,
+      "defining": [
+        {
+          "stat_id": "explicit.stat_1190333629",
+          "kind": "option",
+          "axis": "ascendancy-notable",
+          "option_count": 165,
+          "from": {
+            "group": "explicit",
+            "match": "option-by-name",
+            "pattern": "Allocates <Notable> if you have the matching modifier on Forbidden Flesh",
+            "emit": "option-split",
+            "note": "find the item's explicit mod containing the axis name; StatMapper returns the pre-split id 'base|opt'; emit {id: base, value:{option: opt}}"
+          }
+        }
+      ],
+      "ninja_variant_rule": {
+        "strategy": "floor-only",
+        "axis": "floor",
+        "match": "poe.ninja lists ONE null-variant floor line for this name; use it only as a low-confidence floor. The real price is the defining-mod trade search on the build's own copy.",
+        "observed_variants": [],
+        "ninja_floor_chaos": 30.0,
+        "ninja_floor_listings": 863,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "floor-low",
+        "cap": "low",
+        "trade": "defining-filter-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "As Forbidden Flame; base Cobalt Jewel."
+      },
+      "notes": "Pair-match the Forbidden Flame's notable."
+    },
+    {
+      "name": "Impossible Escape",
+      "class": "notable-jewel",
+      "base": [
+        "Viridian Jewel"
+      ],
+      "source": "primary-stat",
+      "variant_sensitive": true,
+      "defining": [
+        {
+          "stat_id": "explicit.stat_2422708892",
+          "kind": "option",
+          "axis": "keystone",
+          "option_count": 48,
+          "from": {
+            "group": "explicit",
+            "match": "option-by-name",
+            "pattern": "Passives in Radius of <Keystone> can be Allocated ...",
+            "emit": "option-split",
+            "note": "find the item's explicit mod containing the axis name; StatMapper returns the pre-split id 'base|opt'; emit {id: base, value:{option: opt}}"
+          }
+        }
+      ],
+      "ninja_variant_rule": {
+        "strategy": "floor-only",
+        "axis": "floor",
+        "match": "poe.ninja lists ONE null-variant floor line for this name; use it only as a low-confidence floor. The real price is the defining-mod trade search on the build's own copy.",
+        "observed_variants": [],
+        "ninja_floor_chaos": 5.0,
+        "ninja_floor_listings": 957,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "floor-low",
+        "cap": "low",
+        "trade": "defining-filter-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "Variant = which keystone's radius it frees; option-stat."
+      },
+      "notes": "Do NOT confuse with stat_1725885727 (Intuitive Leap) or _1211779989 (generic)."
+    },
+    {
+      "name": "Thread of Hope",
+      "class": "notable-jewel",
+      "base": [
+        "Crimson Jewel"
+      ],
+      "source": "primary-stat",
+      "variant_sensitive": true,
+      "defining": [
+        {
+          "stat_id": "explicit.stat_3642528642",
+          "kind": "option",
+          "axis": "ring-size",
+          "option_count": 5,
+          "from": {
+            "group": "explicit",
+            "match": "option-by-name",
+            "pattern": "Only affects Passives in <Size> Ring",
+            "emit": "option-split",
+            "note": "find the item's explicit mod containing the axis name; StatMapper returns the pre-split id 'base|opt'; emit {id: base, value:{option: opt}}"
+          }
+        }
+      ],
+      "ninja_variant_rule": {
+        "strategy": "floor-only",
+        "axis": "floor",
+        "match": "poe.ninja lists ONE null-variant floor line for this name; use it only as a low-confidence floor. The real price is the defining-mod trade search on the build's own copy.",
+        "observed_variants": [],
+        "ninja_floor_chaos": 22.0,
+        "ninja_floor_listings": 557,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "floor-low",
+        "cap": "low",
+        "trade": "defining-filter-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "Variant = ring size (Small..Massive); 5 options; drives price."
+      }
+    },
+    {
+      "name": "Bubonic Trail",
+      "class": "socket-defined",
+      "base": [
+        "Murder Boots"
+      ],
+      "source": "primary-stat",
+      "variant_sensitive": true,
+      "defining": [
+        {
+          "stat_id": "explicit.stat_3527617737",
+          "kind": "value",
+          "axis": "abyssal-sockets",
+          "from": {
+            "group": "explicit",
+            "match": "value",
+            "pattern": "Has # Abyssal Sockets",
+            "emit": "count-exact",
+            "note": "emit {id, value:{min:N, max:N}} with N = the item's abyssal socket count -- the tier that sets the price."
+          }
+        }
+      ],
+      "ninja_variant_rule": {
+        "strategy": "map-count",
+        "axis": "abyssal-count",
+        "match": "Read the copy's abyssal socket count; pick the ninja variant line whose OBSERVED abyssal_count equals it (not by parsing the '<N> Jewel(s)' label -- poe.ninja labels are not always literal). Fall back to the exact-count trade filter for the price.",
+        "observed_variants": [
+          {
+            "variant": "2 Jewels",
+            "chaos": 10.0,
+            "listing_count": 161,
+            "abyssal_count": 2
+          },
+          {
+            "variant": "1 Jewel",
+            "chaos": 1.0,
+            "listing_count": 2564,
+            "abyssal_count": 1
+          }
+        ],
+        "ninja_floor_chaos": 1.0,
+        "ninja_floor_listings": 2564,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "variant-from-listing-count",
+        "cap": null,
+        "trade": "exact-count-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "poe.ninja enumerates '1 Jewel'/'2 Jewels' lines but the LABEL is not always the literal count (Shroud's '1 Jewel' line carries 'Has 3 Abyssal Sockets'), so map by the observed abyssal_count in each variant line, NOT by parsing the label."
+      }
+    },
+    {
+      "name": "Command of the Pit",
+      "class": "socket-defined",
+      "base": [
+        "Riveted Gloves"
+      ],
+      "source": "primary-stat",
+      "variant_sensitive": true,
+      "defining": [
+        {
+          "stat_id": "explicit.stat_3527617737",
+          "kind": "value",
+          "axis": "abyssal-sockets",
+          "from": {
+            "group": "explicit",
+            "match": "value",
+            "pattern": "Has # Abyssal Sockets",
+            "emit": "count-exact",
+            "note": "emit {id, value:{min:N, max:N}} with N = the item's abyssal socket count -- the tier that sets the price."
+          }
+        }
+      ],
+      "ninja_variant_rule": {
+        "strategy": "map-count",
+        "axis": "abyssal-count",
+        "match": "Read the copy's abyssal socket count; pick the ninja variant line whose OBSERVED abyssal_count equals it (not by parsing the '<N> Jewel(s)' label -- poe.ninja labels are not always literal). Fall back to the exact-count trade filter for the price.",
+        "observed_variants": [],
+        "ninja_floor_chaos": 15.0,
+        "ninja_floor_listings": 99,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "variant-from-listing-count",
+        "cap": null,
+        "trade": "exact-count-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "poe.ninja enumerates '1 Jewel'/'2 Jewels' lines but the LABEL is not always the literal count (Shroud's '1 Jewel' line carries 'Has 3 Abyssal Sockets'), so map by the observed abyssal_count in each variant line, NOT by parsing the label."
+      }
+    },
+    {
+      "name": "Hale Negator",
+      "class": "socket-defined",
+      "base": [
+        "Mind Cage"
+      ],
+      "source": "primary-stat",
+      "variant_sensitive": true,
+      "defining": [
+        {
+          "stat_id": "explicit.stat_3527617737",
+          "kind": "value",
+          "axis": "abyssal-sockets",
+          "from": {
+            "group": "explicit",
+            "match": "value",
+            "pattern": "Has # Abyssal Sockets",
+            "emit": "count-exact",
+            "note": "emit {id, value:{min:N, max:N}} with N = the item's abyssal socket count -- the tier that sets the price."
+          }
+        }
+      ],
+      "ninja_variant_rule": {
+        "strategy": "map-count",
+        "axis": "abyssal-count",
+        "match": "Read the copy's abyssal socket count; pick the ninja variant line whose OBSERVED abyssal_count equals it (not by parsing the '<N> Jewel(s)' label -- poe.ninja labels are not always literal). Fall back to the exact-count trade filter for the price.",
+        "observed_variants": [],
+        "ninja_floor_chaos": 2.0,
+        "ninja_floor_listings": 118,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "variant-from-listing-count",
+        "cap": null,
+        "trade": "exact-count-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "poe.ninja enumerates '1 Jewel'/'2 Jewels' lines but the LABEL is not always the literal count (Shroud's '1 Jewel' line carries 'Has 3 Abyssal Sockets'), so map by the observed abyssal_count in each variant line, NOT by parsing the label."
+      }
+    },
+    {
+      "name": "Lightpoacher",
+      "class": "socket-defined",
+      "base": [
+        "Great Crown"
+      ],
+      "source": "primary-stat",
+      "variant_sensitive": true,
+      "defining": [
+        {
+          "stat_id": "explicit.stat_3527617737",
+          "kind": "value",
+          "axis": "abyssal-sockets",
+          "from": {
+            "group": "explicit",
+            "match": "value",
+            "pattern": "Has # Abyssal Sockets",
+            "emit": "count-exact",
+            "note": "emit {id, value:{min:N, max:N}} with N = the item's abyssal socket count -- the tier that sets the price."
+          }
+        }
+      ],
+      "ninja_variant_rule": {
+        "strategy": "map-count",
+        "axis": "abyssal-count",
+        "match": "Read the copy's abyssal socket count; pick the ninja variant line whose OBSERVED abyssal_count equals it (not by parsing the '<N> Jewel(s)' label -- poe.ninja labels are not always literal). Fall back to the exact-count trade filter for the price.",
+        "observed_variants": [
+          {
+            "variant": "2 Jewels",
+            "chaos": 5.0,
+            "listing_count": 117,
+            "abyssal_count": 2
+          },
+          {
+            "variant": "1 Jewel",
+            "chaos": 1.0,
+            "listing_count": 1540,
+            "abyssal_count": 1
+          }
+        ],
+        "ninja_floor_chaos": 1.0,
+        "ninja_floor_listings": 1540,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "variant-from-listing-count",
+        "cap": null,
+        "trade": "exact-count-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "poe.ninja enumerates '1 Jewel'/'2 Jewels' lines but the LABEL is not always the literal count (Shroud's '1 Jewel' line carries 'Has 3 Abyssal Sockets'), so map by the observed abyssal_count in each variant line, NOT by parsing the label."
+      }
+    },
+    {
+      "name": "Shroud of the Lightless",
+      "class": "socket-defined",
+      "base": [
+        "Carnal Armour"
+      ],
+      "source": "primary-stat",
+      "variant_sensitive": true,
+      "defining": [
+        {
+          "stat_id": "explicit.stat_3527617737",
+          "kind": "value",
+          "axis": "abyssal-sockets",
+          "from": {
+            "group": "explicit",
+            "match": "value",
+            "pattern": "Has # Abyssal Sockets",
+            "emit": "count-exact",
+            "note": "emit {id, value:{min:N, max:N}} with N = the item's abyssal socket count -- the tier that sets the price."
+          }
+        }
+      ],
+      "ninja_variant_rule": {
+        "strategy": "map-count",
+        "axis": "abyssal-count",
+        "match": "Read the copy's abyssal socket count; pick the ninja variant line whose OBSERVED abyssal_count equals it (not by parsing the '<N> Jewel(s)' label -- poe.ninja labels are not always literal). Fall back to the exact-count trade filter for the price.",
+        "observed_variants": [
+          {
+            "variant": "1 Jewel",
+            "chaos": 360.9,
+            "listing_count": 13,
+            "abyssal_count": 3
+          },
+          {
+            "variant": "2 Jewels",
+            "chaos": 3.0,
+            "listing_count": 346,
+            "abyssal_count": 2
+          }
+        ],
+        "ninja_floor_chaos": 3.0,
+        "ninja_floor_listings": 346,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "variant-from-listing-count",
+        "cap": null,
+        "trade": "exact-count-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "poe.ninja enumerates '1 Jewel'/'2 Jewels' lines but the LABEL is not always the literal count (Shroud's '1 Jewel' line carries 'Has 3 Abyssal Sockets'), so map by the observed abyssal_count in each variant line, NOT by parsing the label."
+      }
+    },
+    {
+      "name": "Tombfist",
+      "class": "socket-defined",
+      "base": [
+        "Steelscale Gauntlets"
+      ],
+      "source": "primary-stat",
+      "variant_sensitive": true,
+      "defining": [
+        {
+          "stat_id": "explicit.stat_3527617737",
+          "kind": "value",
+          "axis": "abyssal-sockets",
+          "from": {
+            "group": "explicit",
+            "match": "value",
+            "pattern": "Has # Abyssal Sockets",
+            "emit": "count-exact",
+            "note": "emit {id, value:{min:N, max:N}} with N = the item's abyssal socket count -- the tier that sets the price."
+          }
+        }
+      ],
+      "ninja_variant_rule": {
+        "strategy": "map-count",
+        "axis": "abyssal-count",
+        "match": "Read the copy's abyssal socket count; pick the ninja variant line whose OBSERVED abyssal_count equals it (not by parsing the '<N> Jewel(s)' label -- poe.ninja labels are not always literal). Fall back to the exact-count trade filter for the price.",
+        "observed_variants": [
+          {
+            "variant": "2 Jewels",
+            "chaos": 2.0,
+            "listing_count": 325,
+            "abyssal_count": 2
+          },
+          {
+            "variant": "1 Jewel",
+            "chaos": 1.0,
+            "listing_count": 1893,
+            "abyssal_count": 1
+          }
+        ],
+        "ninja_floor_chaos": 1.0,
+        "ninja_floor_listings": 1893,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "variant-from-listing-count",
+        "cap": null,
+        "trade": "exact-count-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "poe.ninja enumerates '1 Jewel'/'2 Jewels' lines but the LABEL is not always the literal count (Shroud's '1 Jewel' line carries 'Has 3 Abyssal Sockets'), so map by the observed abyssal_count in each variant line, NOT by parsing the label."
+      }
+    },
+    {
+      "name": "Voices",
+      "class": "socket-defined",
+      "base": [
+        "Large Cluster Jewel"
+      ],
+      "source": "primary-stat",
+      "variant_sensitive": true,
+      "defining": [
+        {
+          "stat_id": "explicit.stat_1085446536",
+          "kind": "value",
+          "axis": "added-small-passives",
+          "from": {
+            "group": "explicit",
+            "match": "value",
+            "pattern": "Adds # Small Passive Skills which grant nothing",
+            "emit": "count-exact",
+            "note": "emit exact min=max on the count (3/5/7) -- the sub-variant that distinguishes 1x7 vs corrupted 2x5 / 3x3."
+          }
+        }
+      ],
+      "ninja_variant_rule": {
+        "strategy": "map-count",
+        "axis": "passive-count",
+        "match": "Read the copy's added-small-passive count (3/5/7); pick the ninja variant line whose label encodes that count ('<N> passives').",
+        "observed_variants": [
+          {
+            "variant": "3 passives",
+            "chaos": 7030,
+            "listing_count": 15
+          },
+          {
+            "variant": "5 passives",
+            "chaos": 507.0,
+            "listing_count": 84
+          },
+          {
+            "variant": "7 passives",
+            "chaos": 5.0,
+            "listing_count": 312
+          }
+        ],
+        "ninja_floor_chaos": 5.0,
+        "ninja_floor_listings": 312,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "variant-from-listing-count",
+        "cap": null,
+        "trade": "exact-count-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "poe.ninja enumerates '3 passives'/'5 passives'/'7 passives'."
+      }
+    },
+    {
+      "name": "Aul's Uprising",
+      "class": "roll-defined",
+      "base": [
+        "Onyx Amulet"
+      ],
+      "source": "crosscheck",
+      "variant_sensitive": true,
+      "defining": [
+        {
+          "stat_id": "explicit.stat_1133703802",
+          "kind": "value",
+          "axis": "reservation-aura",
+          "from": {
+            "group": "explicit",
+            "match": "family-all",
+            "pattern": "explicit '<Aura> has no Reservation ...' (which aura)",
+            "emit": "roll-min",
+            "family_size": 116,
+            "samples": [],
+            "note": "Match the copy's reservation-removal explicit mod (the price driver -- which aura's reservation it removes)."
+          }
+        }
+      ],
+      "ninja_variant_rule": {
+        "strategy": "floor-only",
+        "axis": "floor",
+        "match": "poe.ninja lists ONE null-variant floor line for this name; use it only as a low-confidence floor. The real price is the defining-mod trade search on the build's own copy.",
+        "observed_variants": [],
+        "ninja_floor_chaos": 40.0,
+        "ninja_floor_listings": 187,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "floor-low",
+        "cap": "low",
+        "trade": "defining-filter-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "Value dominated by which aura's reservation-removal mod rolled."
+      },
+      "crosscheck_tags": [
+        "[NOT FROM SOURCE - poewiki/trade experience 'Aul's Uprising']"
+      ]
+    },
+    {
+      "name": "Megalomaniac",
+      "class": "roll-defined",
+      "base": [
+        "Medium Cluster Jewel"
+      ],
+      "source": "primary-stat",
+      "variant_sensitive": true,
+      "defining": [
+        {
+          "stat_id": "explicit.stat_2780712583",
+          "kind": "value",
+          "axis": "cluster-notables",
+          "from": {
+            "group": "explicit",
+            "match": "family-all",
+            "pattern": "explicit '1 Added Passive Skill is <Notable>' (x3)",
+            "emit": "presence",
+            "family_size": 301,
+            "samples": [
+              "explicit.stat_2342448236",
+              "explicit.stat_2780712583",
+              "explicit.stat_3599340381"
+            ],
+            "note": "Match the item's THREE '1 Added Passive Skill is <Notable>' flags (presence, value:{min:1}); AND-group -- the 3-notable combo is the identity poe.ninja cannot price."
+          }
+        }
+      ],
+      "ninja_variant_rule": {
+        "strategy": "floor-only",
+        "axis": "floor",
+        "match": "poe.ninja lists ONE null-variant floor line for this name; use it only as a low-confidence floor. The real price is the defining-mod trade search on the build's own copy.",
+        "observed_variants": [],
+        "ninja_floor_chaos": 25.5,
+        "ninja_floor_listings": 9641,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "floor-low",
+        "cap": "low",
+        "trade": "defining-filter-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "Rolls 3 random notables from the whole pool; ninja folds to one line."
+      },
+      "crosscheck_tags": [
+        "[NOT FROM SOURCE - maxroll 'Cluster Jewels Explained' (3-random-notables)]"
+      ]
+    },
+    {
+      "name": "Split Personality",
+      "class": "roll-defined",
+      "base": [
+        "Crimson Jewel"
+      ],
+      "source": "primary-stat",
+      "variant_sensitive": true,
+      "defining": [],
+      "defining_rule": "own-explicit-rolls",
+      "ninja_variant_rule": {
+        "strategy": "floor-only",
+        "axis": "floor",
+        "match": "poe.ninja lists ONE null-variant floor line for this name; use it only as a low-confidence floor. The real price is the defining-mod trade search on the build's own copy.",
+        "observed_variants": [],
+        "ninja_floor_chaos": 2.0,
+        "ninja_floor_listings": 1453,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "floor-low",
+        "cap": "low",
+        "trade": "defining-filter-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "Value = which two random attribute/defence mods; ninja shows one line."
+      },
+      "crosscheck_tags": [
+        "[NOT FROM SOURCE - poewiki 'Split Personality']"
+      ],
+      "notes": "Priced via the item's OWN explicit rolls (generic StatMapper path), not a fixed defining id; the registry entry only prevents a name-only price."
+    },
+    {
+      "name": "Sublime Vision",
+      "class": "roll-defined",
+      "base": [
+        "Prismatic Jewel"
+      ],
+      "source": "crosscheck",
+      "variant_sensitive": true,
+      "defining": [
+        {
+          "stat_id": "explicit.stat_2255914633",
+          "kind": "value",
+          "axis": "aura",
+          "from": {
+            "group": "explicit",
+            "match": "family-all",
+            "pattern": "explicit aura-empower mod (which single aura it names)",
+            "emit": "roll-min",
+            "family_size": 144,
+            "samples": [
+              "explicit.stat_2255914633"
+            ],
+            "note": "Match the copy's aura-empowering explicit mod(s)."
+          }
+        }
+      ],
+      "ninja_variant_rule": {
+        "strategy": "floor-only",
+        "axis": "floor",
+        "match": "poe.ninja lists ONE null-variant floor line for this name; use it only as a low-confidence floor. The real price is the defining-mod trade search on the build's own copy.",
+        "observed_variants": [],
+        "ninja_floor_chaos": 135.8,
+        "ninja_floor_listings": 137,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "floor-low",
+        "cap": "low",
+        "trade": "defining-filter-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "Variant = which single aura it empowers (disables others)."
+      },
+      "crosscheck_tags": [
+        "[NOT FROM SOURCE - poeprices/poewiki 'Sublime Vision']"
+      ]
+    },
+    {
+      "name": "That Which Was Taken",
+      "class": "roll-defined",
+      "base": [
+        "Crimson Jewel"
+      ],
+      "source": "crosscheck",
+      "variant_sensitive": true,
+      "defining": [],
+      "defining_rule": "own-explicit-rolls",
+      "ninja_variant_rule": {
+        "strategy": "floor-only",
+        "axis": "floor",
+        "match": "poe.ninja lists ONE null-variant floor line for this name; use it only as a low-confidence floor. The real price is the defining-mod trade search on the build's own copy.",
+        "observed_variants": [],
+        "ninja_floor_chaos": null,
+        "ninja_floor_listings": null,
+        "harvested": false
+      },
+      "confidence_policy": {
+        "ninja": "floor-low",
+        "cap": "low",
+        "trade": "defining-filter-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "Value = which explicit mods rolled."
+      },
+      "crosscheck_tags": [
+        "[NOT FROM SOURCE - poewiki 'That Which Was Taken']"
+      ],
+      "notes": "Priced via the item's own explicit rolls (generic path)."
+    },
+    {
+      "name": "Watcher's Eye",
+      "class": "roll-defined",
+      "base": [
+        "Prismatic Jewel"
+      ],
+      "source": "primary-stat",
+      "variant_sensitive": true,
+      "defining": [
+        {
+          "stat_id": "explicit.stat_2255914633",
+          "kind": "value",
+          "axis": "aura-mods",
+          "from": {
+            "group": "explicit",
+            "match": "family-all",
+            "pattern": "explicit '<stat> while affected by <Aura>'",
+            "emit": "roll-min",
+            "family_size": 144,
+            "samples": [
+              "explicit.stat_1222888897",
+              "explicit.stat_2255914633",
+              "explicit.stat_2643562209",
+              "explicit.stat_3111519953",
+              "explicit.stat_3627458291"
+            ],
+            "note": "Match EACH 'while affected by <Aura>' explicit line to its own id (value:{min:roll}); AND-group them -- the aura-mod COMBO is the price identity. Generic ES/Life/Mana lines are not price-driving."
+          }
+        }
+      ],
+      "ninja_variant_rule": {
+        "strategy": "floor-only",
+        "axis": "floor",
+        "match": "poe.ninja lists ONE null-variant floor line for this name; use it only as a low-confidence floor. The real price is the defining-mod trade search on the build's own copy.",
+        "observed_variants": [],
+        "ninja_floor_chaos": 50.0,
+        "ninja_floor_listings": 11320,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "floor-low",
+        "cap": "low",
+        "trade": "defining-filter-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "poe.ninja lists ONE null-variant floor (50c across 11,320 mixed listings); the specific aura combo is trade-only."
+      }
+    },
+    {
+      "name": "Atziri's Splendour",
+      "class": "mod-variant",
+      "base": [
+        "Sacrificial Garb"
+      ],
+      "source": "ninja-harvest",
+      "variant_sensitive": true,
+      "also_links": true,
+      "defining": [],
+      "defining_rule": "ninja-variant-label",
+      "ninja_variant_rule": {
+        "strategy": "map-variant",
+        "axis": "variant-mod",
+        "match": "poe.ninja enumerates a `variant` label per form; pick the line whose label tokens are covered by the copy's defining mod text (or, for the base axis, its baseType). That line's chaosValue is the price (confidence from its listing_count). If none covers >0.6 and beats the runner-up, fall to the min..p90 range at LOW confidence (existing unique_price behaviour).",
+        "observed_variants": [
+          {
+            "variant": "Evasion/ES",
+            "chaos": 1203,
+            "listing_count": 1,
+            "links": 5
+          },
+          {
+            "variant": "Armour/ES",
+            "chaos": 80.0,
+            "listing_count": 1,
+            "links": 5
+          },
+          {
+            "variant": "Armour/Evasion/ES",
+            "chaos": 45.0,
+            "listing_count": 1,
+            "links": 5
+          },
+          {
+            "variant": "Armour/ES",
+            "chaos": 7.7,
+            "listing_count": 53
+          },
+          {
+            "variant": "ES",
+            "chaos": 5.6,
+            "listing_count": 38
+          },
+          {
+            "variant": "Armour",
+            "chaos": 5.0,
+            "listing_count": 31
+          },
+          {
+            "variant": "Evasion",
+            "chaos": 5.0,
+            "listing_count": 22
+          },
+          {
+            "variant": "Evasion/ES",
+            "chaos": 5.0,
+            "listing_count": 26
+          },
+          {
+            "variant": "Armour/Evasion/ES",
+            "chaos": 4.9,
+            "listing_count": 10
+          },
+          {
+            "variant": "Armour/ES/Life",
+            "chaos": 4.6,
+            "listing_count": 19
+          },
+          {
+            "variant": "Armour/Evasion",
+            "chaos": 4.0,
+            "listing_count": 28
+          },
+          {
+            "variant": "Evasion/ES/Life",
+            "chaos": 4.0,
+            "listing_count": 19
+          }
+        ],
+        "ninja_floor_chaos": 4.0,
+        "ninja_floor_listings": 28,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "variant-from-listing-count",
+        "cap": null,
+        "trade": "defining-filter-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "Variant = the defence-stat combo it rolls (Armour/ES, Evasion/ES, ..., 9 forms); poe.ninja enumerates each. Also 5L/6L links-sensitive."
+      }
+    },
+    {
+      "name": "Circle of Anguish",
+      "class": "mod-variant",
+      "base": [
+        "Ruby Ring"
+      ],
+      "source": "crosscheck",
+      "variant_sensitive": true,
+      "defining": [
+        {
+          "stat_id": "explicit.stat_1970606344",
+          "kind": "value",
+          "axis": "herald",
+          "from": {
+            "group": "explicit",
+            "match": "family-all",
+            "pattern": "explicit '<stat> while affected by Herald of <X>'",
+            "emit": "roll-min",
+            "family_size": 13,
+            "samples": [],
+            "note": "Match the copy's 'while affected by Herald of <X>' explicit mod -- the named Herald IS the variant."
+          }
+        }
+      ],
+      "ninja_variant_rule": {
+        "strategy": "map-variant",
+        "axis": "variant-mod",
+        "match": "poe.ninja enumerates a `variant` label per form; pick the line whose label tokens are covered by the copy's defining mod text (or, for the base axis, its baseType). That line's chaosValue is the price (confidence from its listing_count). If none covers >0.6 and beats the runner-up, fall to the min..p90 range at LOW confidence (existing unique_price behaviour).",
+        "observed_variants": [],
+        "ninja_floor_chaos": 1.0,
+        "ninja_floor_listings": 3476,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "variant-from-listing-count",
+        "cap": null,
+        "trade": "defining-filter-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "The 'while affected by Herald of <X>' mod names the Herald = the variant. (poe.ninja lists per-Herald rows when priced.)"
+      },
+      "crosscheck_tags": [
+        "[NOT FROM SOURCE - poewiki 'Elder Circle rings']"
+      ]
+    },
+    {
+      "name": "Circle of Fear",
+      "class": "mod-variant",
+      "base": [
+        "Sapphire Ring"
+      ],
+      "source": "crosscheck",
+      "variant_sensitive": true,
+      "defining": [
+        {
+          "stat_id": "explicit.stat_1970606344",
+          "kind": "value",
+          "axis": "herald",
+          "from": {
+            "group": "explicit",
+            "match": "family-all",
+            "pattern": "explicit '<stat> while affected by Herald of <X>'",
+            "emit": "roll-min",
+            "family_size": 13,
+            "samples": [],
+            "note": "Match the copy's 'while affected by Herald of <X>' explicit mod -- the named Herald IS the variant."
+          }
+        }
+      ],
+      "ninja_variant_rule": {
+        "strategy": "map-variant",
+        "axis": "variant-mod",
+        "match": "poe.ninja enumerates a `variant` label per form; pick the line whose label tokens are covered by the copy's defining mod text (or, for the base axis, its baseType). That line's chaosValue is the price (confidence from its listing_count). If none covers >0.6 and beats the runner-up, fall to the min..p90 range at LOW confidence (existing unique_price behaviour).",
+        "observed_variants": [],
+        "ninja_floor_chaos": 1.0,
+        "ninja_floor_listings": 3407,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "variant-from-listing-count",
+        "cap": null,
+        "trade": "defining-filter-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "The 'while affected by Herald of <X>' mod names the Herald = the variant. (poe.ninja lists per-Herald rows when priced.)"
+      },
+      "crosscheck_tags": [
+        "[NOT FROM SOURCE - poewiki 'Elder Circle rings']"
+      ]
+    },
+    {
+      "name": "Circle of Guilt",
+      "class": "mod-variant",
+      "base": [
+        "Iron Ring"
+      ],
+      "source": "crosscheck",
+      "variant_sensitive": true,
+      "defining": [
+        {
+          "stat_id": "explicit.stat_1970606344",
+          "kind": "value",
+          "axis": "herald",
+          "from": {
+            "group": "explicit",
+            "match": "family-all",
+            "pattern": "explicit '<stat> while affected by Herald of <X>'",
+            "emit": "roll-min",
+            "family_size": 13,
+            "samples": [],
+            "note": "Match the copy's 'while affected by Herald of <X>' explicit mod -- the named Herald IS the variant."
+          }
+        }
+      ],
+      "ninja_variant_rule": {
+        "strategy": "map-variant",
+        "axis": "variant-mod",
+        "match": "poe.ninja enumerates a `variant` label per form; pick the line whose label tokens are covered by the copy's defining mod text (or, for the base axis, its baseType). That line's chaosValue is the price (confidence from its listing_count). If none covers >0.6 and beats the runner-up, fall to the min..p90 range at LOW confidence (existing unique_price behaviour).",
+        "observed_variants": [],
+        "ninja_floor_chaos": 2.0,
+        "ninja_floor_listings": 3303,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "variant-from-listing-count",
+        "cap": null,
+        "trade": "defining-filter-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "The 'while affected by Herald of <X>' mod names the Herald = the variant. (poe.ninja lists per-Herald rows when priced.)"
+      },
+      "crosscheck_tags": [
+        "[NOT FROM SOURCE - poewiki 'Elder Circle rings']"
+      ]
+    },
+    {
+      "name": "Circle of Nostalgia",
+      "class": "mod-variant",
+      "base": [
+        "Amethyst Ring"
+      ],
+      "source": "crosscheck",
+      "variant_sensitive": true,
+      "defining": [
+        {
+          "stat_id": "explicit.stat_1970606344",
+          "kind": "value",
+          "axis": "herald",
+          "from": {
+            "group": "explicit",
+            "match": "family-all",
+            "pattern": "explicit '<stat> while affected by Herald of <X>'",
+            "emit": "roll-min",
+            "family_size": 13,
+            "samples": [],
+            "note": "Match the copy's 'while affected by Herald of <X>' explicit mod -- the named Herald IS the variant."
+          }
+        }
+      ],
+      "ninja_variant_rule": {
+        "strategy": "map-variant",
+        "axis": "variant-mod",
+        "match": "poe.ninja enumerates a `variant` label per form; pick the line whose label tokens are covered by the copy's defining mod text (or, for the base axis, its baseType). That line's chaosValue is the price (confidence from its listing_count). If none covers >0.6 and beats the runner-up, fall to the min..p90 range at LOW confidence (existing unique_price behaviour).",
+        "observed_variants": [],
+        "ninja_floor_chaos": 1.0,
+        "ninja_floor_listings": 3887,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "variant-from-listing-count",
+        "cap": null,
+        "trade": "defining-filter-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "The 'while affected by Herald of <X>' mod names the Herald = the variant. (poe.ninja lists per-Herald rows when priced.)"
+      },
+      "crosscheck_tags": [
+        "[NOT FROM SOURCE - poewiki 'Elder Circle rings']"
+      ]
+    },
+    {
+      "name": "Circle of Regret",
+      "class": "mod-variant",
+      "base": [
+        "Topaz Ring"
+      ],
+      "source": "crosscheck",
+      "variant_sensitive": true,
+      "defining": [
+        {
+          "stat_id": "explicit.stat_1970606344",
+          "kind": "value",
+          "axis": "herald",
+          "from": {
+            "group": "explicit",
+            "match": "family-all",
+            "pattern": "explicit '<stat> while affected by Herald of <X>'",
+            "emit": "roll-min",
+            "family_size": 13,
+            "samples": [],
+            "note": "Match the copy's 'while affected by Herald of <X>' explicit mod -- the named Herald IS the variant."
+          }
+        }
+      ],
+      "ninja_variant_rule": {
+        "strategy": "map-variant",
+        "axis": "variant-mod",
+        "match": "poe.ninja enumerates a `variant` label per form; pick the line whose label tokens are covered by the copy's defining mod text (or, for the base axis, its baseType). That line's chaosValue is the price (confidence from its listing_count). If none covers >0.6 and beats the runner-up, fall to the min..p90 range at LOW confidence (existing unique_price behaviour).",
+        "observed_variants": [],
+        "ninja_floor_chaos": 1.0,
+        "ninja_floor_listings": 3340,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "variant-from-listing-count",
+        "cap": null,
+        "trade": "defining-filter-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "The 'while affected by Herald of <X>' mod names the Herald = the variant. (poe.ninja lists per-Herald rows when priced.)"
+      },
+      "crosscheck_tags": [
+        "[NOT FROM SOURCE - poewiki 'Elder Circle rings']"
+      ]
+    },
+    {
+      "name": "Combat Focus",
+      "class": "mod-variant",
+      "base": [
+        "Cobalt Jewel",
+        "Crimson Jewel",
+        "Viridian Jewel"
+      ],
+      "source": "ninja-harvest",
+      "variant_sensitive": true,
+      "defining": [],
+      "defining_rule": "ninja-base-line",
+      "ninja_variant_rule": {
+        "strategy": "map-base",
+        "axis": "base",
+        "match": "poe.ninja splits by baseType; pick the line whose baseType == the copy's base. The base is already pinned by the query's `type` field.",
+        "observed_variants": [],
+        "ninja_floor_chaos": 8.8,
+        "ninja_floor_listings": 22,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "variant-from-listing-count",
+        "cap": null,
+        "trade": "defining-filter-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "Colour base picks which element is prevented from igniting; poe.ninja splits by base."
+      },
+      "crosscheck_tags": [
+        "[NOT FROM SOURCE - poewiki (colour->element mapping)]"
+      ]
+    },
+    {
+      "name": "Doryani's Delusion",
+      "class": "mod-variant",
+      "base": [
+        "Slink Boots",
+        "Sorcerer Boots",
+        "Titan Greaves"
+      ],
+      "source": "crosscheck",
+      "variant_sensitive": true,
+      "also_links": true,
+      "defining": [
+        {
+          "stat_id": "explicit.stat_1077131949",
+          "kind": "value",
+          "axis": "base+variant-mod",
+          "from": {
+            "group": "explicit",
+            "match": "family-all",
+            "pattern": "the aura + element mod (element axis rides on the base axis)",
+            "emit": "roll-min",
+            "family_size": 21,
+            "samples": [],
+            "note": "Base picks the armour type (base-split in trade); match the element aura/pen mod for the element sub-axis. Pin base AND the element mod."
+          }
+        }
+      ],
+      "ninja_variant_rule": {
+        "strategy": "map-variant",
+        "axis": "base+variant-mod",
+        "match": "poe.ninja enumerates a `variant` label per form; pick the line whose label tokens are covered by the copy's defining mod text (or, for the base axis, its baseType). That line's chaosValue is the price (confidence from its listing_count). If none covers >0.6 and beats the runner-up, fall to the min..p90 range at LOW confidence (existing unique_price behaviour).",
+        "observed_variants": [],
+        "ninja_floor_chaos": null,
+        "ninja_floor_listings": null,
+        "harvested": false
+      },
+      "confidence_policy": {
+        "ninja": "variant-from-listing-count",
+        "cap": null,
+        "trade": "defining-filter-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "Base picks the armour type (Boots x3, base-split in trade); an ELEMENT axis (Fire/Cold/Lightning aura+pen) rides on top."
+      },
+      "crosscheck_tags": [
+        "[NOT FROM SOURCE - poewiki 'Doryani's Delusion' (element axis)]"
+      ]
+    },
+    {
+      "name": "Doryani's Invitation",
+      "class": "mod-variant",
+      "base": [
+        "Heavy Belt"
+      ],
+      "source": "ninja-harvest",
+      "variant_sensitive": true,
+      "defining": [],
+      "defining_rule": "ninja-variant-label",
+      "ninja_variant_rule": {
+        "strategy": "map-variant",
+        "axis": "variant-mod",
+        "match": "poe.ninja enumerates a `variant` label per form; pick the line whose label tokens are covered by the copy's defining mod text (or, for the base axis, its baseType). That line's chaosValue is the price (confidence from its listing_count). If none covers >0.6 and beats the runner-up, fall to the min..p90 range at LOW confidence (existing unique_price behaviour).",
+        "observed_variants": [
+          {
+            "variant": "Physical",
+            "chaos": 1527,
+            "listing_count": 7
+          },
+          {
+            "variant": "Cold",
+            "chaos": 7.0,
+            "listing_count": 54
+          },
+          {
+            "variant": "Fire",
+            "chaos": 5.0,
+            "listing_count": 64
+          },
+          {
+            "variant": "Lightning",
+            "chaos": 5.0,
+            "listing_count": 71
+          }
+        ],
+        "ninja_floor_chaos": 5.0,
+        "ninja_floor_listings": 64,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "variant-from-listing-count",
+        "cap": null,
+        "trade": "defining-filter-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "Element (Physical/Cold/Lightning/Fire) picks the damage + pen mods; poe.ninja lists a row per element."
+      }
+    },
+    {
+      "name": "Grand Spectrum",
+      "class": "mod-variant",
+      "base": [
+        "Cobalt Jewel",
+        "Crimson Jewel",
+        "Viridian Jewel"
+      ],
+      "source": "ninja-harvest",
+      "variant_sensitive": true,
+      "defining": [],
+      "defining_rule": "ninja-base-line",
+      "ninja_variant_rule": {
+        "strategy": "map-base",
+        "axis": "base",
+        "match": "poe.ninja splits by baseType; pick the line whose baseType == the copy's base. The base is already pinned by the query's `type` field.",
+        "observed_variants": [],
+        "ninja_floor_chaos": 3.0,
+        "ninja_floor_listings": 149,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "variant-from-listing-count",
+        "cap": null,
+        "trade": "defining-filter-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "Colour base (Cobalt/Crimson/Viridian Jewel) picks the stacking bonus; poe.ninja splits by base. The base is pinned by the query `type`."
+      },
+      "crosscheck_tags": [
+        "[NOT FROM SOURCE - poewiki (colour->bonus mapping)]"
+      ]
+    },
+    {
+      "name": "Impresence",
+      "class": "mod-variant",
+      "base": [
+        "Onyx Amulet"
+      ],
+      "source": "ninja-harvest",
+      "variant_sensitive": true,
+      "defining": [],
+      "defining_rule": "ninja-variant-label",
+      "ninja_variant_rule": {
+        "strategy": "map-variant",
+        "axis": "variant-mod",
+        "match": "poe.ninja enumerates a `variant` label per form; pick the line whose label tokens are covered by the copy's defining mod text (or, for the base axis, its baseType). That line's chaosValue is the price (confidence from its listing_count). If none covers >0.6 and beats the runner-up, fall to the min..p90 range at LOW confidence (existing unique_price behaviour).",
+        "observed_variants": [
+          {
+            "variant": "Chaos",
+            "chaos": 90.0,
+            "listing_count": 493
+          },
+          {
+            "variant": "Cold",
+            "chaos": 2.0,
+            "listing_count": 319
+          },
+          {
+            "variant": "Fire",
+            "chaos": 2.0,
+            "listing_count": 311
+          },
+          {
+            "variant": "Lightning",
+            "chaos": 2.0,
+            "listing_count": 323
+          },
+          {
+            "variant": "Physical",
+            "chaos": 2.0,
+            "listing_count": 292
+          }
+        ],
+        "ninja_floor_chaos": 2.0,
+        "ninja_floor_listings": 292,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "variant-from-listing-count",
+        "cap": null,
+        "trade": "defining-filter-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "Element (Chaos/Physical/Lightning/Fire/Cold) picks the free-curse + damage mods; poe.ninja lists 'Impresence (<element>)'."
+      }
+    },
+    {
+      "name": "Mageblood",
+      "class": "mod-variant",
+      "base": [
+        "Heavy Belt"
+      ],
+      "source": "ninja-harvest",
+      "variant_sensitive": true,
+      "defining": [],
+      "defining_rule": "ninja-variant-label",
+      "ninja_variant_rule": {
+        "strategy": "map-variant",
+        "axis": "variant-mod",
+        "match": "poe.ninja enumerates a `variant` label per form; pick the line whose label tokens are covered by the copy's defining mod text (or, for the base axis, its baseType). That line's chaosValue is the price (confidence from its listing_count). If none covers >0.6 and beats the runner-up, fall to the min..p90 range at LOW confidence (existing unique_price behaviour).",
+        "observed_variants": [
+          {
+            "variant": "4 Flasks",
+            "chaos": 20580,
+            "listing_count": 30
+          },
+          {
+            "variant": "3 Flasks",
+            "chaos": 20107,
+            "listing_count": 15
+          },
+          {
+            "variant": "2 Flasks",
+            "chaos": 8605,
+            "listing_count": 10
+          }
+        ],
+        "ninja_floor_chaos": 8605,
+        "ninja_floor_listings": 10,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "variant-from-listing-count",
+        "cap": null,
+        "trade": "defining-filter-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "'2 Flasks'/'3 Flasks'/'4 Flasks' -- how many magic utility flasks it applies; poe.ninja enumerates each. The count is intrinsic to the copy."
+      }
+    },
+    {
+      "name": "Precursor's Emblem",
+      "class": "mod-variant",
+      "base": [
+        "Prismatic Ring",
+        "Ruby Ring",
+        "Sapphire Ring",
+        "Topaz Ring",
+        "Two-Stone Ring"
+      ],
+      "source": "ninja-harvest",
+      "variant_sensitive": true,
+      "defining": [],
+      "defining_rule": "ninja-base-line",
+      "ninja_variant_rule": {
+        "strategy": "map-base",
+        "axis": "base",
+        "match": "poe.ninja splits by baseType; pick the line whose baseType == the copy's base. The base is already pinned by the query's `type` field.",
+        "observed_variants": [],
+        "ninja_floor_chaos": 79.5,
+        "ninja_floor_listings": 30,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "variant-from-listing-count",
+        "cap": null,
+        "trade": "defining-filter-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "Ring base picks which resist/attribute implicit it can roll; poe.ninja splits by base. Base pinned by query `type`."
+      },
+      "notes": "Variant axis is an IMPLICIT that follows the base; base-pin is sufficient."
+    },
+    {
+      "name": "The First Crest",
+      "class": "mod-variant",
+      "base": [
+        "Coffer Relic"
+      ],
+      "source": "ninja-harvest",
+      "variant_sensitive": true,
+      "defining": [],
+      "defining_rule": "ninja-variant-label",
+      "ninja_variant_rule": {
+        "strategy": "map-variant",
+        "axis": "variant-mod",
+        "match": "poe.ninja enumerates a `variant` label per form; pick the line whose label tokens are covered by the copy's defining mod text (or, for the base axis, its baseType). That line's chaosValue is the price (confidence from its listing_count). If none covers >0.6 and beats the runner-up, fall to the min..p90 range at LOW confidence (existing unique_price behaviour).",
+        "observed_variants": [
+          {
+            "variant": "Relics",
+            "chaos": 8.0,
+            "listing_count": 61
+          },
+          {
+            "variant": "Experience",
+            "chaos": 1.0,
+            "listing_count": 12
+          },
+          {
+            "variant": "Tainted Currency",
+            "chaos": 1.0,
+            "listing_count": 29
+          }
+        ],
+        "ninja_floor_chaos": 1.0,
+        "ninja_floor_listings": 29,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "variant-from-listing-count",
+        "cap": null,
+        "trade": "defining-filter-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "Relic reward variant (Relics / Tainted Currency / Experience); poe.ninja lists 3 rows."
+      }
+    },
+    {
+      "name": "The Light of Meaning",
+      "class": "mod-variant",
+      "base": [
+        "Prismatic Jewel"
+      ],
+      "source": "crosscheck",
+      "variant_sensitive": true,
+      "defining": [
+        {
+          "stat_id": "explicit.stat_1223932609",
+          "kind": "value",
+          "axis": "variant-mod",
+          "from": {
+            "group": "explicit",
+            "match": "family-all",
+            "pattern": "the 'Passive Skills in Radius also grant <X>' amplify mod",
+            "emit": "roll-min",
+            "family_size": 15,
+            "samples": [
+              "explicit.stat_3382199855",
+              "explicit.stat_3761482453"
+            ],
+            "note": "Match the copy's 'Passive Skills in Radius also grant <X>' mod(s); which bonus the radius grant confers is the variant. from.family_ids serialises all 15 members so the runtime emits the copy's SPECIFIC member by its own id (rep id alone matches 0 real copies).",
+            "family_ids": [
+              "explicit.stat_1223932609",
+              "explicit.stat_1313763128",
+              "explicit.stat_1647724040",
+              "explicit.stat_1812306107",
+              "explicit.stat_2999571636",
+              "explicit.stat_3087912144",
+              "explicit.stat_3252387974",
+              "explicit.stat_3382199855",
+              "explicit.stat_3556460433",
+              "explicit.stat_3587101704",
+              "explicit.stat_3761482453",
+              "explicit.stat_3901726941",
+              "explicit.stat_4215928287",
+              "explicit.stat_576760472",
+              "explicit.stat_719810173"
+            ]
+          }
+        }
+      ],
+      "ninja_variant_rule": {
+        "strategy": "map-variant",
+        "axis": "variant-mod",
+        "match": "poe.ninja enumerates a `variant` label per form; pick the line whose label tokens are covered by the copy's defining mod text (or, for the base axis, its baseType). That line's chaosValue is the price (confidence from its listing_count). If none covers >0.6 and beats the runner-up, fall to the min..p90 range at LOW confidence (existing unique_price behaviour).",
+        "observed_variants": [],
+        "ninja_floor_chaos": 10.0,
+        "ninja_floor_listings": 812,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "variant-from-listing-count",
+        "cap": null,
+        "trade": "defining-filter-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "Variant = which bonus the 'Passive Skills in Radius also grant <X>' mod confers (Evasion / Mana / Life / an element / crit / ...)."
+      },
+      "crosscheck_tags": [
+        "[NOT FROM SOURCE - poewiki 'The Light of Meaning']"
+      ]
+    },
+    {
+      "name": "Vessel of Vinktar",
+      "class": "mod-variant",
+      "base": [
+        "Topaz Flask"
+      ],
+      "source": "crosscheck",
+      "variant_sensitive": true,
+      "defining": [
+        {
+          "stat_id": "explicit.stat_1077131949",
+          "kind": "value",
+          "axis": "variant-mod",
+          "from": {
+            "group": "explicit",
+            "match": "family-all",
+            "pattern": "the lightning conversion / added-lightning / pen mod",
+            "emit": "roll-min",
+            "family_size": 18,
+            "samples": [],
+            "note": "Match the copy's lightning conversion/added/pen mod -- the variant."
+          }
+        }
+      ],
+      "ninja_variant_rule": {
+        "strategy": "map-variant",
+        "axis": "variant-mod",
+        "match": "poe.ninja enumerates a `variant` label per form; pick the line whose label tokens are covered by the copy's defining mod text (or, for the base axis, its baseType). That line's chaosValue is the price (confidence from its listing_count). If none covers >0.6 and beats the runner-up, fall to the min..p90 range at LOW confidence (existing unique_price behaviour).",
+        "observed_variants": [],
+        "ninja_floor_chaos": 2.0,
+        "ninja_floor_listings": 313,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "variant-from-listing-count",
+        "cap": null,
+        "trade": "defining-filter-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "4-5 variants (added Lightning to Spells / to Attacks / Phys->Lightning / Lightning Pen); poe.ninja lists 'Vessel of Vinktar (<X>)' when priced."
+      },
+      "crosscheck_tags": [
+        "[NOT FROM SOURCE - poewiki 'Vessel of Vinktar']"
+      ]
+    },
+    {
+      "name": "Volkuur's Guidance",
+      "class": "mod-variant",
+      "base": [
+        "Zealot Gloves"
+      ],
+      "source": "ninja-harvest",
+      "variant_sensitive": true,
+      "defining": [],
+      "defining_rule": "ninja-variant-label",
+      "ninja_variant_rule": {
+        "strategy": "map-variant",
+        "axis": "variant-mod",
+        "match": "poe.ninja enumerates a `variant` label per form; pick the line whose label tokens are covered by the copy's defining mod text (or, for the base axis, its baseType). That line's chaosValue is the price (confidence from its listing_count). If none covers >0.6 and beats the runner-up, fall to the min..p90 range at LOW confidence (existing unique_price behaviour).",
+        "observed_variants": [
+          {
+            "variant": "Cold",
+            "chaos": 1.0,
+            "listing_count": 251
+          },
+          {
+            "variant": "Fire",
+            "chaos": 1.0,
+            "listing_count": 256
+          },
+          {
+            "variant": "Lightning",
+            "chaos": 1.0,
+            "listing_count": 214
+          }
+        ],
+        "ninja_floor_chaos": 1.0,
+        "ninja_floor_listings": 214,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "variant-from-listing-count",
+        "cap": null,
+        "trade": "defining-filter-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "Element (Lightning/Fire/Cold) picks the curse-on-hit + res mod; poe.ninja lists 3 rows."
+      }
+    },
+    {
+      "name": "Yriel's Fostering",
+      "class": "mod-variant",
+      "base": [
+        "Exquisite Leather"
+      ],
+      "source": "ninja-harvest",
+      "variant_sensitive": true,
+      "also_links": true,
+      "defining": [],
+      "defining_rule": "ninja-variant-label",
+      "ninja_variant_rule": {
+        "strategy": "map-variant",
+        "axis": "variant-mod",
+        "match": "poe.ninja enumerates a `variant` label per form; pick the line whose label tokens are covered by the copy's defining mod text (or, for the base axis, its baseType). That line's chaosValue is the price (confidence from its listing_count). If none covers >0.6 and beats the runner-up, fall to the min..p90 range at LOW confidence (existing unique_price behaviour).",
+        "observed_variants": [
+          {
+            "variant": "Bleeding",
+            "chaos": 45.0,
+            "listing_count": 1,
+            "links": 6
+          },
+          {
+            "variant": "Poison",
+            "chaos": 40.0,
+            "listing_count": 3,
+            "links": 6
+          },
+          {
+            "variant": "Bleeding",
+            "chaos": 10.8,
+            "listing_count": 5,
+            "links": 5
+          },
+          {
+            "variant": "Poison",
+            "chaos": 9.6,
+            "listing_count": 7,
+            "links": 5
+          },
+          {
+            "variant": "Maim",
+            "chaos": 7.54,
+            "listing_count": 7,
+            "links": 5
+          },
+          {
+            "variant": "Bleeding",
+            "chaos": 1.0,
+            "listing_count": 337
+          },
+          {
+            "variant": "Maim",
+            "chaos": 1.0,
+            "listing_count": 312
+          },
+          {
+            "variant": "Poison",
+            "chaos": 1.0,
+            "listing_count": 274
+          }
+        ],
+        "ninja_floor_chaos": 1.0,
+        "ninja_floor_listings": 274,
+        "harvested": true
+      },
+      "confidence_policy": {
+        "ninja": "variant-from-listing-count",
+        "cap": null,
+        "trade": "defining-filter-from-listings",
+        "unmatchable": "none-link-only",
+        "note": "Bleeding/Poison/Maim picks which animal companion skill is granted; poe.ninja lists 3 rows. Also 5L/6L links-sensitive (engine adds links)."
+      },
+      "crosscheck_tags": [
+        "[NOT FROM SOURCE - poewiki 'Yriel's Fostering (Rhoa/Snake/Ursa)']"
+      ]
+    }
+  ]
+}

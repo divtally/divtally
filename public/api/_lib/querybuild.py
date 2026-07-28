@@ -27,7 +27,7 @@ import json
 import urllib.parse
 from typing import Dict, List, Optional, Tuple
 
-from . import util
+from . import util, variantreg
 from .models import (CAT_GEM, CAT_MAGIC, CAT_RARE, CAT_UNIQUE, Item,
                      PriceResult, PriceTier)
 from .statmap import StatMapper, is_local_defence, _score
@@ -362,6 +362,34 @@ class PublicPricer:
         base = {"type": btype, "label": btype} if btype else None
         return {"category": category, "base": base}
 
+    @staticmethod
+    def _apply_defining(row: dict, locked: dict) -> None:
+        """Overlay a variant-DEFINING mod's exact search value onto its picker row: the base
+        stat id, an `option` for OPTION stats (Allocates X / ring size / keystone radius), or
+        an EXACT prefill for seed/socket-count stats -- signalled by `exact:true` (search
+        min==max=default_min), the min=max mode the base picker lacked (audit sec 3). Keeps the
+        '<=1 prefilled bound' contract invariant intact (default_max stays null)."""
+        sid = locked.get("stat_id")
+        if sid:
+            row["stat_id"] = sid
+            row["searchable"] = True
+            row["prefer"] = True     # a defining mod is ticked + required by default
+            row["reason"] = ""       # it IS searchable (via the resolved base/option/exact id)
+        val = locked.get("value") or {}
+        if "option" in val:
+            row["option"] = val["option"]
+            row["default_min"] = row["default_max"] = None
+        elif "min" in val and val.get("min") == val.get("max"):
+            row["default_min"] = val["min"]
+            row["default_max"] = None
+            row["exact"] = True
+        elif "min" in val:
+            row["default_min"] = val["min"]
+            row["default_max"] = None
+        elif "max" in val:
+            row["default_max"] = val["max"]
+            row["default_min"] = None
+
     def affix_options(self, item: Item) -> dict:
         """The item's mods/defences as picker-ready search options (docs/public-contract.md
         `rares[].affixes` / `.pseudo`). Each entry carries `group` (the mod's trade stat group:
@@ -371,9 +399,15 @@ class PublicPricer:
         the tool hides nothing)."""
         is_armour = bool(item.defences) or item.raw.get("inventoryId", "") in _ARMOUR_INV
         is_unique = item.category == CAT_UNIQUE
+        # D-0019: for a variant-registered unique, the copy's variant-DEFINING mods are marked
+        # required + prefilled with the exact search value (option / exact seed-count / roll),
+        # so the picker highlights them instead of blanket-skipping every unique mod.
+        var = self._variant_for(item) if is_unique else None
+        locked = (var.get("locked_by_idx") if var else None) or {}
         affixes = []
         for i, line in enumerate(item.explicit_mods):
-            if is_armour and is_local_defence(line):
+            is_def = i in locked
+            if is_armour and is_local_defence(line) and not is_def:
                 continue
             src = item.mod_src[i] if i < len(item.mod_src) else None
             grp = "enchant" if src == "enchant" else None
@@ -382,29 +416,34 @@ class PublicPricer:
             v = util.first_number(line)
             if ok and neg and v is not None:
                 v = -abs(v)
-            prefer = ok and ((not is_unique) or _is_skill_level_mod(line))
+            prefer = ok and ((not is_unique) or _is_skill_level_mod(line) or is_def)
             label = util.strip_rich(line).strip()
             if src == "enchant":
                 label += " (enchant)"
             # prefill (min/max) only for searchable affixes -- an unsearchable mod has no
             # filter to prefill (the picker greys it out); `value` still carries its roll.
             dmin, dmax = _affix_defaults(v, bool(ok and neg)) if ok else (None, None)
-            affixes.append({
+            row = {
                 "kind": "stat", "text": label,
                 "stat_id": sid if ok else None, "value": v,
                 "default_min": dmin, "default_max": dmax,
                 "searchable": ok, "resist": _is_res_affix(line), "negated": bool(ok and neg),
                 "group": src or "explicit",
-                "prefer": prefer, "priority": _affix_tier(line, ok, is_unique),
+                "prefer": prefer,
+                "priority": "required" if is_def else _affix_tier(line, ok, is_unique),
+                "defining": bool(is_def),
                 "reason": "" if ok else "no trade filter matches this mod",
-            })
+            }
+            if is_def:
+                self._apply_defining(row, locked[i])
+            affixes.append(row)
         for key, val in item.defences.items():
             if val and val > 0:
                 affixes.append({"kind": "equip", "key": key, "stat_id": None,
                                 "text": _DEF_LABEL.get(key, key), "value": int(val),
                                 "default_min": int(val), "default_max": None,
                                 "searchable": True, "resist": False, "negated": False,
-                                "group": "equip", "prefer": not is_unique,
+                                "group": "equip", "prefer": not is_unique, "defining": False,
                                 "priority": "skip" if is_unique else "required", "reason": ""})
         c = res_contributions(item.explicit_mods)
         elem_members, chaos_members = _res_fold_members(affixes)
@@ -416,6 +455,7 @@ class PublicPricer:
                            "default_min": tot, "default_max": None,
                            "searchable": True, "resist": True, "negated": False,
                            "group": "pseudo", "folds": elem_members, "prefer": not is_unique,
+                           "defining": False,
                            "priority": "skip" if is_unique else "required", "reason": ""})
         if c["chaos"] > 0:
             tot = round(c["chaos"])
@@ -424,6 +464,7 @@ class PublicPricer:
                            "default_min": tot, "default_max": None,
                            "searchable": True, "resist": True, "negated": False,
                            "group": "pseudo", "folds": chaos_members, "prefer": not is_unique,
+                           "defining": False,
                            "priority": "skip" if is_unique else "required", "reason": ""})
         return {"affixes": affixes, "pseudo": pseudo}
 
@@ -471,11 +512,31 @@ class PublicPricer:
                 out.append({"id": sid, "value": {"min": int(v)}})
         return out
 
+    def _variant_for(self, item: Item):
+        """The VariantResult for a registry unique (D-0019), or None. Recomputed on demand
+        (cheap, stateless); price_unique_ninja + affix_options both call it so the picker's
+        defining flags and the built query always agree."""
+        if item.category != CAT_UNIQUE or not item.name:
+            return None
+        entry = variantreg.lookup(item.name, item.base_type)
+        if not entry:
+            return None
+        return variantreg.build_variant(item, entry, self.mapper)
+
     # ---- trade query builders (built, never executed) --------------------
-    def _unique_query(self, item: Item) -> dict:
-        """Name + base (+ links) (+ build's skill-level rolls) -- the query the extension
-        runs to price/verify this unique on the user's machine."""
+    def _unique_query(self, item: Item, var=None) -> dict:
+        """Name + base (+ links) (+ build's skill-level rolls) (+ D-0019 variant-defining
+        filters) -- the query the extension runs to price/verify this unique on the user's
+        machine. `var` (a VariantResult) ADDS the REQUIRED defining-mod filters for a
+        variant-registered unique (option-split / exact seed / exact count / aura roll-min /
+        own-rolls); D-0015: purely additive over the previous name+base+skill-level query."""
         vfilters = self._unique_value_filters(item)
+        if var:
+            have = {f.get("id") for f in vfilters}
+            for f in var.get("filters", []):
+                if f.get("id") and f["id"] not in have:
+                    have.add(f["id"])
+                    vfilters.append(f)
         query = {"status": self._status(), "name": item.name, "type": item.base_type,
                  "stats": [{"type": "and", "filters": vfilters}]}
         links = self._links_filter(item)
@@ -616,12 +677,18 @@ class PublicPricer:
                    "trade_query": self._payload(active_query), **host_extra}
         return r
 
-    # ---- unique pricing (poe.ninja by name; NEW) -------------------------
+    # ---- unique pricing (poe.ninja by name; registry-aware per D-0019) ---
     def price_unique_ninja(self, item: Item) -> PriceResult:
         r = PriceResult(item=item, method="unique-ninja")
         econ = self._econ()
-        query = self._unique_query(item) if item.name else None
+        var = self._variant_for(item)
+        query = self._unique_query(item, var) if item.name else None
         self._attach_query(r, query)
+        if var:
+            # additive item-row variant block (docs/public-contract.md 2.8): what makes this a
+            # variant, a human label, and the locked defining stats (the required trade filters).
+            r.extra["variant_info"] = {"class": var["cls"], "label": var["label"],
+                                       "locked_stats": var["locked_stats"]}
         if not item.name or not econ:
             r.method = "unique-unpriced"
             r.confidence = "none"
@@ -630,11 +697,18 @@ class PublicPricer:
             r.extra["source"] = "none"
             return r
         mod_text = " ".join(item.explicit_mods or [])
-        m = econ.unique_price(item.name, mod_text=mod_text, base_type=item.base_type)
+        reg_rule = var["ninja_rule"] if var else None
+        owned_count = var["owned_count"] if var else None
+        m = econ.unique_price(item.name, mod_text=mod_text, base_type=item.base_type,
+                              reg_rule=reg_rule, owned_count=owned_count)
         if not m:
             r.method = "unique-unpriced"
             r.confidence = "none"
-            r.note = "not listed on poe.ninja; price it on your machine via the trade link"
+            # D-0019: a registry variant whose exact owned variant isn't on poe.ninja is
+            # UNPRICED + link -- never a cheapest-any-variant number.
+            r.note = ("couldn't match your exact variant on poe.ninja; price it on your "
+                      "machine via the trade link" if var else
+                      "not listed on poe.ninja; price it on your machine via the trade link")
             r.extra["source"] = "none"
             return r
         r.tier = PriceTier(minimum=m["chaos_min"], median=m["chaos_median"], high=m["chaos_high"])
@@ -644,19 +718,32 @@ class PublicPricer:
         r.extra["listing_count"] = m.get("listing_count") or 0
         r.extra["n_variants"] = m.get("n_variants") or 1
         r.extra["variant"] = m.get("variant") or ""
+        cap = var["cap"] if var else None
         matched = m.get("matched")
-        if matched == "range":
+        if matched == "floor":
+            # registry floor-only class (timeless seed / Allocates notable / roll-defined):
+            # poe.ninja can't split the variant, so its one aggregate line is a LOW-confidence
+            # floor; the exact-variant trade search (this row's trade_query) is the real price.
+            r.method = "unique-ninja-floor"
+            r.confidence = cap or "low"
+            r.note = ("poe.ninja lists one aggregate line for this name -- a low-confidence "
+                      "FLOOR across all variants (min of the range); price your exact variant "
+                      "via the trade link")
+        elif matched == "variant":
+            r.method = "unique-ninja-variant"
+            lc = m.get("listing_count") or 0
+            r.confidence = cap or ("high" if lc >= 5 else "medium")
+            r.note = f"poe.ninja price for variant '{m.get('variant')}'"
+            if var and not var["label"] and m.get("variant"):
+                r.extra["variant_info"]["label"] = m.get("variant")
+        elif matched == "range":
             r.method = "unique-ninja-range"
             r.confidence = "low"
             r.note = (f"{m.get('n_variants')} variants on poe.ninja; showing the price "
                       "range (min..high) - exact roll unclear, verify via the trade link")
-        elif matched == "variant":
-            r.method = "unique-ninja-variant"
-            r.confidence = "high" if (m.get("listing_count") or 0) >= 5 else "medium"
-            r.note = f"poe.ninja price for variant '{m.get('variant')}'"
         else:  # "name"
             r.method = "unique-ninja"
-            r.confidence = self._confidence_from_lc(m.get("listing_count") or 0)
+            r.confidence = cap or self._confidence_from_lc(m.get("listing_count") or 0)
             r.note = "poe.ninja price by name"
         return r
 
