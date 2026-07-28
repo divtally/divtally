@@ -359,3 +359,23 @@ by singular/plural mod text (count now read from the socket array), and bad-URL/
 links returning 502 `ninja_error` instead of 400 `bad_input` (parse errors re-raised as
 `EstimateError`; genuine fetch failures still 502). No schema field removed/renamed. Next per
 D-0020: deploy, then Round 2 (browser UI).
+
+## D-0020 R2 F1 - variant-unique 0-match placeholder no longer counted (2026-07-28)
+Round 2's one MAJOR (`docs/bugtest/r2-judge.md` F1; Build 3 R2c-1 + Build 4 R2d-1); full notes in
+`docs/bugtest/r2-fix1.md`. A D-0019 variant unique (Watcher's Eye) whose exact locked-mod search
+returned `total_found=0` was keeping its poe.ninja name-level PLACEHOLDER, rendering it as a price,
+and staying counted in the headline (55c / 2.9% on Build 4) - a misleading number, contradicting
+Locked D-0019 ("floor is a PLACEHOLDER, not its price"; "unmatchable -> link + no number"). This is
+a code-compliance fix, **not** a decision change - D-0019 is unchanged. `public/site/assets/core.js`:
+(1) new `dropIfPlaceholder(key,patch)` nulls the chaos in a failure patch **iff** the row is still the
+ninja placeholder for a variant unique (`it.variant && median!=null && method ~ /^unique-ninja/`),
+scoped so a real whisper/cache/prior-trade price is never clobbered; (2) all four `foldBatch` failure
+branches (error / nobuyout / no-rate / chunk-timeout) wrap their patch with it; (3) `applyPrice` gains
+an invariant `else delete state.enabled[key]` so a withdrawn number never leaves a stale enable. A
+failed variant-unique scan is now indistinguishable from a 0-match rare (link + no number). Contract
+additive (no field added/removed). Verified: offline `test_scanstatus.mjs` 64/0 (new
+`scenarioVariantPlaceholder`), all harnesses green; and LIVE end-to-end on yalokk via route-swapping
+the fixed core.js onto the real divtally.com + the real extension (no deploy) - Watcher's Eye dropped
+to link-only, headline `included 26->25, priced 28->27, min 1924.628c->1869.628c` (exactly the 55c
+removed), Bubonic Trail control still 1.0c, hands-free 13/13, clean console, `totalMs 67 480`. 15/15
+live assertions PASS. Coordinator deploys after.

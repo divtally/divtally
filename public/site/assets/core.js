@@ -457,6 +457,13 @@
       // fill only auto-includes if the user hasn't already decided this row.
       if (opts.include) state.enabled[key] = defaultOn(key);
       else if (!(key in state.enabled)) state.enabled[key] = defaultOn(key);
+    } else {
+      // Invariant (F1/R2): a row with no median carries no number, so it must never stay counted.
+      // Clears a stale enable when a price is WITHDRAWN — e.g. a variant unique whose poe.ninja
+      // placeholder is dropped once its exact locked-mod search comes back empty (link-only, like
+      // a 0-match rare). Every other enable site already guards on median != null; this closes the
+      // one path (foldBatch nulling a placeholder) that left an enable behind a null price.
+      delete state.enabled[key];
     }
     emit("priced", { keys: [key], state: state });
     emit("totals", totals());
@@ -787,15 +794,15 @@
           if (!it) return;
           var dbg = res.debug || null;      // v1.1: {searchStatus, fetchStatus, fetched, nulls} (absent on old ext)
           if (res.error) {
-            applyPrice(key, { confidence: "none", method: "extension", source: "trade",
-              note: "extension: " + res.error + debugSuffix(dbg), debug: dbg }, { include: false });
+            applyPrice(key, dropIfPlaceholder(key, { confidence: "none", method: "extension", source: "trade",
+              note: "extension: " + res.error + debugSuffix(dbg), debug: dbg }), { include: false });
             scanSet(key, "error", { message: res.error, status: dbg && dbg.searchStatus });
             return;
           }
           if (res.amount == null) {
-            applyPrice(key, { confidence: "none", method: "extension", source: "trade",
+            applyPrice(key, dropIfPlaceholder(key, { confidence: "none", method: "extension", source: "trade",
               note: "listings exist but none had a buyout price" + debugSuffix(dbg),
-              total_found: res.total || 0, debug: dbg }, { include: false });
+              total_found: res.total || 0, debug: dbg }), { include: false });
             scanSet(key, "nobuyout", { total: res.total || 0,
               fetched: dbg ? dbg.fetched : null, nulls: dbg ? dbg.nulls : null });
             return;
@@ -806,9 +813,9 @@
           var band = rareTiersFromPrices(res.prices, divRate());
           var chaos = toChaos(res.amount, res.currency);   // cheapest (norate guard + fallback)
           if (band == null && chaos == null) {
-            applyPrice(key, { confidence: "low", method: "extension", source: "trade",
+            applyPrice(key, dropIfPlaceholder(key, { confidence: "low", method: "extension", source: "trade",
               note: "cheapest: " + fmtAmt(res.amount) + " " + res.currency + " (no chaos rate to convert)" + debugSuffix(dbg),
-              total_found: res.total || 0, debug: dbg }, { include: false });
+              total_found: res.total || 0, debug: dbg }), { include: false });
             scanSet(key, "nobuyout", { total: res.total || 0, amount: res.amount, currency: res.currency, norate: true });
             return;
           }
@@ -839,8 +846,8 @@
         key = String(key);
         if (seen[key] || scanResolved(key)) return;
         var msg = (b.resp && b.resp.error) ? b.resp.error : "no result returned";
-        applyPrice(key, { confidence: "none", method: "extension", source: "trade",
-          note: "extension: " + msg }, { include: false });
+        applyPrice(key, dropIfPlaceholder(key, { confidence: "none", method: "extension", source: "trade",
+          note: "extension: " + msg }), { include: false });
         scanSet(key, "error", { message: msg });
       });
       if (toCache.length) { cachedCount += toCache.length; cachePost(toCache); }
@@ -871,6 +878,23 @@
     if (!r.priced) return true;
     var p = r.price || {};
     return !!(r.item && r.item.variant && /^unique-ninja/.test(p.method || ""));
+  }
+  // F1 (R2): a variant unique carries a poe.ninja name-level PLACEHOLDER at load (D-0019: "floor
+  // is a PLACEHOLDER, not its price"). If its exact locked-mod search then comes back with no real
+  // trade price (0 matches / no buyout / no chaos rate / an error), that placeholder is proven NOT
+  // to be this variant's price, so it must DROP to link-only — exactly like a 0-match rare
+  // ("unmatchable -> link + no number"), never lingering as a counted, misleading number. Given a
+  // failure patch, null its chaos iff the row still shows the ninja placeholder (method
+  // unique-ninja*). Scoped to the placeholder only: a real whisper / cache / prior-scan price is a
+  // different method and is never clobbered by a failed re-scan. Runs BEFORE applyPrice overwrites
+  // state.priced, so it reads the pre-scan price. applyPrice's null-median branch then clears the
+  // stale enable, and totals() (which skips null medians) drops the row from the headline.
+  function dropIfPlaceholder(key, patch) {
+    var it = state.items.find(function (x) { return String(x.index) === String(key); });
+    var p = state.priced[String(key)];
+    if (it && it.variant && p && p.chaos && p.chaos.median != null && /^unique-ninja/.test(p.method || ""))
+      patch.chaos = { min: null, median: null, high: null };
+    return patch;
   }
   function autoscan() { return priceRowsViaExtension(manualRows().filter(needsScan)); }
   function priceViaExtension(key) {
