@@ -259,6 +259,37 @@ def phase_a():
           and imp_amb["chaos_min"] == 500 and imp_amb["chaos_median"] == 700
           and 700 <= imp_amb["chaos_high"] <= 900, str(imp_amb))
     check("unique not listed -> None", econ.unique_price("Nonexistent Item") is None)
+    # ---- R1 M1/M3: link-split uniques priced at the copy's LINK TIER (not a min..high range) ----
+    econ._uniques["inpulsa's broken heart"] = [
+        {"name": "Inpulsa's Broken Heart", "baseType": "Sadist Garb", "variant": None,
+         "links": 6, "chaosValue": 344.5, "listingCount": 30, "count": 30},
+        {"name": "Inpulsa's Broken Heart", "baseType": "Sadist Garb", "variant": None,
+         "links": 5, "chaosValue": 81.0, "listingCount": 40, "count": 40},
+        {"name": "Inpulsa's Broken Heart", "baseType": "Sadist Garb", "variant": None,
+         "links": None, "chaosValue": 10.0, "listingCount": 500, "count": 500}]
+    inp6 = econ.unique_price("Inpulsa's Broken Heart", base_type="Sadist Garb", max_link=6)
+    check("link-split: 6L item -> the 6L line as a POINT (344.5), not a 10..291 range",
+          inp6 and inp6["matched"] == "variant"
+          and inp6["chaos_min"] == inp6["chaos_median"] == inp6["chaos_high"] == 344.5, str(inp6))
+    inp5 = econ.unique_price("Inpulsa's Broken Heart", base_type="Sadist Garb", max_link=5)
+    check("link-split: 5L item -> the 5L line (81), not the 6L", inp5 and inp5["chaos_median"] == 81.0, str(inp5))
+    inp3 = econ.unique_price("Inpulsa's Broken Heart", base_type="Sadist Garb", max_link=3)
+    check("link-split: <5L item -> the unlinked base line (10), not the 5L median",
+          inp3 and inp3["matched"] == "variant" and inp3["chaos_median"] == 10.0, str(inp3))
+    inp0 = econ.unique_price("Inpulsa's Broken Heart", base_type="Sadist Garb")
+    check("link-split: unknown link count -> range fallback (never guesses a tier)",
+          inp0 and inp0["matched"] == "range", str(inp0))
+    # non-monotonic tiers: match the link COUNT, not the price (a 5L can out-price the 6L)
+    econ._uniques["replica farrul's fur"] = [
+        {"name": "Replica Farrul's Fur", "baseType": "Triumphant Lamellar", "variant": None,
+         "links": 5, "chaosValue": 3609.0, "listingCount": 5, "count": 5},
+        {"name": "Replica Farrul's Fur", "baseType": "Triumphant Lamellar", "variant": None,
+         "links": 6, "chaosValue": 1768.0, "listingCount": 9, "count": 9},
+        {"name": "Replica Farrul's Fur", "baseType": "Triumphant Lamellar", "variant": None,
+         "links": None, "chaosValue": 1323.0, "listingCount": 20, "count": 20}]
+    rff6 = econ.unique_price("Replica Farrul's Fur", base_type="Triumphant Lamellar", max_link=6)
+    check("link-split non-monotonic: 6L item -> the 6L line (1768), not the pricier 5L (3609)",
+          rff6 and rff6["chaos_median"] == 1768.0, str(rff6))
 
     poeninja.get_json = fake_get_json
     engine._mapper_singleton = None; engine._types_singleton = None
@@ -297,9 +328,13 @@ def phase_a():
                 q = ((byidx.get(k) or {}).get("trade_query") or {}).get("query") or {}
                 n_stat_filt = sum(len(g.get("filters", [])) for g in (q.get("stats") or []))
                 n_arm = len((((q.get("filters") or {}).get("armour_filters") or {}).get("filters") or {}))
-                want_stat = sum(1 for a in ent["affixes"] if a["kind"] == "stat" and a["searchable"])
+                # IMPLICIT affixes are opt-in picker rows (D-0015), NOT part of the default rare
+                # query, so they don't count toward the "requires all searchable EXPLICIT affixes"
+                # invariant (base implicits come with the base; user opts in via the picker).
+                want_stat = sum(1 for a in ent["affixes"] if a["kind"] == "stat"
+                                and a["searchable"] and a.get("group") != "implicit")
                 want_arm = sum(1 for a in ent["affixes"] if a["kind"] == "equip" and a.get("value"))
-                check(f"[ascii] rare[{k}] default query requires all searchable affixes",
+                check(f"[ascii] rare[{k}] default query requires all searchable explicit affixes",
                       n_stat_filt == want_stat and n_arm == want_arm,
                       f"stats {n_stat_filt}/{want_stat} armour {n_arm}/{want_arm}")
             globals()["_SAMPLE_DOC"] = doc
@@ -327,6 +362,18 @@ def phase_a():
     code, body = buildmod._run("not a url or code", "", "online")
     check("bad input -> ok false", body.get("ok") is False and code >= 400, str(code))
     check("bad input -> error_type", bool(body.get("error_type")))
+    # R1: a build-overview link and a PoE2 link are USER URL mistakes -> 400 bad_input (contract
+    # sec.4 lists a build-overview link there), NOT 502 ninja_error (upstream failure). Parse
+    # fails before any fetch, so these are hermetic.
+    ov_code, ov_body = buildmod._run("https://poe.ninja/poe1/builds/allflame", "", "online")
+    check("overview link -> 400 bad_input (was 502 ninja_error)",
+          ov_code == 400 and ov_body.get("error_type") == "bad_input",
+          f"{ov_code}/{ov_body.get('error_type')}")
+    p2_code, p2_body = buildmod._run(
+        "https://poe.ninja/poe2/builds/allflame/character/Foo-1234/Bar", "", "online")
+    check("PoE2 link -> 400 bad_input (was 502 ninja_error)",
+          p2_code == 400 and p2_body.get("error_type") == "bad_input",
+          f"{p2_code}/{p2_body.get('error_type')}")
 
 
 def phase_variant():
@@ -369,9 +416,14 @@ def phase_variant():
              "chaosValue": 90.0, "listingCount": 493, "count": 493},
             {"name": "Impresence", "baseType": "Onyx Amulet", "variant": "Lightning",
              "chaosValue": 2.0, "listingCount": 323, "count": 323}],
+        "bubonic trail": [   # R1 build4 M2: the 1-socket variant renders the SINGULAR mod text
+            {"name": "Bubonic Trail", "baseType": "Murder Boots", "variant": "1 Jewel",
+             "chaosValue": 1.0, "listingCount": 2564, "count": 2564},
+            {"name": "Bubonic Trail", "baseType": "Murder Boots", "variant": "2 Jewels",
+             "chaosValue": 10.0, "listingCount": 161, "count": 161}],
     }
     types = {"Cobalt Jewel", "Prismatic Jewel", "Timeless Jewel", "Large Cluster Jewel",
-             "Carnal Armour", "Onyx Amulet"}
+             "Carnal Armour", "Onyx Amulet", "Murder Boots"}
     P = qb.PublicPricer("TestLeague", econ, mapper, types, status="available")
 
     def stats_of(r):
@@ -436,6 +488,29 @@ def phase_variant():
     check("Shroud: 3 abyssal sockets -> '1 Jewel' line via observed abyssal_count (non-literal label)",
           r.method == "unique-ninja-variant" and abs((r.tier.median or 0) - 360.9) < 1e-6,
           f"{r.method}/{r.tier.median}")
+
+    # ---- Bubonic Trail: exactly 1 abyssal socket renders the SINGULAR "Has 1 Abyssal Socket",
+    # which the plural-only stat pattern can't match. The count MUST come from the socket array
+    # (attr/sColour == 'A') so the copy is priced (map-count -> '1 Jewel' 1c), carries a non-empty
+    # defining filter (D-0019), and gets a real label -- not unpriced/'count variant' (R1 M2). ----
+    bt = I(name="Bubonic Trail", base_type="Murder Boots", type_line="Murder Boots",
+           frame_type=3, rarity="Unique", category=CAT_UNIQUE, group="equipment", slot="Boots",
+           explicit_mods=["Has 1 Abyssal Socket", "+20 to maximum Life"],
+           mod_src=["explicit", "explicit"], raw={},
+           sockets=[{"group": 0, "attr": "A", "sColour": "A"},
+                    {"group": 0, "attr": "S", "sColour": "R"}])
+    r = P.price_unique_ninja(bt)
+    check("Bubonic Trail: singular 1-socket copy priced via socket-array count (map-count '1 Jewel' 1c)",
+          r.method == "unique-ninja-variant" and abs((r.tier.median or 0) - 1.0) < 1e-6,
+          f"{r.method}/{r.tier.median}")
+    _bt_vi = r.extra.get("variant_info") or {}
+    check("Bubonic Trail: defining abyssal filter locked (not empty) + real label (D-0019 / contract 2.8)",
+          bool(_bt_vi.get("locked_stats")) and _bt_vi.get("label") not in ("count variant", "", None),
+          str(_bt_vi))
+    _bt_q = (r.extra.get("trade_query") or {}).get("query", {}).get("stats", [{}])[0].get("filters", [])
+    check("Bubonic Trail: trade_query carries the exact abyssal-count filter (min==max==1)",
+          any(f.get("id") == "explicit.stat_3527617737"
+              and f.get("value") == {"min": 1, "max": 1} for f in _bt_q), str(_bt_q))
 
     # ---- Impresence: map-variant by mod text; unmatchable -> unpriced + link ----
     im = P.price_unique_ninja(mk("Impresence", "Onyx Amulet",

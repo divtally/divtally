@@ -97,11 +97,20 @@ def _item_row(i: int, r: PriceResult, div_rate: Optional[float]) -> dict:
     return row
 
 
+def _is_swap(r: PriceResult) -> bool:
+    """A weapon-swap item (Weapon2/Offhand2). D-0018: swap items are OUT of the server totals
+    and priced_items by default (the site's toggle re-includes them client-side from the full
+    items[]/rares{}, which we still emit). Mirrors core.js totals() (R1 M1/finding 10)."""
+    raw = getattr(r.item, "raw", None) or {}
+    return raw.get("inventoryId") in ("Weapon2", "Offhand2")
+
+
 def _sum_tier(results: List[PriceResult], key: str) -> Optional[float]:
-    """Sum a tier across ninja-priced items (source == 'poe.ninja'). None if none priced."""
+    """Sum a tier across ninja-priced items (source == 'poe.ninja'), excluding weapon-swap gear
+    (D-0018). None if none priced."""
     total, any_v = 0.0, False
     for r in results:
-        if (r.extra or {}).get("source") != "poe.ninja":
+        if (r.extra or {}).get("source") != "poe.ninja" or _is_swap(r):
             continue
         v = getattr(r.tier, key)
         if isinstance(v, (int, float)) and math.isfinite(v):
@@ -114,8 +123,9 @@ def _priced_ninja(r: PriceResult) -> bool:
     """A row counts toward `priced_items` only if it is poe.ninja-sourced AND carries at least
     one finite chaos tier -- matching the contract's "items with a poe.ninja number". Excludes a
     granted-only gem group (source 'poe.ninja' but every tier null), which the totals already
-    skip via `_sum_tier`."""
-    if (r.extra or {}).get("source") != "poe.ninja":
+    skip via `_sum_tier`, and weapon-swap gear (D-0018; excluded from totals so it must not be
+    counted here either)."""
+    if (r.extra or {}).get("source") != "poe.ninja" or _is_swap(r):
         return False
     return any(isinstance(v, (int, float)) and math.isfinite(v)
                for v in (r.tier.minimum, r.tier.median, r.tier.high))

@@ -205,6 +205,14 @@ is a technical transparency disclosure, not marketing; strip on owner request. P
 identity: repo-local user = DivTally <divtally@gmail.com>, full history rewritten to it
 pre-publish (personal email never ships in public metadata).
 
+## D-0020 AMENDMENTS (owner, 2026-07-27/28)
+- **LOOP UNTIL DRY**: not a fixed round count - keep iterating fresh rounds (new lenses/tests
+  each time) until TWO consecutive rounds produce no meaningful adjustments.
+- **Hard criteria every browser round**: (a) scan-duration AUDIT - total wall-clock per build +
+  per-item timings (scan session now stamps per-row ms + totalMs, exposed via bpc.scanStatus());
+  (b) HANDS-FREE FRUITION - every build must scan to completion with zero intervention; any row
+  stuck non-terminal = blocker-class finding.
+
 ## D-0020 - Five-round bug campaign (owner-commissioned, 2026-07-27)
 When current work completes: FIVE rounds of bug testing; fix between rounds, DEPLOY fixes, wait
 for completion, re-sweep with DIFFERENT tests each round. Test inputs = owner-provided builds in
@@ -333,3 +341,21 @@ exist; **guard** - comment at the call site names this bug; **invariant** - a pa
 await one multi-minute MV3 message reply; batch work is chunked so every reply lands well inside
 its own timeout. Extension/zips UNCHANGED (bug was page-side only). Redeployed to Pages.
 Validates the owner's test-before-store-submission call (D-0008 sequence change).
+
+## D-0020 R1 - API end-to-end fixes applied (2026-07-28)
+Round 1 of D-0020 fixed; full notes in `docs/bugtest/r1-fix1.md`. 13 findings -> 7 root bugs, all
+proven through the real pipeline; `public/api/_verify.py` (offline + live) and `tests.py` green,
+plus a new end-to-end proof. Two touch DOCUMENTED pricing/taxonomy behaviour (contract updated,
+additively): (1) **link-split uniques** now price at the copy's socket-link tier via poe.ninja's
+per-line `links` field (was a vague min..high range that summed the wrong tiers into totals) -
+threads `item.max_link` into `unique_price`; grounded in real `research/data` unique lines,
+including non-monotonic tiers (a 5L can out-price a 6L, so we match the link COUNT not the price).
+(2) **foil/relic uniques** (frameType 9/10, e.g. Nimis) now route to `category:"unique"` and are
+priced (were dropped to `normal` -> out of totals, a ~27% undercount). Also fixed: gem-group dedup
+dropping distinct duplicate gems (now keyed on gem id-set), weapon-swap gear summed into server
+totals (now excluded per D-0018, still in items[]/rares{} for the toggle), implicit mods missing
+from the affix picker (now opt-in `group:"implicit"` rows), 1-abyssal-socket uniques left unpriced
+by singular/plural mod text (count now read from the socket array), and bad-URL/overview/PoE2
+links returning 502 `ninja_error` instead of 400 `bad_input` (parse errors re-raised as
+`EstimateError`; genuine fetch failures still 502). No schema field removed/renamed. Next per
+D-0020: deploy, then Round 2 (browser UI).

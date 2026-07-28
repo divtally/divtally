@@ -347,9 +347,34 @@ class PoeNinjaEconomy:
     def _variant_tokens(s: str) -> set:
         return {t for t in re.split(r"[^a-z0-9]+", (s or "").lower()) if len(t) >= 3}
 
+    @staticmethod
+    def _link_tier_lines(lines: list, max_link: Optional[int]) -> Optional[list]:
+        """The poe.ninja lines for the copy's socket-link tier, or None when this name is not
+        link-split (no line carries `links` >= 5) or the copy's link count is unknown. poe.ninja
+        splits some uniques by a per-line `links` field (5 or 6); copies under 5 links share the
+        base/unlinked line (`links` absent/None/<5). Given the copy's max_link: >=6 -> the 6L
+        line(s) (or the highest linked tier <= max_link when there is no 6L line), 5 -> the 5L
+        line(s), <5 -> the base/unlinked line(s)."""
+        def lk(ln):
+            v = ln.get("links")
+            return int(v) if isinstance(v, (int, float)) else 0
+        ml = int(max_link or 0)
+        if ml <= 0 or not any(lk(ln) >= 5 for ln in lines):
+            return None
+        if ml >= 5:
+            exact = [ln for ln in lines if lk(ln) == ml]
+            if exact:
+                return exact
+            below = [ln for ln in lines if 5 <= lk(ln) <= ml]
+            if below:
+                top = max(lk(ln) for ln in below)
+                return [ln for ln in below if lk(ln) == top]
+        base = [ln for ln in lines if lk(ln) < 5]
+        return base or None
+
     def unique_price(self, name: str, mod_text: str = "", base_type: str = "",
-                     reg_rule: Optional[dict] = None, owned_count: Optional[int] = None
-                     ) -> Optional[dict]:
+                     reg_rule: Optional[dict] = None, owned_count: Optional[int] = None,
+                     max_link: Optional[int] = None) -> Optional[dict]:
         """Price a unique BY NAME off the merged poe.ninja unique overviews.
 
         When `reg_rule` (a variant_uniques.json `ninja_variant_rule`) is given, matching is
@@ -390,6 +415,30 @@ class PoeNinjaEconomy:
                     "chaos_min": vals[0], "chaos_median": vals[0], "chaos_high": vals[0],
                     "listing_count": ln.get("listingCount") or 0, "n_variants": 1,
                     "count": ln.get("count") or 0}
+        # Link-split uniques: poe.ninja splits some names into per-socket-link-count lines (a
+        # `links` field of 5 or 6; <5-link copies share the base/unlinked line). When the copy's
+        # link count is known, narrow to that link tier BEFORE variant-token disambiguation so a
+        # 6L Inpulsa's is priced at its 6L line -- not a min..high range spanning unlinked/5L/6L
+        # (R1 build2 M1 / build3-4 M3). We match the link COUNT, not the price, so non-monotonic
+        # tiers (a corrupted 5L can out-price a 6L) still resolve to the correct tier.
+        tier = self._link_tier_lines(lines, max_link)
+        if tier:
+            if len(tier) == 1 and isinstance(tier[0].get("chaosValue"), (int, float)):
+                ln = tier[0]
+                c = float(ln["chaosValue"])
+                lk = ln.get("links")
+                return {"matched": "variant",
+                        "variant": (f"{int(lk)}-link" if lk else "unlinked"),
+                        "chaos_min": c, "chaos_median": c, "chaos_high": c,
+                        "listing_count": ln.get("listingCount") or 0, "n_variants": n,
+                        "count": ln.get("count") or 0}
+            # >1 line in the tier (also text-variant-split within the link tier): fall through to
+            # the mod-text disambiguation below, but only over lines in the copy's link tier.
+            lines = tier
+            vals = sorted(float(ln["chaosValue"]) for ln in lines
+                          if isinstance(ln.get("chaosValue"), (int, float)))
+            if not vals:
+                return None
         # Try to disambiguate variants against the item's mod text.
         item_tokens = self._variant_tokens(mod_text)
         scored = []
@@ -515,12 +564,19 @@ def _categorise(d: dict, group: str) -> str:
     ft = d.get("frameType")
     if group == "gem" or ft == 4:
         return CAT_GEM
-    if ft == 3:
+    # 3 = Unique, 9 = Relic, 10 = SupporterFoil: foil/relic uniques carry their OWN frame id
+    # (not frameType 3 + a flag). Missing 9/10 dropped high-value foils (e.g. Nimis, frameType
+    # 10, ~7,680c) to CAT_NORMAL -> unpriced + out of totals (R1 build3 blocker).
+    if ft in (3, 9, 10):
         return CAT_UNIQUE
     if ft == 2:
         return CAT_RARE
     if ft == 1:
         return CAT_MAGIC
+    # Final fallback: any other foil/relic frame id GGG may add still routes as a unique when
+    # poe.ninja tags the item rarity "Unique" (the frameType list is ahead of our enum).
+    if str(d.get("rarity") or "").lower() == "unique":
+        return CAT_UNIQUE
     return CAT_NORMAL
 
 
@@ -753,9 +809,18 @@ def normalize(data: dict) -> Tuple[BuildMeta, List[Item]]:
                          "support": bool(gd.get("support")),
                          "granted": _gem_is_granted(g, gd, slot, provided_pairs, provided_names)})
         active.supports = sups
-        sig = (active.base_type, active.gem_level, tuple(s["name"] for s in sups))
-        if sig in seen_skill:
-            continue
-        seen_skill.add(sig)
+        # Collapse only TRUE duplicate setups (the SAME physical gems surfaced twice, e.g. a
+        # weapon-swap view) -- keyed on the gems' stable ids, NOT a coarse name/level/support
+        # signature that also collapses DISTINCT copies. N separate Raise Spectre gems in one
+        # quiver share the coarse signature but are distinct items (distinct ids); the old key
+        # dropped all but one -> undercounted minion/aura-stacking builds (R1 build1 finding 1).
+        # When any gem id is missing we cannot prove duplication, so we KEEP the row (a granted
+        # gem has id=None) -- never silently drop a gem.
+        gem_ids = [active_d.get("id")] + [(g.get("itemData", g) or {}).get("id") for g in allg[1:]]
+        if all(gem_ids):
+            sig = frozenset(gem_ids)
+            if sig in seen_skill:
+                continue
+            seen_skill.add(sig)
         items.append(active)
     return meta, items

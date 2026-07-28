@@ -68,8 +68,15 @@ def _make_pricer(trade_league: str, status: str) -> PublicPricer:
 def prepare_from_url(url: str, league: Optional[str] = None, status: str = "online"):
     """Fetch + normalise a poe.ninja character; build a PublicPricer. No pricing yet."""
     client = poeninja.PoeNinjaClient()
-    parsed = poeninja.parse_build_url(url)                 # PoeNinjaError on bad URL
-    data = client.fetch_character(**parsed)
+    # A malformed/overview/PoE2/wrong-host URL is a CLIENT input mistake, not an upstream
+    # failure: re-raise it as EstimateError so build.py returns 400 bad_input (contract sec.4
+    # lists a build-overview link under bad_input), reserving ninja_error/502 for genuine
+    # fetch failures from fetch_character below (R1: overview + PoE2 links were 502 ninja_error).
+    try:
+        parsed = poeninja.parse_build_url(url)
+    except poeninja.PoeNinjaError as e:
+        raise EstimateError(str(e))
+    data = client.fetch_character(**parsed)                # genuine fetch failures stay 502
     meta, items = poeninja.normalize(data)
     meta.source_url = url
     trade_league = resolve_league(meta.league, league, client)

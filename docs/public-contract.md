@@ -23,6 +23,25 @@ exact timeless seed `min==max`, exact socket/passive count, aura-combo); `rares[
 map-count/-variant/-base matches). Non-registry uniques are unchanged. See
 `docs/notes-variant-querybuild.md`.
 
+**Additive/corrective update 2026-07-27 (D-0020 Round 1 bug fixes):** all schema-compatible.
+- **Foil/relic uniques** (frameType 9 Relic, 10 SupporterFoil — e.g. Nimis) now route to
+  `category:"unique"` and are priced/listed like any unique (were mis-categorised `normal` and
+  dropped from pricing + totals).
+- **Weapon-swap items** (`swap:true`, Weapon2/Offhand2) are now excluded from `totals` and
+  `priced_items` **by default**, matching D-0018 and the site (§2.2, §2.3). They remain in
+  `items[]` and `rares{}` so a "weapon swap" toggle can re-include them client-side.
+- **Implicit mods** now appear as opt-in `rares[].affixes` rows (`group:"implicit"`; §2.6) so a
+  searchable corrupted/base implicit can be added to the search; they are NOT in the default rare
+  query (base implicits come with the base). Previously omitted entirely.
+- **Link-split uniques**: `unique-ninja-variant` now also selects the poe.ninja line for the
+  copy's socket-link tier (5L/6L vs unlinked) when the name is link-split, instead of a vague
+  `unique-ninja-range` (§3).
+- **Duplicate distinct gems** (e.g. several identical minion gems in one item) are no longer
+  collapsed into a single row (only true weapon-swap duplicates, keyed on gem id, still collapse).
+- **Bad-URL classification**: a build-overview link, a PoE2 link, and other parse-level URL
+  mistakes now return **400 `bad_input`** (per §4), not 502 `ninja_error` (which stays reserved
+  for genuine poe.ninja fetch failures).
+
 ---
 
 ## 0. The hard invariant (read first)
@@ -104,7 +123,8 @@ Top-level keys: `ok`, `schema_version`, `meta`, `totals`, `items`, `rares`, `war
 
 ### 2.2 `totals`
 Sums **only poe.ninja-priced items** (gems + uniques). Rares/magic are excluded (they have
-no server-side number).
+no server-side number). **Weapon-swap items** (`swap:true`) are also excluded by default
+(D-0018); they stay in `items[]`/`rares{}` for a client-side toggle to re-include.
 ```jsonc
 { "currency": "chaos",
   "chaos":  { "min": 31760.26, "median": 31985.66, "high": 32438.54 },
@@ -135,6 +155,10 @@ Common fields (every row):
 
 Present when the item has sockets/links (a 5/6-link drives price):
 `max_link` (int), `total_sockets` (int), `socket_colours` (string[] of R/G/B/W/A).
+
+`swap` (bool, present + `true` only on Weapon2/Offhand2 items) — a weapon-swap item, excluded
+from `totals`/`priced_items` by default (D-0018). `rarity` reads `"Unique"`/`"Relic"` for
+foil/relic uniques (frameType 10/9), which route to `category:"unique"`.
 
 Non-gem rows add `mods`: `{ "implicit": string[], "explicit": string[] }` (rich-text
 stripped) when the item has any.
@@ -231,7 +255,7 @@ and the tool hides nothing.
 | `searchable` | bool | `false` = no trade filter matches this mod → the picker greys it out but still lists it (`reason` says why) |
 | `negated` | bool | the roll is a "reduced" value carried on the opposite-polarity "increased" stat → filter as a max, not a min |
 | `resist` | bool | this mod folds into a `pseudo` resistance total (the picker hides it when the pseudo toggle is on) |
-| `group` | string | the mod's trade stat group: `explicit` · `crafted` · `fractured` · `enchant` · `veiled` · `scourge` · `crucible`; `equip` for defence totals; `pseudo` for pseudo entries. Defaults to `explicit` for PoB imports (which carry no per-mod group) |
+| `group` | string | the mod's trade stat group: `explicit` · `crafted` · `fractured` · `enchant` · `implicit` · `veiled` · `scourge` · `crucible`; `equip` for defence totals; `pseudo` for pseudo entries. Defaults to `explicit` for PoB imports (which carry no per-mod group). **`implicit` rows are OPT-IN**: listed so a searchable corrupted/base implicit can be added, but `prefer:false`, `default_min`/`default_max` `null`, and NOT in the default rare query |
 | `prefer` | bool | ticked-by-default in the picker (rares: every searchable affix; uniques: only build-defining `+# to Level of all … Skills` rolls **and D-0019 variant-defining mods**) |
 | `priority` | enum | default tier — `required` · `nice` · `notimp` · `skip` (a `defining` mod is always `required`) |
 | `defining` | bool | **D-0019** — this mod is a variant-DEFINING mod of a registered unique (the aura combo, the Allocates notable, the timeless seed, the socket/passive count …). Always `searchable:true`, `prefer:true`, `priority:"required"`; the picker should lock/highlight it. `false` on every ordinary affix and every non-registry item |
@@ -357,7 +381,9 @@ can render/lock the defining mods and explain the price.
 - `skill` — gem group priced from poe.ninja.
 - `unique-ninja` — unique priced by exact name (single poe.ninja line).
 - `unique-ninja-variant` — a specific poe.ninja variant matched to the item. Non-registry: the
-  variant `label` tokens are covered by the item's mods. **D-0019 registry:** the line for the
+  variant `label` tokens are covered by the item's mods, **or** — when poe.ninja splits the name
+  by socket-link count — the line for the copy's link tier (5L / 6L / unlinked), `variant` then
+  reads e.g. `"6-link"`. **D-0019 registry:** the line for the
   OWNED variant, selected deterministically — by socket/passive **count** (`map-count`, e.g.
   Voices "7 passives"; the observed abyssal count when the label isn't literal), by variant
   **label** vs the copy's mods (`map-variant`, e.g. Impresence "Lightning"), or by **base**

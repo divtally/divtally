@@ -302,12 +302,16 @@ def _categorise(d: dict, group: str) -> str:
     ft = d.get("frameType")
     if group == "gem" or ft == 4:
         return CAT_GEM
-    if ft == 3:
+    # 3 = Unique, 9 = Relic, 10 = SupporterFoil: foil/relic uniques carry their OWN frame id
+    # (not frameType 3 + a flag); missing 9/10 dropped foil uniques (e.g. Nimis) to CAT_NORMAL.
+    if ft in (3, 9, 10):
         return CAT_UNIQUE
     if ft == 2:
         return CAT_RARE
     if ft == 1:
         return CAT_MAGIC
+    if str(d.get("rarity") or "").lower() == "unique":
+        return CAT_UNIQUE
     return CAT_NORMAL
 
 
@@ -587,9 +591,15 @@ def normalize(data: dict) -> Tuple[BuildMeta, List[Item]]:
                          "support": bool(gd.get("support")),
                          "granted": _gem_is_granted(g, gd, slot, provided_pairs, provided_names)})
         active.supports = sups
-        sig = (active.base_type, active.gem_level, tuple(s["name"] for s in sups))
-        if sig in seen_skill:                    # collapse duplicate setups (e.g. weapon swap)
-            continue
-        seen_skill.add(sig)
+        # Collapse only TRUE duplicate setups (the same physical gems surfaced twice, e.g. a
+        # weapon-swap view) -- keyed on the gems' stable ids, NOT a coarse name/level/support
+        # signature that also drops DISTINCT copies (N identical minion gems in one item share
+        # the coarse signature but are separate items). Missing id (granted gem) -> keep the row.
+        gem_ids = [active_d.get("id")] + [(g.get("itemData", g) or {}).get("id") for g in allg[1:]]
+        if all(gem_ids):
+            sig = frozenset(gem_ids)
+            if sig in seen_skill:                # collapse duplicate setups (e.g. weapon swap)
+                continue
+            seen_skill.add(sig)
         items.append(active)
     return meta, items

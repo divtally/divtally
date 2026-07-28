@@ -2,11 +2,12 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-# frameType -> rarity label (GGG standard item frame ids). PoE1: 9 = Relic (foil uniques
-# reuse the unique frame + a `foil` flag, unlike PoE2 where 9/10 were Foil). Routing keys
-# only on 1-4, so 9's label is cosmetic.
+# frameType -> rarity label (GGG standard item frame ids). PoE1 foil/relic uniques use their
+# OWN frame ids -- 9 = Relic, 10 = SupporterFoil -- NOT frameType 3 + a `foil` flag (live
+# poe.ninja data disproves the old claim: Nimis is frameType 10, rarity "Unique"). Both 9 and
+# 10 route as uniques (see poeninja._categorise), so both label as a unique-tier rarity.
 FRAME_RARITY = {0: "Normal", 1: "Magic", 2: "Rare", 3: "Unique", 4: "Gem",
-                5: "Currency", 6: "Divination", 8: "Prophecy", 9: "Relic"}
+                5: "Currency", 6: "Divination", 8: "Prophecy", 9: "Relic", 10: "Unique"}
 
 # Pricing categories we route items into. (PoE2's CAT_RUNE is deleted -- PoE1 has no
 # runes / soul cores; that frame-5 socketed mechanic does not exist here.)

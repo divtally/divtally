@@ -466,6 +466,31 @@ class PublicPricer:
                            "group": "pseudo", "folds": chaos_members, "prefer": not is_unique,
                            "defining": False,
                            "priority": "skip" if is_unique else "required", "reason": ""})
+        # IMPLICIT mods (D-0015: the picker hides nothing). These were omitted entirely, so a
+        # searchable, price-defining corrupted implicit ("Corrupted Blood cannot be inflicted on
+        # you") was invisible (R1 build2 M3, Kraken Star). List each in the `implicit` stat group
+        # so the user can OPT IN to search it. They are OFFERED, not prefilled/required by default
+        # (base implicits come with the base; the default rare query stays explicit-driven) --
+        # default_min/max stay null, `prefer` false. Appended AFTER the pseudo fold is computed so
+        # existing affix indices (and every `folds[].index`) are unchanged. `resist` is false:
+        # they are not folded into the pseudo totals (which sum explicit resists only).
+        for line in (item.implicit_mods or []):
+            if is_armour and is_local_defence(line):
+                continue
+            sid, neg = self.mapper.match(line, group="implicit")
+            ok = bool(sid)
+            v = util.first_number(line)
+            if ok and neg and v is not None:
+                v = -abs(v)
+            affixes.append({
+                "kind": "stat", "text": util.strip_rich(line).strip() + " (implicit)",
+                "stat_id": sid if ok else None, "value": v,
+                "default_min": None, "default_max": None,
+                "searchable": ok, "resist": False, "negated": bool(ok and neg),
+                "group": "implicit", "prefer": False, "defining": False,
+                "priority": "notimp" if ok else "skip",
+                "reason": "" if ok else "no trade filter matches this mod",
+            })
         return {"affixes": affixes, "pseudo": pseudo}
 
     def _rare_query(self, item: Item, scope: dict, stat_groups: List[dict],
@@ -483,7 +508,11 @@ class PublicPricer:
 
     def _rare_default_filters(self, item: Item) -> Tuple[List[dict], dict, int]:
         opts = self.affix_options(item)["affixes"]
-        stat_opts = [o for o in opts if o["kind"] == "stat" and o["searchable"]]
+        # IMPLICIT affixes are OFFERED in the picker (opt-in) but NOT required in the default
+        # query -- base implicits come with the base type; the default rare query stays
+        # explicit-driven (D-0015 requires every searchable EXPLICIT-style affix).
+        stat_opts = [o for o in opts if o["kind"] == "stat" and o["searchable"]
+                     and o.get("group") != "implicit"]
         equip_opts = [o for o in opts if o["kind"] == "equip" and o["value"]]
 
         def _statf(o):
@@ -700,7 +729,8 @@ class PublicPricer:
         reg_rule = var["ninja_rule"] if var else None
         owned_count = var["owned_count"] if var else None
         m = econ.unique_price(item.name, mod_text=mod_text, base_type=item.base_type,
-                              reg_rule=reg_rule, owned_count=owned_count)
+                              reg_rule=reg_rule, owned_count=owned_count,
+                              max_link=int(getattr(item, "max_link", 0) or 0))
         if not m:
             r.method = "unique-unpriced"
             r.confidence = "none"

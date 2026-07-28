@@ -235,6 +235,14 @@ def build_variant(item, entry: dict, mapper) -> VariantResult:
             label = "seed variant"
 
     elif cls == "socket-defined":
+        # Abyssal count comes from the copy's SOCKET ARRAY (ground truth), not the mod text: a
+        # 1-socket copy renders the SINGULAR "Has 1 Abyssal Socket", which the plural-only stat
+        # pattern "Has # Abyssal Sockets" never matches -- leaving the item unpriced with an
+        # empty filter and a "count variant" placeholder label (R1 build4 M2, Bubonic Trail).
+        # sockets[].attr / .sColour == 'A' marks an abyssal socket.
+        abyssal_n = sum(1 for s in (getattr(item, "sockets", None) or [])
+                        if "A" in (str(s.get("attr") or "").upper(),
+                                   str(s.get("sColour") or "").upper()))
         parts = []
         for d in defining:
             target = d.get("stat_id")
@@ -249,6 +257,12 @@ def build_variant(item, entry: dict, mapper) -> VariantResult:
                             break
                 if found:
                     break
+            if not found and target and abyssal_n > 0:
+                # singular/plural or otherwise unmatched mod text: fall back to the observed
+                # abyssal socket count, and locate the abyssal mod line for the picker highlight.
+                m_idx = next((i for i, m in enumerate(item.explicit_mods)
+                              if "abyssal socket" in util.strip_rich(m).lower()), None)
+                found = (abyssal_n, m_idx)
             if found:
                 N, idx = found
                 axis = (d.get("axis") or "").replace("-", " ").title()

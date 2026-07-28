@@ -86,6 +86,12 @@ check("cat gem ft4", _pn._categorise({"frameType": 4}, "equipment"), "gem")
 check("cat gem by group", _pn._categorise({}, "gem"), "gem")
 check("cat ft5 -> normal (not rune)", _pn._categorise({"frameType": 5}, "equipment"), "normal")
 check("cat normal ft0", _pn._categorise({"frameType": 0}, "equipment"), "normal")
+# foil/relic uniques carry their OWN frame id (9=Relic, 10=SupporterFoil), NOT frameType 3 + a
+# flag -- they must route to unique, else high-value foils (e.g. Nimis) are dropped to normal.
+check("cat relic ft9 -> unique", _pn._categorise({"frameType": 9}, "equipment"), "unique")
+check("cat foil ft10 -> unique", _pn._categorise({"frameType": 10}, "equipment"), "unique")
+check("cat rarity=Unique fallback (unknown frame)",
+      _pn._categorise({"frameType": 99, "rarity": "Unique"}, "equipment"), "unique")
 
 # ---- sockets / LINKS (PoE1-only; max_link = largest link-group) ----
 _si6 = _pn._sockets_info({"sockets": [{"group": 0, "sColour": "R"}] * 6})

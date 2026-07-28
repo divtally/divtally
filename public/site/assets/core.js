@@ -711,17 +711,18 @@
       var resolved = !!SCAN_TERMINAL[s.stage];
       if (resolved) done++;
       status[k] = { stage: s.stage, detail: s.detail || null, waitUntil: s.waitUntil || null,
-                    resolved: resolved, ahead: unresolvedBefore };
+                    resolved: resolved, ahead: unresolvedBefore, ms: (s.ms != null ? s.ms : null) };
       if (!resolved) unresolvedBefore++;      // ahead = # of unresolved rows earlier in SEND order
     });
     for (i = 0; i < order.length; i++) { if (SCAN_ACTIVE[status[order[i]].stage]) { current = order[i]; break; } }
+    var totalMs = scan.startedAt ? ((scan.finishedAt || Date.now()) - scan.startedAt) : null;
     if (current == null) { for (i = 0; i < order.length; i++) { if (!status[order[i]].resolved) { current = order[i]; break; } } }
-    return { active: scan.active, total: order.length, done: done, current: current,
+    return { totalMs: totalMs, active: scan.active, total: order.length, done: done, current: current,
              order: order, names: Object.assign({}, scan.names), status: status };
   }
   function scanEmit() { emit("scanstatus", scanSnapshot()); }
   function scanBegin(rows) {
-    scanReset(); scan.active = true;
+    scanReset(); scan.active = true; scan.startedAt = Date.now();
     rows.forEach(function (r) {
       var k = String(r.key); scan.order.push(k);
       scan.names[k] = (r.item && r.item.name) || k;
@@ -734,11 +735,14 @@
     if (!scan.active || scan.order.indexOf(key) < 0) return;
     if (scanResolved(key) && !SCAN_TERMINAL[stage]) return;      // never regress a resolved row
     var s = scan.status[key] || (scan.status[key] = {});
+    // D-0020 timing audit: stamp first activity + terminal per row; ms = row wall-clock
+    if (s.t0 == null && stage !== "queued") s.t0 = Date.now();
+    if (SCAN_TERMINAL[stage] && s.ms == null) s.ms = s.t0 != null ? (Date.now() - s.t0) : 0;
     s.stage = stage; s.detail = detail || null;
     s.waitUntil = (stage === "waiting" && detail && detail.waitMs) ? (Date.now() + detail.waitMs) : null;
     scanEmit();
   }
-  function scanEnd() { if (!scan.active) return; scan.active = false; scanEmit(); }
+  function scanEnd() { if (!scan.active) return; scan.active = false; scan.finishedAt = Date.now(); scanEmit(); }
 
   // Price one or more rows via the extension. Groups by league (one price message per league,
   // per the protocol — the extension prices the batch serially under its own limiter).
