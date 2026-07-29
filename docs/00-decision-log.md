@@ -205,6 +205,28 @@ is a technical transparency disclosure, not marketing; strip on owner request. P
 identity: repo-local user = DivTally <divtally@gmail.com>, full history rewritten to it
 pre-publish (personal email never ships in public metadata).
 
+## D-0030 - Pre-launch QA polish pass (owner "going public soon", 2026-07-29)
+Owner-approved punch-list from a Playwright + 6-lens Opus QA sweep (later a 4-lens round-2 verify).
+Method: system Chrome via Playwright (channel:'chrome', no browser download), demo build rendered
+offline via `bpc.loadMock(window.BPC_SAMPLE)` (deterministic, no trade calls), fullpage desktop 1440 +
+mobile 390 captures analysed by Opus vision agents. Rig lives at scratchpad/qa-rig.
+BLOCKER FOUND + FIXED: the mobile EQUIPMENT paperdoll collapsed to an empty void (all 17 slots piled
+on one cell, 136 overlaps, grid overflowed to 445px). Root cause: the <=720px media query set
+`.doll{grid-template-areas:none}` but never reset the slots' `grid-area:helm/weap/...` -> named areas
+gone -> every slot on one cell. Fix: `.doll .slot{grid-area:auto}` + 2-col flow + hide `.slot.empty`
+spacers. Verified overlaps 136->0. (VERIFY-BY-GEOMETRY discipline paid off: the reviewer first read it
+as an animation artifact; a reduced-motion + opacity-forced re-measure proved it a real layout bug.)
+Also shipped: removed dead Edge/Firefox store buttons ('in review' text); hide the 'Get the extension'
+hero CTA when the extension is detected; shorthand standardised to '35c / 2div' (icons kept for real
+prices); how-it-works copy (RUNG chips -> Shared/Manual/Hands-free/DIY, 'only its price is stored',
+dropped orphan on/off, pastebin.com, canonical GGG disclaimer, endpoint-host trust note); flask/excluded
+dim lightened; wider tabular price column; contrast + mobile URL/chip wrap. NOTE: 'priced from economy
+data' -> 'priced automatically' (rares aren't economy data); the EXTENSION-badge-on-every-row is a
+demo-data artifact (real builds show mixed sources) -> no change. Verdict: launch-ready. All frontend
+(index.html + how-it-works) -> no core.js, no ?v= bump. STILL OWNER'S CALL: Cloudflare Web-Analytics
+beacon vs the 'no analytics' copy (dashboard toggle; disable OR keep+disclose). Deferred nits carried:
+re-price zig-zag, desktop gear-card heights, single-corner rivet, 'no extension' pill wording.
+
 ## D-0029 - Monetization Phase 1: optional "Buy me a coffee" (Ko-fi) footer button (owner, 2026-07-29)
 Owner decided to monetize. Preceded by a 5-lens Opus research workflow on 5yr PoE community sentiment
 (tool + creator monetization) -> playbook: the community punishes ACCOUNT-RISK, GATEKEEPING, and RMT --
