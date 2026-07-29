@@ -302,6 +302,26 @@ def phase_a():
     check("watcherseye: aura mod is NOT default-off",
           _aura is None or _aura.get("priority") != "exclude", str(_aura and _aura.get("priority")))
 
+    # ---- magic JEWELS scanned like rares (owner: magic jewels weren't getting scanned) ----
+    # A magic abyss/cluster jewel can carry price-defining rolls -> route it through the RARE path
+    # (affix-filtered query = a real autoscan price), NOT the scope-only "magic is cheap" path.
+    # Other magic items (flasks) stay cheap.
+    _mj = _Item(name="", base_type="Cobalt Jewel", type_line="Vivid Crimson Jewel of Zealousness",
+                frame_type=1, rarity="Magic", category="magic", group="jewel", slot="Jewel",
+                explicit_mods=["7% increased maximum Life",
+                               "8% increased Fire Damage over Time Multiplier"],
+                mod_src=["explicit", "explicit"], raw={"inventoryId": "Jewel"})
+    _mf = _Item(name="", base_type="Quicksilver Flask", type_line="Quicksilver Flask",
+                frame_type=1, rarity="Magic", category="magic", group="flask", slot="Flask",
+                explicit_mods=["25% increased Movement Speed"], mod_src=["explicit"],
+                raw={"inventoryId": "Flask"})
+    _pb = _p.price_build([_mj, _mf])
+    check("magicjewel: priced like a rare (method=rare-unpriced)", _pb[0].method == "rare-unpriced", _pb[0].method)
+    check("magicflask: stays cheap (method=magic-unpriced)", _pb[1].method == "magic-unpriced", _pb[1].method)
+    _mjq = (_pb[0].extra.get("trade_query") or {}).get("query") or {}
+    _mjfilters = [f for g in (_mjq.get("stats") or []) for f in (g.get("filters") or [])]
+    check("magicjewel: query is affix-filtered (a real search, not scope-only)", len(_mjfilters) >= 1, str(len(_mjfilters)))
+
     econ = poeninja.PoeNinjaEconomy("TestLeague")
     econ._uniques = {
         "mageblood": [{"name": "Mageblood", "baseType": "Heavy Belt", "variant": "5 Flasks",

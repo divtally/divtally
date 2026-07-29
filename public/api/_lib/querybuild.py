@@ -885,7 +885,14 @@ class PublicPricer:
             elif it.category == CAT_RARE:
                 results.append(self.price_rare_unpriced(it))
             elif it.category == CAT_MAGIC:
-                results.append(self.price_magic_unpriced(it))
+                # Magic JEWELS (abyss / cluster / etc.) can carry valuable, price-defining rolls, so
+                # search them by their affixes like a rare (affix-filtered query = a real autoscan
+                # price) instead of the scope-only "magic is cheap, price yourself" path. Other magic
+                # items (flasks etc.) stay cheap.
+                if it.group == "jewel":
+                    results.append(self.price_rare_unpriced(it))
+                else:
+                    results.append(self.price_magic_unpriced(it))
             else:
                 results.append(PriceResult(item=it, method="none",
                                note="normal item; not priced", confidence="none"))
