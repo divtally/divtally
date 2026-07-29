@@ -238,6 +238,44 @@ def phase_a():
     check("scope[no-category] scopes.category is null",
           _p.scope_choices(_mk("Astral Plate", ""))["category"] is None)
 
+    # ---- cluster-jewel resistance-fold regression ("Blight Joy" 0-result bug) ----
+    # "Added Small Passive Skills also grant: +N% to X Resistance" is a PER-PASSIVE grant, not the
+    # character's own resistance -> it must NOT fold into pseudo.pseudo_total_elemental_resistance
+    # (which matches 0 cluster jewels), and the picker must search it by PRESENCE, not the roll.
+    _grant = "Added Small Passive Skills also grant: +5% to Cold Resistance"
+    _gear = "+45% to Cold Resistance"
+    check("clusterjewel: 'also grant' res is NOT a foldable resist", qb._is_res_affix(_grant) is False)
+    check("clusterjewel: gear res IS still a foldable resist (control)", qb._is_res_affix(_gear) is True)
+    check("clusterjewel: 'also grant' res contributes 0 to elemental total",
+          qb.res_contributions([_grant])["elemental"] == 0, str(qb.res_contributions([_grant])))
+    check("clusterjewel: gear res still contributes to elemental total (control)",
+          qb.res_contributions([_gear])["elemental"] == 45)
+    _cj = _Item(name="", base_type="Large Cluster Jewel", type_line="Large Cluster Jewel",
+                frame_type=2, rarity="Rare", category=_CAT_RARE, group="jewel", slot="Jewel",
+                explicit_mods=["Adds 8 Passive Skills",
+                               "2 Added Passive Skills are Jewel Sockets",
+                               "Added Small Passive Skills grant: 10% increased Spell Damage",
+                               _grant,
+                               "1 Added Passive Skill is Conjured Wall",
+                               "1 Added Passive Skill is Mage Hunter",
+                               "1 Added Passive Skill is Thaumophage"],
+                mod_src=["enchant", "enchant", "enchant", "explicit", "explicit", "explicit", "explicit"],
+                raw={"inventoryId": "Jewel"})
+    _opts = _p.affix_options(_cj)
+    check("clusterjewel: NO elemental/chaos pseudo synthesised", _opts["pseudo"] == [],
+          str([p.get("text") for p in _opts["pseudo"]]))
+    _ca = next((a for a in _opts["affixes"] if "Cold Resistance" in (a.get("text") or "")), None)
+    check("clusterjewel: cold-res-grant affix present", _ca is not None)
+    if _ca:
+        check("clusterjewel: cold-res-grant resist=False", _ca.get("resist") is False)
+        check("clusterjewel: cold-res-grant searchable", _ca.get("searchable") is True)
+        check("clusterjewel: cold-res-grant presence-only (default_min None)", _ca.get("default_min") is None)
+        _sg, _eq, _ = _p._rare_default_filters(_cj)
+        _flat = [f for g in _sg for f in g.get("filters", [])]
+        _cf = next((f for f in _flat if f.get("id") == _ca.get("stat_id")), None)
+        check("clusterjewel: default query grant filter is presence-only (no min)",
+              _cf is not None and "value" not in _cf, str(_cf))
+
     econ = poeninja.PoeNinjaEconomy("TestLeague")
     econ._uniques = {
         "mageblood": [{"name": "Mageblood", "baseType": "Heavy Belt", "variant": "5 Flasks",

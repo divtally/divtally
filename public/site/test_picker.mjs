@@ -430,5 +430,25 @@ console.log("· D-0022 — defining EXACT seed: min==max when emitted (identity-
      "…and a not-needed tier drops it through the tierGroups path too");
 }
 
+console.log("· cluster-jewel resistance grant — de-folded, presence-only (Blight Joy 0-result bug)");
+{
+  // The corrected backend payload for a cluster jewel: the "Added Small Passive Skills also grant:
+  // +N% to Cold Resistance" mod is NOT resist (so not folded) and carries NO min (presence-only),
+  // and NO elemental/chaos pseudo is synthesised. buildRareQuery must then search it as a bare {id}.
+  const CJ = {
+    affixes: [
+      { kind: "stat", text: "Added Small Passive Skills grant: 10% increased Spell Damage", stat_id: "enchant.stat_spelldmg", option: 12, value: null, default_min: null, default_max: null, searchable: true, resist: false, negated: false },
+      { kind: "stat", text: "Added Small Passive Skills also grant: +5% to Cold Resistance", stat_id: "explicit.stat_2709692542", value: 5, default_min: null, default_max: null, searchable: true, resist: false, negated: false },
+      { kind: "stat", text: "1 Added Passive Skill is Conjured Wall", stat_id: "explicit.stat_conjwall", option: 3, value: null, default_min: null, default_max: null, searchable: true, resist: false, negated: false },
+    ],
+    pseudo: [],
+  };
+  const q = bpc.buildRareQuery(CJ, { status: { option: "online" }, type: "Large Cluster Jewel" }, bpc.rareDefaultPicks(CJ));
+  const cf = filterFor(q, "explicit.stat_2709692542");
+  ok(cf && !("value" in cf), "cold-res grant is searched presence-only (bare {id}, no value.min)");
+  ok(!filterFor(q, "pseudo.pseudo_total_elemental_resistance"), "NO elemental-resistance pseudo filter is emitted");
+  ok(statIds(q).includes("explicit.stat_2709692542"), "the individual cold-res grant filter is present (matches the market listings)");
+}
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

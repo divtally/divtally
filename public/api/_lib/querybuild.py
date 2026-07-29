@@ -102,8 +102,17 @@ _WEIGHT_TYPES = {"weight", "weight2"}
 
 
 def _is_res_affix(text: str) -> bool:
+    # Predicate = "is a FOLDABLE character/gear resistance" -- its ONLY consumers are the
+    # resistance-fold decisions (the per-affix `resist` flag at build time, res_contributions,
+    # and _res_fold_members). It is NOT "mentions resistance".
     t = util.strip_rich(text).lower()
     if "resist" not in t:
+        return False
+    # Cluster/radius/graft "... also grant(s) +N% to X Resistance" are PER-PASSIVE grants applied to
+    # the small passives the jewel adds, NOT the character's own resistance. GGG's pseudo totals
+    # (pseudo.pseudo_total_elemental/chaos_resistance) never aggregate them, so folding one synthesises
+    # a pseudo filter that matches ZERO listings -- the "Blight Joy" cluster-jewel 0-result bug.
+    if "also grant" in t:
         return False
     return not ("maximum" in t or "penetrat" in t or "enemy" in t)
 
@@ -475,6 +484,13 @@ class PublicPricer:
             # option/exact from the LOCKED variant value and must win.
             if opt is not None and not is_def:
                 row["option"] = opt
+                row["default_min"] = row["default_max"] = None
+            elif not is_def and "also grant" in util.strip_rich(line).lower():
+                # Cluster/radius "... also grant: +N% ..." suffixes are a minor per-passive
+                # differentiator; search them by PRESENCE, not magnitude (the backend default query
+                # already does -- _rare_default_filters/_statf emits a bare {id}). Without this the
+                # picker prefills min=the build's own roll, and a higher-rolled item (e.g. +5% cold
+                # vs the +2% market floor) would exclude every cheaper listing -> 0 matches.
                 row["default_min"] = row["default_max"] = None
             if is_def:
                 self._apply_defining(row, locked[i])
