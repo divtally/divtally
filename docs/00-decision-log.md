@@ -205,6 +205,19 @@ is a technical transparency disclosure, not marketing; strip on owner request. P
 identity: repo-local user = DivTally <divtally@gmail.com>, full history rewritten to it
 pre-publish (personal email never ships in public metadata).
 
+## D-0029 - Monetization Phase 1: optional "Buy me a coffee" (Ko-fi) footer button (owner, 2026-07-29)
+Owner decided to monetize. Preceded by a 5-lens Opus research workflow on 5yr PoE community sentiment
+(tool + creator monetization) -> playbook: the community punishes ACCOUNT-RISK, GATEKEEPING, and RMT --
+almost never "asking for money". Safe path = free-core + open-source + optional support; NEVER paywall
+core, gate the price-check, sell data, run programmatic ads (currency-seller/gambling risk), or touch
+RMT/paid-trade. DivTally's design (open-source, user's-own-IP, no session, load-reducing cache) already
+clears every trust line. Phase 1 shipped: a low-key config-driven donation pill in the footer
+(config.js SUPPORT_URL -> #footSupport; hidden when unset; any link works). Wired to
+https://ko-fi.com/divtally (verified: the plain Ko-fi profile lands straight on the Tip/donate form;
+`?hidefeed`/`widget` are EMBED-only params, no effect on the standalone page). index.html + config.js
+only -> no core.js, no ?v= bump. Phase 2 (later, once trust+traffic): optional CONVENIENCE membership
+(saved builds/history/priority cache) as NET-NEW perks, never gating core. Full playbook in chat/session.
+
 ## D-0028 - Watcher's Eye: generic max Life/Mana/ES default to not-needed (owner, 2026-07-29)
 Owner: for Watcher's Eye, "we don't care about the life mana energy shield mods" - exclude them from
 the search by default, still allow user selection. Only the "while affected by <Aura>" defining combo
