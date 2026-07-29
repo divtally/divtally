@@ -527,7 +527,8 @@
 
   /* ---------- THE TOOLTIP (Awakened PoE Trade style) ---------- */
   #tt{
-    position:fixed; z-index:60; width:500px; pointer-events:none; opacity:0; transform:scale(.96);
+    position:fixed; z-index:60; width:500px; max-width:calc(100vw - 16px);   /* never wider than the screen (was overflowing narrow phones even while hidden) */
+    pointer-events:none; opacity:0; transform:scale(.96);
     transition:opacity .12s ease, transform .12s ease; font-family:var(--serif);
     filter:drop-shadow(0 8px 22px rgba(0,0,0,.8));
   }
@@ -809,11 +810,26 @@
     .afx{grid-template-columns:20px 1fr 58px 58px; gap:6px;}
     .svrow{grid-template-columns:1fr 104px 50px 50px; gap:6px;}
     .svrow .segbtn{width:28px; height:26px; font-size:18px;}
+    /* toolbar: a <select> sizes to its longest option (Listings ~330px) and would overflow a phone.
+       Let the url input + Appraise go full-width and the two selects share a shrinkable row. */
+    .toolbar input#url{flex-basis:100%; min-width:0;}
+    .toolbar .stone-sel{flex:1 1 40%; min-width:0; max-width:100%;}
+    .toolbar .stone-btn.go{flex-basis:100%;}
+    /* rares rows: stack the price+controls BELOW the name on phones (the price's chaos-parenthetical
+       e.g. "(10,500)" can't fit inline next to the fixed 150px name column) */
+    .mrow{grid-template-columns:34px minmax(0,1fr);}
+    .mrow .mr-right{grid-column:1 / -1; justify-content:flex-start; flex-wrap:wrap;}
+    .mrow .mr-input{min-width:0;}
+    /* gem rows: grid's meta+price columns can't shrink -> flex-wrap so they drop below the name */
+    .sk-head{display:flex; flex-wrap:wrap; gap:5px 8px;}
+    .sk-head .sk-name{flex:1 1 90px; min-width:0;}
+    /* banner: a long single-word character name would overflow -> allow it to break */
+    .char-name{font-size:30px; overflow-wrap:anywhere;}
   }
 
   /* ---------- responsive collapse ---------- */
   @media (max-width:720px){
-    .board{grid-template-columns:1fr; grid-template-areas:"doll" "stash";}
+    .board{grid-template-columns:minmax(0,1fr); grid-template-areas:"doll" "stash";}   /* minmax(0,..) so the board can shrink below child min-content -> no overflow on narrow phones */
     /* the 5-col paper-doll can't fit a phone -> flow the slots in a simple 2-col grid.
        CRITICAL: each slot keeps grid-area:helm/weap/body/... ; with grid-template-areas:none
        those named areas vanish and every slot collapses onto ONE cell (17 slots, 136 overlaps,
@@ -821,8 +837,8 @@
     .doll{grid-template-columns:repeat(2, minmax(0,1fr)); grid-template-areas:none; grid-auto-rows:minmax(120px,auto);}
     .doll .slot{aspect-ratio:auto; min-height:120px; grid-area:auto;}
     .doll .slot.empty{display:none;}   /* drop the "." spacer cells in the flat flow */
-    .grid12{grid-template-columns:repeat(4,1fr);}
-    .gem-cell{grid-column:span 4;}
+    .grid12{grid-template-columns:repeat(3, minmax(0,1fr));}   /* shrinkable cols; 4x1fr forced ~470px min-width */
+    .gem-cell{grid-column:1 / -1;}   /* gems always full-width regardless of column count */
     .orb-dock{position:static; justify-content:center; margin-top:24px;}
     .slot .iname{font-size:18px;}
   }
@@ -854,7 +870,7 @@
     border:1px solid var(--bz1); border-radius:3px; padding:1px 6px;}
   .upgrade p.uh-lead{color:var(--mut); font-size:20px; margin:2px 0 12px; max-width:760px;}
   .upgrade .cols{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
-  @media (max-width:640px){ .upgrade .cols{grid-template-columns:1fr;} }
+  @media (max-width:640px){ .upgrade .cols{grid-template-columns:minmax(0,1fr);} .upgrade .does, .upgrade .never{min-width:0;} .upgrade li{overflow-wrap:break-word;} }
   .upgrade .cols h5{font-family:var(--mono); font-size:15px; letter-spacing:.1em; text-transform:uppercase; margin:0 0 6px;}
   .upgrade .does h5{color:var(--ok);} .upgrade .never h5{color:var(--parch);}
   .upgrade ul{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:5px;}

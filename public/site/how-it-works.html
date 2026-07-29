@@ -122,6 +122,7 @@
       <tbody>
         <tr><td>You appraise a build</td><td class="ep"><span class="m">GET/POST</span> <span id="epApi">{API_BASE}</span>/api/build</td><td>Ours (reads poe.ninja; for pasted PoB links, also the paste service you linked &mdash; pobb.in / pastebin.com)</td></tr>
         <tr><td>Item &amp; currency icons render</td><td class="ep"><span class="m">GET</span> web.poecdn.com/&hellip; <span class="muted">(images)</span></td><td>GGG's public image CDN &mdash; <b>your</b> browser, pictures only</td></tr>
+        <tr><td>Anonymous page-view count</td><td class="ep"><span class="m">GET/POST</span> *.cloudflareinsights.com <span class="muted">(beacon)</span></td><td>Cloudflare Web Analytics &mdash; <b>your</b> browser; cookieless, aggregate only</td></tr>
         <tr><td>Filling cached rare prices</td><td class="ep"><span class="m">GET</span> <span id="epWorker">{WORKER_BASE}</span>/cache</td><td>Ours (a dumb key/value store)</td></tr>
         <tr><td>A rare priced on your machine</td><td class="ep"><span class="m">POST</span> <span id="epWorker2">{WORKER_BASE}</span>/cache</td><td>Ours (writes your result for others)</td></tr>
         <tr><td>You click a trade link</td><td class="ep"><span class="m">GET</span> pathofexile.com/trade/search/&hellip;</td><td><b>Your</b> browser tab, opened by you</td></tr>
@@ -145,7 +146,7 @@
       </tbody>
     </table>
   </div>
-  <p class="small muted">No account, no login, and <b>no cookies we set</b> &mdash; no analytics, no ad/tracking pixels, no third-party scripts. The only third-party server your browser touches on a normal page load is GGG's image CDN (<code>web.poecdn.com</code>) for item pictures; it sets nothing and learns nothing but that an icon was fetched. Clear your browser storage and everything on your device is gone.</p>
+  <p class="small muted">No account, no login, and <b>no cookies</b>. The only analytics is <b>Cloudflare Web Analytics</b> &mdash; cookieless and privacy-first: aggregate page-view counts only, it stores nothing on your device and can't identify you or follow you across sites (no ad or tracking pixels either). On a normal page load your browser touches two third-party servers: GGG's image CDN (<code>web.poecdn.com</code>) for item pictures, and Cloudflare's analytics beacon (<code>static.cloudflareinsights.com</code>) &mdash; neither sets a cookie or learns anything about you. Clear your browser storage and everything on your device is gone.</p>
 
   <h3>In the shared community cache (short-lived, public prices only)</h3>
   <p>When a rare is priced on a real machine, <b>only its price</b> is stored so the next visitor with the same build sees it too. Each entry is a chaos number plus a listing count and the trade link &mdash; keyed by a hash of the item's league + name + mods. It holds <b>no</b> character name, account, or anything identifying, and every entry <b>expires after 24 hours</b>. Unpriceable items are simply left blank (a link, never a made-up number).</p>

@@ -10,12 +10,14 @@
 # does NOT by itself block an injected inline onerror. It DOES lock external/eval script, restrict
 # fetch/XHR to the two configured backends (blocking evil-backend exfil and reinforcing the override
 # gate), pin img to poecdn, and deny framing. connect-src lists exactly the API + worker from
-# config.js; img-src is poecdn only (the site uses zero data: images — verified). To later drop
-# 'unsafe-inline' from script-src, move both inline <script> blocks into /assets/*.js (mechanical).
+# config.js PLUS cloudflareinsights.com (the Cloudflare Web Analytics beacon — cookieless, aggregate
+# page-views only; static.cloudflareinsights.com is allowed in script-src, disclosed on how-it-works).
+# img-src is poecdn only (the site uses zero data: images — verified). To later drop 'unsafe-inline'
+# from script-src, move both inline <script> blocks into /assets/*.js (mechanical).
 
 /*
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' https://web.poecdn.com; font-src 'self'; connect-src 'self' https://divtally.vercel.app https://divtally-cache.divtally.workers.dev; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' https://web.poecdn.com; font-src 'self'; connect-src 'self' https://divtally.vercel.app https://divtally-cache.divtally.workers.dev https://cloudflareinsights.com; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'
