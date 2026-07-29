@@ -591,3 +591,39 @@ was already present; this pass VERIFIED it complete (all continuations gated) ra
 R6 was NOT dry (2 majors), so LOOP-UNTIL-DRY continues: deploy, then re-sweep. (S2 CSP is folded into
 S1's fix; S3 extension-popup self-XSS / S4 api exception leak / S5 JSON nosniff are MINOR, out of this
 task's two-major scope - flagged for a later round.)
+
+## D-0031 - Magic jewels priced like rares, not "cheap" (owner "these jewels aren't getting scanned", 2026-07-29)
+Owner reported a build's magic (blue) jewels weren't getting a real price. Root cause: `price_build`
+routed ALL magic items to `price_magic_unpriced` -> the D-0016 scope-only "magic is cheap, price
+yourself" query (search = "Any Jewel", useless). But an abyss/cluster MAGIC jewel can carry
+price-defining rolls. Fix: `price_build` now routes MAGIC + `group=='jewel'` through
+`price_rare_unpriced` (the affix-filtered rare query = a real autoscan price); other magic items
+(flasks etc.) stay cheap. Client mirror: `isMagicJewel()`, and `isPickableRare` + the 'edit affixes'
+button now include magic jewels, so they get the affix picker + autoscan queue like rares. No payload
+change (magic items already ship affix data client-side as `rares[]` kind='magic', per _verify).
+Tests: _verify +3 (magic jewel -> rare-unpriced + affix-filtered query; magic flask stays
+magic-unpriced). API + index.html, no core.js / no ?v= bump.
+
+## D-0032 - Picker modal: sticky footer so the action buttons are always visible (owner, 2026-07-29)
+Owner: on the affix picker, a long first-item mod list pushed the action buttons below the fold ->
+users wouldn't know they exist. Fix: `.pick` is now a flex column - header pinned (`.ph` flex:0 0
+auto), the mod list is the ONLY scroll region (`.pbody` flex:1 1 auto; min-height:0; overflow-y:auto),
+and the buttons live in a `position:sticky; bottom:0` `.pfoot` (wrapping the pbtns) so they stay
+on-screen no matter how long the list is. Verified at a 520px viewport: body scrolls, footer stays
+pinned + fully visible (footBottom 498 in 520). Pure index.html, no core.js / no ?v= bump.
+
+## D-0033 - Heist trinkets: only the "drop as" conversion mod is required by default (owner, 2026-07-29)
+Owner, on a "Carrion Creed, Thief's Trinket": "we only care about affixes that say 'drop as' ... so
+when searching you can deselect the other mods." A Thief's Trinket's price-defining mod is the currency
+CONVERSION line ("... Orbs of Augmentation to drop as Chaos Orbs instead"); its additional-items /
+increased-Rarity Heist mods are common and, if all required, over-constrain the search to few/no
+listings. Fix (owner-curated default, same shape as Watcher's Eye default_off, D-0028): when a
+conversion mod is present, `affix_options` sets the NON-conversion searchable mods to priority
+'exclude' (picker shows them unticked but re-selectable) and the conversion mod(s) to 'required'; and
+`_rare_default_filters` now drops 'exclude'-priority affixes from the auto-scan required set. No-op for
+every other rare (nothing else sets 'exclude' on a rare), so D-0015 "require ALL affixes" is unchanged
+outside this curated case; D-0015 still holds for the USER (they can re-tick). Detection is
+apostrophe-agnostic (base ends "Trinket"); mod signature is "to drop as". Client already handles
+'exclude' (default-untick + notneeded). Verified on real refdata: the trinket resolves and the built
+query carries exactly 1 filter (explicit.stat_2559492014, Aug->Chaos), excluding increased-Rarity.
+Tests: _verify +4. API-only, no core.js / no ?v= bump.
