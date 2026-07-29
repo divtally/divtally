@@ -35,6 +35,11 @@ window.BPC_CONFIG = {
   REPO_URL: "https://github.com/divtally/divtally",
   RELEASE_URL: "https://github.com/divtally/divtally/releases",   // packaged extension builds (works while store reviews pend)
 
+  // Optional "buy me a coffee" donation button (footer). Any link works -- Ko-fi (0% fee, no donor
+  // account needed), Buy Me a Coffee, GitHub Sponsors, or PayPal.me. Leave "" (or REPLACE_ME) to
+  // HIDE the button entirely. Pure optional support: nothing on the site is ever gated behind it.
+  SUPPORT_URL: "https://ko-fi.com/divtally",   // Ko-fi tip page (lands straight on the donate form)
+
   /* Optional. Leave as-is unless you know you need them. */
   DEFAULT_LEAGUE: "",                         // "" = use each build's own league; or pin e.g. "Standard"
   CACHE_MAX_KEYS: 60                          // per worker request cap (do not raise above the Worker's MAX_ENTRIES)

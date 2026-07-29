@@ -941,6 +941,13 @@
   .site-foot a{color:var(--bz3); text-decoration:none;}
   .site-foot a:hover{color:var(--bz-hi); text-decoration:underline;}
   .site-foot .foot-space{flex:1 1 20px;}
+  /* optional "buy me a coffee" pill (config SUPPORT_URL; hidden until set) */
+  .site-foot .coffee-link{display:inline-flex; align-items:center; gap:6px; padding:3px 12px; border-radius:6px;
+    font-family:var(--mono); font-size:15px; color:var(--bz-hi); text-decoration:none;
+    background:linear-gradient(180deg,#2a2014,#1a130c); border:1px solid var(--bz2);
+    box-shadow:inset 0 1px 0 rgba(242,224,182,.16), 0 2px 4px rgba(0,0,0,.4); transition:filter .12s;}
+  .site-foot .coffee-link:hover{filter:brightness(1.18); color:var(--bz-hi); text-decoration:none;}
+  .site-foot .coffee-link[hidden]{display:none;}
   .site-foot .ggg-note{color:var(--parch); font-style:italic; font-family:var(--serif); font-size:18px;}
 
   /* manual-pricing modal (reuses .pick styling; public: trade link + whisper + extension) */
@@ -1360,6 +1367,7 @@
     <a href="/how-it-works.html">How it works</a>
     <a id="footRepo" href="#" target="_blank" rel="noopener">Open source</a>
     <a id="footCacheToggle" href="#" role="button">Community cache: on</a>
+    <a id="footSupport" class="coffee-link" href="#" target="_blank" rel="noopener" title="DivTally is free — a coffee helps cover the cache + hosting. Thank you!" hidden>&#9749; Buy me a coffee</a>
     <span class="foot-space"></span>
     <span class="ggg-note">Not affiliated with or endorsed by Grinding Gear Games. Path of Exile is a trademark of GGG.</span>
   </footer>
@@ -2721,6 +2729,10 @@ bpc.on('meta',m=>{ if(m && m.league) seedLeagues(m.league); });
   const repo=$('#footRepo');
   if(repo){ if(CFG && CFG.REPO_URL && !/REPLACE_ME/.test(CFG.REPO_URL)) repo.href=CFG.REPO_URL;
     else { repo.classList.add('disabled'); repo.title='repository link coming soon'; repo.removeAttribute('href'); } }
+  const sup=$('#footSupport');   // optional donation button — shown only when SUPPORT_URL is configured
+  if(sup){ const su=((CFG && CFG.SUPPORT_URL) || '').trim();
+    if(su && !/REPLACE_ME/.test(su)){ sup.href=su; sup.hidden=false; }
+    else { sup.hidden=true; sup.removeAttribute('href'); } }
   const ct=$('#footCacheToggle');
   if(ct){
     const paint=()=>{ ct.textContent='Community cache: '+(bpc.cacheOptOut()?'off':'on'); ct.title=bpc.cacheOptOut()?'Turn the shared community price cache back on':'Stop reading from / writing to the shared community price cache'; };
