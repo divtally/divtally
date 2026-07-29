@@ -122,6 +122,19 @@ def _is_skill_level_mod(text: str) -> bool:
     return "to level of all" in t and "skill" in t
 
 
+def _is_heist_trinket(item: "Item") -> bool:
+    # Heist trinkets are the only equippable base whose type ends in "Trinket"
+    # (the single base "Thief's Trinket"). Apostrophe-agnostic on purpose.
+    return (item.base_type or "").strip().endswith("Trinket")
+
+
+def _is_drop_as_mod(text: str) -> bool:
+    # The price-defining Heist-trinket mod is the currency CONVERSION line
+    # ("... Orbs of Augmentation to drop as Chaos Orbs instead"). Its signature is
+    # "to drop as" -- the additional-items / increased-Rarity mods never contain it.
+    return "to drop as" in util.strip_rich(text).lower()
+
+
 def _affix_tier(line: str, ok: bool, is_unique: bool) -> str:
     if not ok:
         return "skip"
@@ -447,6 +460,11 @@ class PublicPricer:
         var = self._variant_for(item) if is_unique else None
         locked = (var.get("locked_by_idx") if var else None) or {}
         var_off = (var.get("default_off") if var else None) or []   # registry default_off substrings (lowercased)
+        # Heist trinket (owner): only the "drop as" currency-CONVERSION mod is price-defining; the
+        # additional-items / increased-Rarity mods over-constrain the search. When a conversion mod
+        # is present, default the OTHERS off (still user-selectable in the picker) and the
+        # conversion mod(s) required -- an owner-curated default; D-0015 still holds for the USER.
+        heist_curate = _is_heist_trinket(item) and any(_is_drop_as_mod(m) for m in item.explicit_mods)
         affixes = []
         for i, line in enumerate(item.explicit_mods):
             is_def = i in locked
@@ -499,6 +517,9 @@ class PublicPricer:
             # not a silent auto-exclude of a user's own choice (D-0015 still holds for the USER).
             if not is_def and ok and var_off and any(p in label.lower() for p in var_off):
                 row["priority"] = "exclude"
+            # Heist-trinket curation (above): conversion mod -> required, the rest -> default-off.
+            if not is_def and ok and heist_curate:
+                row["priority"] = "required" if _is_drop_as_mod(line) else "exclude"
             if is_def:
                 self._apply_defining(row, locked[i])
             affixes.append(row)
@@ -576,8 +597,11 @@ class PublicPricer:
         # IMPLICIT affixes are OFFERED in the picker (opt-in) but NOT required in the default
         # query -- base implicits come with the base type; the default rare query stays
         # explicit-driven (D-0015 requires every searchable EXPLICIT-style affix).
+        # priority "exclude" = an owner-curated default-off (Heist-trinket non-conversion mods) --
+        # dropped from the auto-scan's required set. No-op for every other rare: nothing else sets
+        # "exclude" on a rare, so D-0015 (require ALL affixes) is unchanged outside the curated case.
         stat_opts = [o for o in opts if o["kind"] == "stat" and o["searchable"]
-                     and o.get("group") != "implicit"]
+                     and o.get("group") != "implicit" and o.get("priority") != "exclude"]
         equip_opts = [o for o in opts if o["kind"] == "equip" and o["value"]]
 
         def _statf(o):

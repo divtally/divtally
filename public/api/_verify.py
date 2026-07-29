@@ -322,6 +322,40 @@ def phase_a():
     _mjfilters = [f for g in (_mjq.get("stats") or []) for f in (g.get("filters") or [])]
     check("magicjewel: query is affix-filtered (a real search, not scope-only)", len(_mjfilters) >= 1, str(len(_mjfilters)))
 
+    # ---- Heist trinket: only "drop as" is required, the rest default-off (owner) ----
+    # "Carrion Creed, Thief's Trinket" from the owner's screenshot. The 3 additional-items /
+    # increased-Rarity mods over-constrain the search; only the currency-conversion mod prices it.
+    _tk = _Item(name="Carrion Creed", base_type="Thief's Trinket", type_line="Thief's Trinket",
+                frame_type=2, rarity="Rare", category="rare", group="trinket", slot="Trinket",
+                explicit_mods=[
+                    "2% chance to receive additional Blight items when opening a Reward Chest in a Heist",
+                    "8% chance to receive additional Divination Card items when opening a Reward Chest in a Heist",
+                    "5% chance in Heists for Orbs of Augmentation to drop as Chaos Orbs instead",
+                    "19% increased Rarity of Items dropped in Heists"],
+                mod_src=["explicit", "explicit", "explicit", "explicit"], raw={"inventoryId": "Trinket"})
+    _tko = _p.affix_options(_tk)["affixes"]
+    _tk_conv = [o for o in _tko if "to drop as" in o["text"].lower()]
+    _tk_other = [o for o in _tko if o["kind"] == "stat" and "to drop as" not in o["text"].lower()]
+    check("heisttrinket: every non-'drop as' mod is default-off (exclude)",
+          all(o["priority"] == "exclude" for o in _tk_other), str([o["priority"] for o in _tk_other]))
+    check("heisttrinket: the conversion mod is required (searchable)",
+          bool(_tk_conv) and all(o["priority"] == "required" for o in _tk_conv), str([o["priority"] for o in _tk_conv]))
+    # the auto-scan required set is ONLY the conversion mod (not the 3 others). Asserted on
+    # _rare_default_filters directly -- scope-independent, so it doesn't need the trinket base in
+    # this harness's tiny valid-types whitelist (prod resolves it: refdata.item_types has it).
+    _tk_sg, _, _ = _p._rare_default_filters(_tk)
+    _tkf = [f for g in _tk_sg for f in (g.get("filters") or [])]
+    check("heisttrinket: auto-scan requires exactly 1 filter (the conversion mod)", len(_tkf) == 1, str(len(_tkf)))
+    # a trinket with NO conversion mod is left alone (still requires all its mods)
+    _tk2 = _Item(name="Plain Trinket", base_type="Thief's Trinket", type_line="Thief's Trinket",
+                 frame_type=2, rarity="Rare", category="rare", group="trinket", slot="Trinket",
+                 explicit_mods=["19% increased Rarity of Items dropped in Heists",
+                                "12% increased Quantity of Items dropped in Heists"],
+                 mod_src=["explicit", "explicit"], raw={"inventoryId": "Trinket"})
+    _tk2o = [o for o in _p.affix_options(_tk2)["affixes"] if o["kind"] == "stat"]
+    check("heisttrinket: no conversion mod -> curation is inert (nothing forced off)",
+          all(o["priority"] != "exclude" for o in _tk2o), str([o["priority"] for o in _tk2o]))
+
     econ = poeninja.PoeNinjaEconomy("TestLeague")
     econ._uniques = {
         "mageblood": [{"name": "Mageblood", "baseType": "Heavy Belt", "variant": "5 Flasks",
