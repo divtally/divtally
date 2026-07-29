@@ -362,7 +362,7 @@
      or on items the user has excluded from the total. */
   .slot.loading .buymark, .slot.empty .buymark, .slot.off .buymark{display:none;}
   .slot.on{box-shadow:inset 0 0 0 1px rgba(0,0,0,.6), inset 0 2px 10px rgba(0,0,0,.55), 0 0 0 1px rgba(200,170,110,.25);}
-  .slot.off{filter:grayscale(.9) brightness(.55); opacity:.62;}
+  .slot.off{filter:grayscale(.5) brightness(.82); opacity:.82;}   /* excluded: clearly dimmed but still legible */
   .slot.off::after{
     content:"VOID"; position:absolute; inset:0; display:grid; place-items:center;
     font-family:var(--display); font-size:18px; letter-spacing:.3em; color:rgba(208,107,94,.85);
@@ -428,7 +428,7 @@
     padding:9px 12px; background:var(--inner); border:1px solid var(--bz1); border-radius:4px;
     box-shadow:inset 0 2px 6px rgba(0,0,0,.5);
   }
-  .toolbar input#url::placeholder{color:rgba(170,158,130,.55);}
+  .toolbar input#url::placeholder{color:rgba(186,174,146,.72);}
   .stone-sel, .stone-btn{
     font-family:var(--serif); font-size:19px; color:var(--fg); padding:9px 12px;
     background:linear-gradient(180deg,#2a2014,#1a130c); border:1px solid var(--bz2); border-radius:4px;
@@ -814,8 +814,13 @@
   /* ---------- responsive collapse ---------- */
   @media (max-width:720px){
     .board{grid-template-columns:1fr; grid-template-areas:"doll" "stash";}
-    .doll{grid-template-columns:1fr; grid-template-areas:none; }
-    .doll .slot{aspect-ratio:auto; min-height:78px;}
+    /* the 5-col paper-doll can't fit a phone -> flow the slots in a simple 2-col grid.
+       CRITICAL: each slot keeps grid-area:helm/weap/body/... ; with grid-template-areas:none
+       those named areas vanish and every slot collapses onto ONE cell (17 slots, 136 overlaps,
+       grid overflows to 445px). Resetting grid-area:auto lets them flow normally. */
+    .doll{grid-template-columns:repeat(2, minmax(0,1fr)); grid-template-areas:none; grid-auto-rows:minmax(120px,auto);}
+    .doll .slot{aspect-ratio:auto; min-height:120px; grid-area:auto;}
+    .doll .slot.empty{display:none;}   /* drop the "." spacer cells in the flat flow */
     .grid12{grid-template-columns:repeat(4,1fr);}
     .gem-cell{grid-column:span 4;}
     .orb-dock{position:static; justify-content:center; margin-top:24px;}
@@ -888,9 +893,9 @@
   .mrow .mr-right{display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;}
   .mrow .mr-input{width:150px; font-family:var(--mono); font-size:18px; color:var(--fg); padding:7px 9px;
     background:var(--inner); border:1px solid var(--bz1); border-radius:4px; box-shadow:inset 0 1px 4px rgba(0,0,0,.4);}
-  .mrow .mr-input::placeholder{color:rgba(170,158,130,.5);}
+  .mrow .mr-input::placeholder{color:rgba(184,172,144,.68);}
   .mrow .mr-input:focus{outline:none; border-color:var(--bz3); box-shadow:0 0 0 1px rgba(200,170,110,.3);}
-  .mrow .mr-price{font-family:var(--mono); font-size:19px; color:var(--val); white-space:nowrap; min-width:70px; text-align:right;}
+  .mrow .mr-price{font-family:var(--mono); font-size:19px; color:var(--val); white-space:nowrap; min-width:96px; text-align:right; font-variant-numeric:tabular-nums;}
   .mrow .mr-price .bpc-cur{height:18px; vertical-align:-3px;}
   .mrow .mr-src{font-family:var(--mono); font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--parch);
     border:1px solid var(--bz1); border-radius:3px; padding:1px 5px; white-space:nowrap;}
@@ -1323,15 +1328,14 @@
             <li>No login, no session cookie, no POESESSID &mdash; zero account risk</li>
             <li>Touches only <code>pathofexile.com/api/trade</code> and this site &mdash; nothing else</li>
             <li>No tabs, no browsing history, no all-sites access</li>
-            <li>Not affiliated with or endorsed by Grinding Gear Games</li>
+            <li>No affiliation with or endorsement by Grinding Gear Games &mdash; a community tool</li>
           </ul>
         </div>
       </div>
       <div class="stores">
         <span class="stlab">Get it:</span>
         <a class="store-btn" id="storeChrome" href="#" target="_blank" rel="noopener">Chrome</a>
-        <a class="store-btn" id="storeEdge" href="#" target="_blank" rel="noopener">Edge</a>
-        <a class="store-btn" id="storeFirefox" href="#" target="_blank" rel="noopener">Firefox</a>
+        <span class="stlab" style="opacity:.75">Edge &amp; Firefox &mdash; in review</span>
       </div>
       <div class="uh-foot">Prefer not to install anything? You never have to &mdash; use the trade links and paste-a-price above. <a href="/how-it-works.html">Read exactly what the extension can and can't do &rarr;</a></div>
     </div>
@@ -1543,7 +1547,7 @@ bpc.on('progress',m=>{ if(['queued','running','loading'].includes(bpc.state.phas
 bpc.on('done',()=>{
   const t=bpc.totals(); const manual=bpc.manualRows().filter(r=>!r.priced).length;
   const parts=[];
-  if(t.priced) parts.push(t.priced+' item'+(t.priced!==1?'s':'')+' priced from economy data');
+  if(t.priced) parts.push(t.priced+' item'+(t.priced!==1?'s':'')+' priced automatically');
   if(manual) parts.push(manual+' rare'+(manual!==1?'s':'')+' to price yourself');
   $('#status').textContent = parts.join(' · ');
 });
@@ -2461,6 +2465,8 @@ bpc.on('bridge',b=>{
   const badge=$('#bridgeBadge'), txt=$('#bridgeText');
   if(b.active){ badge.classList.add('on'); txt.textContent='extension active'+(b.version?(' · v'+b.version):''); badge.title='DivTally browser extension detected — rares can be priced hands-free.'; }
   else { badge.classList.remove('on'); txt.textContent='no extension'; }
+  // Extension already installed -> hide the "Get the DivTally Browser Extension" hero CTA (they have it).
+  const heroCta=$('#heroExtLink'); if(heroCta) heroCta.hidden = !!b.active;
   renderManual();          // autoscan / per-row auto buttons + upgrade card + auto-scan-on-load depend on this
 });
 
@@ -2620,7 +2626,7 @@ function manualRowHTML(r){
     const rtu=safeHref(r.trade_url), openBtn = rtu ? `<a class="stone-btn" href="${E(rtu)}" target="_blank" rel="noopener" style="padding:6px 11px;font-size:18px">open search ↗</a>` : '';
     const autoBtn = bpc.state.bridge.active ? `<button class="stone-btn search mr-auto" data-mk="${E(k)}" type="button" style="padding:6px 11px;font-size:18px" title="price this one via the extension">⚡ auto</button>` : '';
     right = openBtn + inspBtn +
-      `<input class="mr-input" data-mk="${E(k)}" placeholder="35c · 2 div · paste whisper" spellcheck="false" autocomplete="off">`+
+      `<input class="mr-input" data-mk="${E(k)}" placeholder="35c / 2div · paste whisper" spellcheck="false" autocomplete="off">`+
       `<button class="stone-btn search mr-apply" data-mk="${E(k)}" type="button" style="padding:6px 11px;font-size:18px">apply</button>`+ autoBtn + affixBtn;
     const noteRaw = (p.note && p.source!=='none') ? `<div class="mr-err" style="color:var(--parch);font-style:normal">${E(p.note)}</div>` : '';
     right += noteRaw;
@@ -2644,7 +2650,7 @@ function renderManual(rows){
       ? `<span class="mh-sub">Scanning your rares — each row fills in as it resolves.</span>`
       : (bpc.state.bridge.active
         ? `<span class="mh-sub">Extension detected — hit <b>Autoscan</b> to price them all, or price rows one at a time below.</span>`
-        : `<span class="mh-sub">Click <b>open search</b>, copy a listing's buyout in-game (its whisper), and paste it below — or just type <code>35c</code> / <code>2 div</code>. Prices fold into your total.</span>`);
+        : `<span class="mh-sub">Click <b>open search</b>, copy a listing's buyout in-game (its whisper), and paste it below — or just type <code>35c</code> / <code>2div</code>. Prices fold into your total.</span>`);
   } else intro.innerHTML='';
   $('#manualRows').innerHTML = rows.map(manualRowHTML).join('');
   updateUpgradeCard(unpriced);
@@ -2691,7 +2697,7 @@ function openManual(k){
   if(tradeUrl) body+=`<div class="mp-block"><a class="stone-btn viewtrade" href="${E(tradeUrl)}" target="_blank" rel="noopener" style="display:block;text-align:center">↗ open this search on the trade site</a></div>`;
   if(bpc.state.bridge.active) body+=`<div class="mp-block"><button class="stone-btn autoscan" id="mpExt" type="button" style="width:100%">⚡ price via extension</button></div>`;
   body+=`<div class="mp-block"><div class="mp-lbl">Paste a buyout, or type a price</div>`+
-    `<input class="mp-input" id="mpInput" placeholder='35 chaos   ·   2 div   ·   paste the whole "listed for …" whisper' spellcheck="false" autocomplete="off">`+
+    `<input class="mp-input" id="mpInput" placeholder='35c / 2div · paste the whole "listed for …" whisper' spellcheck="false" autocomplete="off">`+
     `<div class="mp-hint">On the trade site, copy a listing's buyout whisper (or its price note) and paste it here. Chaos &amp; Divine fold into your total.</div>`+
     `<div class="mp-err" id="mpErr"></div></div>`;
   if(p.chaos && p.chaos.median!=null)
@@ -2720,7 +2726,7 @@ bpc.on('meta',m=>{ if(m && m.league) seedLeagues(m.league); });
   function setStore(id,url){ const a=$('#'+id); if(!a) return;
     if(url && !/REPLACE_ME/.test(url)){ a.href=url; }
     else { a.classList.add('disabled'); a.title='store listing coming soon'; a.removeAttribute('href'); } }
-  setStore('storeChrome', s.chrome); setStore('storeEdge', s.edge); setStore('storeFirefox', s.firefox);
+  setStore('storeChrome', s.chrome);   // Edge/Firefox buttons removed until their store reviews clear (re-add + re-wire then)
   const hero=$('#heroExtLink');
   if(hero){ const first=[s.chrome,s.edge,s.firefox].find(u=>u && !/REPLACE_ME/.test(u));
     if(first) hero.href=first;

@@ -47,7 +47,13 @@
   .src-list .rung{flex:0 0 auto; font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:#160f08;
     background:linear-gradient(180deg,var(--bz3),var(--bz1)); border-radius:4px; padding:3px 8px; margin-top:2px;}
   .src-list .rung.opt{background:none; border:1px solid var(--bz2); color:var(--parch);}
-  .ep{font-family:var(--mono); font-size:13px; color:var(--bz-hi); overflow-wrap:anywhere;}
+  .ep{font-family:var(--mono); font-size:13px; color:var(--bz-hi); overflow-wrap:break-word; word-break:normal;}
+  @media (max-width:640px){
+    /* narrow: URLs shatter char-by-char under overflow-wrap:anywhere -> shrink + let them scroll cleanly */
+    .ep{font-size:11px; white-space:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch;}
+    code{overflow-wrap:break-word; word-break:break-word;}
+    table{display:block; overflow-x:auto;}
+  }
   .ep .m{color:var(--gem);}
   .no{color:var(--bad); font-weight:600;}
   .yes{color:var(--ok); font-weight:600;}
@@ -80,7 +86,7 @@
       <li>Paste build link or import code &rarr; <b>Appraise</b>. Gems, uniques, currency priced instantly.</li>
       <li>Rares start unpriced &mdash; total is a floor. Header counts what's left.</li>
       <li>Fastest path: install the <b>DivTally browser extension</b> &rarr; rares price automatically from your own connection, live status per item. Auto-scan toggle on = every build you load scans itself.</li>
-      <li>No extension: <b>open search</b> on a rare &rarr; official trade site, pre-filtered &rarr; copy any listing's whisper &rarr; paste in the row. Or type <code>35c</code> / <code>2 div</code>. Total updates instantly.</li>
+      <li>No extension: <b>open search</b> on a rare &rarr; official trade site, pre-filtered &rarr; copy any listing's whisper &rarr; paste in the row. Or type <code>35c</code> / <code>2div</code>. Total updates instantly.</li>
       <li>Popular builds: rares may arrive pre-priced from the community cache &mdash; marked <i>unverified</i>, dot instead of checkmark.</li>
       <li>Untick any item &rarr; excluded from totals ("what's it cost without the chase ring").</li>
       <li><b>MIN / MEDIAN / HIGH</b> top-right = budget tiers. Chaos totals, divines alongside.</li>
@@ -98,10 +104,10 @@
     <li><b>Rares</b> (and magic items, and uniques poe.ninja doesn't list) can't be priced that way &mdash; every rare is unique. For each one you get a ready-made trade search and price it yourself, one of four ways:</li>
   </ul>
   <ul class="src-list">
-    <li><span class="rung">Free</span><div><b>The community cache.</b> If another visitor (or a volunteer's daily seeding run) already priced this exact item recently, its price is filled in for you automatically. Short-lived (24&nbsp;hours) and always exact-match. You can turn this off below.</div></li>
-    <li><span class="rung">Rung&nbsp;1</span><div><b>You paste a price.</b> Click <b>open search</b> on a rare, find a comparable listing on the trade site, copy its buyout (the whisper), and paste it back here. Type <code>35c</code> or <code>2&nbsp;div</code> if you already know. It folds into your total and is remembered on your device for that build.</div></li>
-    <li><span class="rung">Rung&nbsp;2</span><div><b>The DivTally browser extension</b> (optional; <a href="https://github.com/divtally/divtally/releases" target="_blank" rel="noopener">download from GitHub</a> while store listings are in review). It runs those same trade searches from <b>your</b> browser and IP &mdash; logged out &mdash; and fills the cheapest buyout in automatically. Nothing on our side ever touches the trade API.</div></li>
-    <li><span class="rung opt">Rung&nbsp;0</span><div><b>Run it locally.</b> The whole thing is open source; you can run the desktop/CLI version on your own machine if you'd rather not use the website at all.</div></li>
+    <li><span class="rung">Shared</span><div><b>The community cache.</b> If another visitor (or a volunteer's daily seeding run) already priced this exact item recently, its price is filled in for you automatically. Short-lived (24&nbsp;hours) and always exact-match. You can turn this off below.</div></li>
+    <li><span class="rung">Manual</span><div><b>You paste a price.</b> Click <b>open search</b> on a rare, find a comparable listing on the trade site, copy its buyout (the whisper), and paste it back here. Type <code>35c</code> / <code>2div</code> if you already know. It folds into your total and is remembered on your device for that build.</div></li>
+    <li><span class="rung">Hands-free</span><div><b>The DivTally browser extension</b> (optional; <a href="https://github.com/divtally/divtally/releases" target="_blank" rel="noopener">download from GitHub</a> while store listings are in review). It runs those same trade searches from <b>your</b> browser and IP &mdash; logged out &mdash; and fills the cheapest buyout in automatically. Nothing on our side ever touches the trade API.</div></li>
+    <li><span class="rung opt">DIY</span><div><b>Run it locally.</b> The whole thing is open source; you can run the desktop/CLI version on your own machine if you'd rather not use the website at all.</div></li>
   </ul>
   <div class="callout">
     <span class="k">Why the split</span>
@@ -114,7 +120,7 @@
     <table>
       <thead><tr><th>When</th><th>Request</th><th>Whose server</th></tr></thead>
       <tbody>
-        <tr><td>You appraise a build</td><td class="ep"><span class="m">GET/POST</span> <span id="epApi">{API_BASE}</span>/api/build</td><td>Ours (reads poe.ninja; for pasted PoB links, also the paste service you linked &mdash; pobb.in / pastebin)</td></tr>
+        <tr><td>You appraise a build</td><td class="ep"><span class="m">GET/POST</span> <span id="epApi">{API_BASE}</span>/api/build</td><td>Ours (reads poe.ninja; for pasted PoB links, also the paste service you linked &mdash; pobb.in / pastebin.com)</td></tr>
         <tr><td>Item &amp; currency icons render</td><td class="ep"><span class="m">GET</span> web.poecdn.com/&hellip; <span class="muted">(images)</span></td><td>GGG's public image CDN &mdash; <b>your</b> browser, pictures only</td></tr>
         <tr><td>Filling cached rare prices</td><td class="ep"><span class="m">GET</span> <span id="epWorker">{WORKER_BASE}</span>/cache</td><td>Ours (a dumb key/value store)</td></tr>
         <tr><td>A rare priced on your machine</td><td class="ep"><span class="m">POST</span> <span id="epWorker2">{WORKER_BASE}</span>/cache</td><td>Ours (writes your result for others)</td></tr>
@@ -142,14 +148,14 @@
   <p class="small muted">No account, no login, and <b>no cookies we set</b> &mdash; no analytics, no ad/tracking pixels, no third-party scripts. The only third-party server your browser touches on a normal page load is GGG's image CDN (<code>web.poecdn.com</code>) for item pictures; it sets nothing and learns nothing but that an icon was fetched. Clear your browser storage and everything on your device is gone.</p>
 
   <h3>In the shared community cache (short-lived, public prices only)</h3>
-  <p>When a rare is priced on a real machine, its <b>price only</b> is stored so the next visitor with the same build sees it too. Each entry is a chaos number plus a listing count and the trade link &mdash; keyed by a hash of the item's league + name + mods. It holds <b>no</b> character name, account, or anything identifying, and every entry <b>expires after 24 hours</b>. Unpriceable items are simply left blank (a link, never a made-up number).</p>
+  <p>When a rare is priced on a real machine, <b>only its price</b> is stored so the next visitor with the same build sees it too. Each entry is a chaos number plus a listing count and the trade link &mdash; keyed by a hash of the item's league + name + mods. It holds <b>no</b> character name, account, or anything identifying, and every entry <b>expires after 24 hours</b>. Unpriceable items are simply left blank (a link, never a made-up number).</p>
   <p>This cache is <b>open</b> &mdash; the recipe is public, so anyone can contribute (that is how the extension shares your results back). So the site treats it as untrusted: a cached price is always shown as <b>community-submitted and unverified</b>, never with the green "verified" dot a poe.ninja price gets, and its confidence is <b>computed from the listing count on our side</b> &mdash; whatever a sender claims is ignored. Values are capped to sane magnitudes, and a per-contributor daily write limit keeps one script from flooding it. It is a convenience, not a source of truth: to trust a number, click through to the live trade search.</p>
 
   <h3 id="optout">Opt out of the shared cache</h3>
   <p>With this on (the default), your build reads cached rare prices, and prices produced on your machine (via the extension) are shared back. Turn it off and this site will neither read from nor write to the shared cache &mdash; you'll price every rare yourself.</p>
   <div class="cache-toggle">
     <button id="cacheBtn" type="button">Community cache: on</button>
-    <span class="st" id="cacheState">You're using the shared cache. <b class="on">on</b></span>
+    <span class="st" id="cacheState">You're using the shared cache.</span>
   </div>
 
   <h2>Playing nice with the trade API (rate limits)</h2>
@@ -178,7 +184,7 @@
     <a href="/">DivTally</a>
     <a id="footRepo" href="#">Open source</a>
     <span class="foot-space"></span>
-    <span class="ggg">Not affiliated with or endorsed by Grinding Gear Games.</span>
+    <span class="ggg">Not affiliated with or endorsed by Grinding Gear Games. Path of Exile is a trademark of GGG.</span>
   </footer>
 </div>
 
@@ -210,8 +216,8 @@
     var off=optedOut();
     btn.textContent='Community cache: '+(off?'off':'on');
     btn.classList.toggle('off', off);
-    st.innerHTML = off ? 'You’ve opted out — this site won’t read from or write to the shared cache. <b class="offc">off</b>'
-                       : 'You’re using the shared cache. <b class="on">on</b>';
+    st.innerHTML = off ? 'You’ve opted out — this site won’t read from or write to the shared cache.'
+                       : 'You’re using the shared cache.';
   }
   paint();
   btn.addEventListener('click', function(){ setOptOut(!optedOut()); paint(); });
