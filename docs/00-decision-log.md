@@ -205,6 +205,27 @@ is a technical transparency disclosure, not marketing; strip on owner request. P
 identity: repo-local user = DivTally <divtally@gmail.com>, full history rewritten to it
 pre-publish (personal email never ships in public metadata).
 
+## D-0024 - "Forged Metal" design shipped to production (owner-approved, 2026-07-28)
+Owner picked the Forged Metal component treatment on the CURRENT layout (kept paper-doll grid +
+item images + all functionality; changed: metal-plate panels, brass-key buttons that press,
+~1.35x larger text, prominent gold total). Tuning (owner): whole-word wrapping (no mid-word cuts);
+result-count state moved from item BORDERS to the COST text (0 -> red "not found", <5 -> orange
+number, >=5 normal); legend sample "12" -> "#". Doll item-names held at 14/15px (not full 1.35x) -
+the fixed 5-col grid cells cannot fit bigger words whole without a mid-word break; lever if wanted
+= fewer/wider columns or JS auto-fit (owner not yet asked). Textures pure CSS (SVG data: URIs are
+CSP-blocked in prod). REVERT PATH: git tag `design-classic-pre-forged` marks the last pre-forged
+commit; revert = restore public/site from that tag + redeploy. Flourish+gold-serif graft and
+D-0023 status readout still stack on top later if owner wants.
+
+## D-0023 - Live search-status readout in the banner (owner, 2026-07-28; QUEUED after design pick)
+Owner wants a status area near the character banner during a scan showing: NOW searching (current
+item), NEXT in line, progress (searched X / N, remaining), and an ETA. Owner OK to do it after the
+design changes land. Data ALREADY EXISTS (D-0020 timing hook): bpc.scanStatus() returns
+{active, total, done, current, totalMs, per-row {stage, ahead, ms}} - so ETA = remaining ×
+rolling-avg-per-item (or elapsed/done × remaining); current + next-in-line from order+ahead. Pure
+UI add, no engine change. SEQUENCE: texture-variant design pick -> apply chosen component design
+(restyles the banner) -> build this readout into the new banner (avoid styling it twice).
+
 ## D-0022 - Dragonfang variant registry gap + unlock defining mods (owner, 2026-07-28)
 1. **Replica Dragonfang's Flight (and base Dragonfang's Flight) missing from the variant
    registry** - its price-defining mod is "+# to Level of all <specific gem> Gems" (Replica) /
