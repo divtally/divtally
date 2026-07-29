@@ -627,3 +627,23 @@ apostrophe-agnostic (base ends "Trinket"); mod signature is "to drop as". Client
 'exclude' (default-untick + notneeded). Verified on real refdata: the trinket resolves and the built
 query carries exactly 1 filter (explicit.stat_2559492014, Aug->Chaos), excluding increased-Rarity.
 Tests: _verify +4. API-only, no core.js / no ?v= bump.
+
+## D-0034 - Nice-to-have "match at least" default = all-but-one; the bar aligns to the row grid (owner, 2026-07-29)
+Two owner asks on the affix picker's nice-to-have count control. (1) DEFAULT VALUE: the "match at
+least N of M" threshold now defaults to **#nice − 1** (floored at 1), not all M — requiring every
+nice-to-have mod was too strict and often returned few/no listings. Changed in BOTH places that must
+agree: the displayed default (index.html `renderSurveyBody`, `n = max(1, nice−1)`) and the actual
+query threshold (core.js `tierGroups`, `cm = countMin ?? max(1, nice−1)`). An explicit user edit still
+wins and clamps to [1, #nice]; while untouched (data-auto + value===data-def) countMin stays null so
+the threshold tracks #nice−1 dynamically as the nice set changes. This LOOSENS the D-0015 "N=all ⇒ a
+notimp/nice mod is still effectively required" guarantee for the NICE tier only — the REQUIRED
+AND-group is untouched (every required mod still matches); an owner-sanctioned narrowing, unlike the
+rejected D-0014 auto-relax of REQUIRED affixes. (2) LAYOUT: the `.countbar` is no longer a detached
+green box below the list — it's now a grid row using .svrow's exact columns (`1fr 122px 60px 60px`),
+so the label sits in the text column, the spinner in the MIN column, and "of N" in the MAX column,
+reading in line with the priority/min/max header. Green left-border + subtle tint tie it to the
+nice-to-have rows; mobile mirrors the phone column widths. Verified: geometry (spinner left/right ==
+the row min inputs, dLeft/dRight = 0 at desktop 900 + mobile 500) and a REAL-APP render (openPicker on
+a demo cluster jewel: default value == max(1, nice−1), spinner in min col, "of N" in max col).
+Tests: test_picker +5 (default #nice−1 with 3 nice -> 2, user can raise back to all, single-nice
+floors at 1; updated the two old "N=all" assertions). core.js changed -> ?v= 20260729c -> 20260729d.

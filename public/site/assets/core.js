@@ -1162,8 +1162,9 @@
   }
   // D-0016 item 3 — map the API's affix `priority` (contract §3: required·nice·notimp·skip) onto
   // the site's THREE tiers. `notimp` -> nice-to-have (NOT not-needed): D-0015 forbids the tool
-  // auto-EXCLUDING on a low score; nice keeps it searched (count group, default N=all ⇒ still
-  // required). `skip` -> not-needed ONLY when the row is UNSEARCHABLE (no stat_id — it can never
+  // auto-EXCLUDING on a low score; nice keeps it searched in the count group (whose default
+  // threshold is #nice−1 per D-0034 — searched, but not force-required). `skip` -> not-needed
+  // ONLY when the row is UNSEARCHABLE (no stat_id — it can never
   // be a filter); a SEARCHABLE `skip` row is treated like `notimp` (still searched). querybuild
   // assigns `skip` to EVERY non-skill-level unique mod AND the unique pseudo total (all
   // searchable) — mapping those to not-needed silently auto-excluded them (D-0020 R3-2, breaching
@@ -1301,7 +1302,7 @@
   // pick's `tier` ('required'|'nice'|'notneeded'; default = the affix's mapped priority) and returns
   // a NEW picks (usePseudo, affix{i:{ticked,min,max,tier,group}}, pseudo{…}, groups[], countMin):
   //   required  -> the AND group (min/max carried through "as now")
-  //   nice      -> ONE count group; threshold = picks.countMin ?? (#nice) = all (strictest; D-0015)
+  //   nice      -> ONE count group; threshold = picks.countMin ?? (#nice − 1) = all-but-one (D-0034)
   //   notneeded -> excluded (unticked). Equip (defence totals) is required/not-needed only
   //               (armour_filters can't be count-grouped) and stays out of `groups`.
   function tierGroups(rare, picks) {
@@ -1325,7 +1326,11 @@
     if (req) { andGi = groups.length; groups.push({ type: "and" }); }
     if (nice) {
       cGi = groups.length;
-      var cm = (picks.countMin != null ? picks.countMin : nice);
+      // D-0034 (owner): the untouched default threshold is ALL-BUT-ONE of the nice-to-have mods
+      // (#nice − 1, floored at 1), not all of them — requiring every nice-to-have was too strict.
+      // An explicit picks.countMin still wins (and clamps to [1, #nice]). The REQUIRED AND-group is
+      // untouched, so every required mod still matches; only the nice count loosens by one.
+      var cm = (picks.countMin != null ? picks.countMin : Math.max(1, nice - 1));
       groups.push({ type: "count", min: Math.max(1, Math.min(nice, Math.round(cm))) });
     }
     if (!groups.length) groups.push({ type: "and" });

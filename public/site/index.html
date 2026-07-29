@@ -749,12 +749,18 @@
   .svrow[data-tier="notimp"]{border-left-color:var(--bz1);}
   .svrow[data-tier="skip"]{border-left-color:transparent; opacity:.5;}
   .svrow.no .svtxt{color:var(--mut);}
-  /* "match at least N" spinner for the nice-to-have count group */
-  .countbar{display:flex; align-items:center; gap:7px; flex-wrap:wrap; margin:10px 0 2px; padding:9px 11px;
-    background:rgba(91,143,94,.08); border:1px solid rgba(91,143,94,.30); border-radius:5px;
+  /* "match at least N" spinner for the nice-to-have count group — a grid row aligned to .svrow's
+     columns (label in the text column; the spinner in the MIN column, "of N" in the MAX column) so
+     it reads in line with the priority/min/max line above it. Green left border ties it to the
+     nice-to-have rows. */
+  .countbar{display:grid; grid-template-columns:1fr 122px 60px 60px; gap:9px; align-items:center;
+    margin:2px 0; padding:9px 6px; border-top:1px solid rgba(122,106,79,.18);
+    border-left:3px solid #5b8f5e; background:rgba(91,143,94,.06);
     font-family:var(--serif); font-size:19px; color:var(--parch);}
-  .countbar .countmin{width:52px; font-family:var(--mono); font-size:19px; text-align:center; color:var(--fg);
-    background:var(--inner); border:1px solid var(--bz1); border-radius:3px; padding:5px 4px;}
+  .countbar .cb-lab{grid-column:1;}
+  .countbar .cb-of{grid-column:4; text-align:center; font-family:var(--mono); font-size:17px; color:var(--mut);}
+  .countbar .countmin{grid-column:3; width:100%; font-family:var(--mono); font-size:19px; text-align:center; color:var(--fg);
+    background:var(--inner); border:1px solid var(--bz1); border-radius:3px; padding:6px 4px;}
   .countbar .countmin:focus{outline:none; border-color:var(--bz3); box-shadow:0 0 0 1px rgba(200,170,110,.3);}
   /* per-row "move to group" select in the edit-groups editor */
   .afx .grpmove{display:inline-block; margin-top:5px; font-family:var(--serif); font-size:18px; padding:4px 8px; color:var(--bz3);}
@@ -813,6 +819,7 @@
     .pick .ph{font-size:26px;}
     .afx{grid-template-columns:20px 1fr 58px 58px; gap:6px;}
     .svrow{grid-template-columns:1fr 104px 50px 50px; gap:6px;}
+    .countbar{grid-template-columns:1fr 104px 50px 50px; gap:6px;}   /* keep the spinner aligned with the min column on phones */
     .svrow .segbtn{width:28px; height:26px; font-size:18px;}
     /* toolbar: a <select> sizes to its longest option (Listings ~330px) and would overflow a phone.
        Let the url input + Appraise go full-width and the two selects share a shrinkable row. */
@@ -1405,7 +1412,7 @@
 
 <script src="/config.js"></script>
 <script src="/assets/sample.js?v=20260729c"></script>
-<script src="/assets/core.js?v=20260729c"></script>
+<script src="/assets/core.js?v=20260729d"></script>
 <script>
 "use strict";
 const $=s=>document.querySelector(s), E=bpc.esc;
@@ -2327,8 +2334,11 @@ function renderSurveyBody(){
   h+=`</div>`;
   if(nice>0){
     const auto = PKM.countMin==null;
-    const n = auto ? nice : Math.max(1,Math.min(PKM.countMin,nice));
-    h+=`<div class="countbar" title="How many of the nice-to-have mods a match must have. Default = all of them (strictest); lower it to loosen.">Nice-to-have: match at least <input class="countmin" type="number" min="1" max="${nice}" value="${n}" data-auto="${auto?1:0}" data-def="${n}"> of ${nice}</div>`;
+    const n = auto ? Math.max(1,nice-1) : Math.max(1,Math.min(PKM.countMin,nice));   // D-0034: default = all-but-one
+    h+=`<div class="countbar" title="How many of the nice-to-have mods a match must have. Default = all but one; raise it for a stricter match, lower it to loosen.">`+
+       `<span class="cb-lab">Nice-to-have: match at least</span>`+
+       `<input class="countmin" type="number" min="1" max="${nice}" value="${n}" data-auto="${auto?1:0}" data-def="${n}">`+
+       `<span class="cb-of">of ${nice}</span></div>`;
   }
   return h;
 }

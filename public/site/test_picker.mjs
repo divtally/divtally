@@ -246,13 +246,13 @@ console.log("· D-0016 item 3 — tier assignment -> groups (required=AND, nice=
   eq(picks.groups.length, 2, "one AND + one count group");
   eq(picks.groups[0].type, "and", "group 0 = AND (required)");
   eq(picks.groups[1].type, "count", "group 1 = count (nice-to-have)");
-  eq(picks.groups[1].min, 2, "count default N = the nice count (all of them; strictest)");
+  eq(picks.groups[1].min, 1, "count default N = #nice − 1 = all-but-one (D-0034; 2 nice -> 1)");
   const q = bpc.buildRareQuery(TRARE, TORIG, picks);
   ok(q.stats.length === 2, "built query has two stat groups");
   const andG = q.stats.find(g => g.type === "and"), cG = q.stats.find(g => g.type === "count");
   eq(andG.filters.map(f => f.id).sort(), ["explicit.stat_life"], "AND group holds only the required affix");
   eq(cG.filters.map(f => f.id).sort(), ["explicit.stat_cast", "explicit.stat_firedmg"], "count group holds the nice affixes");
-  eq(cG.value, { min: 2 }, "count group carries group-level value.min = 2");
+  eq(cG.value, { min: 1 }, "count group carries group-level value.min = 1 (2 nice − 1, D-0034)");
 }
 
 console.log("· D-0016 item 3 — count 'match at least N' spinner loosens/clamps");
@@ -265,6 +265,27 @@ console.log("· D-0016 item 3 — count 'match at least N' spinner loosens/clamp
   eq(bpc.tierGroups(TRARE, hi).groups[1].min, 2, "countMin above #nice clamps to #nice");
   const lo = bpc.rareDefaultPicks(TRARE); lo.countMin = 0;       // below 1
   eq(bpc.tierGroups(TRARE, lo).groups[1].min, 1, "countMin below 1 clamps to 1 (never a 0-of-N no-op)");
+}
+
+console.log("· D-0034 — nice-to-have count default = all-but-one (#nice − 1)");
+{
+  const nrow = (id, val, pr) => ({ kind:"stat", text:id, stat_id:"explicit.stat_"+id, value:val,
+    default_min:val, default_max:null, searchable:true, resist:false, negated:false, priority:pr });
+  // 1 required + 3 searchable nice-to-have -> default 'match at least' = 2 (3 − 1), distinct from
+  // the min-1 floor, so it actually proves the N−1 rule (not just the clamp).
+  const R3 = { scopes: TRARE.scopes, pseudo: [],
+    affixes: [ nrow("life",45,"required"), nrow("fire",30,"nice"), nrow("cast",12,"nice"), nrow("cold",25,"nice") ] };
+  const p3 = bpc.tierGroups(R3, bpc.rareDefaultPicks(R3));
+  const c3 = p3.groups.find(g => g.type === "count");
+  eq(c3.min, 2, "3 nice-to-have mods -> default match-at-least = 2 (3 − 1)");
+  eq(p3.countMin, 2, "echoed countMin reflects the all-but-one default");
+  ok(!!p3.groups.find(g => g.type === "and"), "required AND-group still present (D-0015 required tier untouched)");
+  const strict = bpc.rareDefaultPicks(R3); strict.countMin = 3;  // user can raise it back to all
+  eq(bpc.tierGroups(R3, strict).groups.find(g => g.type === "count").min, 3, "user can raise it back to all (3 of 3)");
+  // a single nice-to-have mod floors at 1 (max(1, 1 − 1)) — never a 0-of-1 no-op
+  const R1 = { scopes: TRARE.scopes, pseudo: [], affixes: [ nrow("life",45,"required"), nrow("fire",30,"nice") ] };
+  eq(bpc.tierGroups(R1, bpc.rareDefaultPicks(R1)).groups.find(g => g.type === "count").min, 1,
+     "a single nice-to-have mod floors at 1 (never 0-of-1)");
 }
 
 console.log("· D-0016 item 3 — a NOT-NEEDED affix is dropped (that IS a user action)");
