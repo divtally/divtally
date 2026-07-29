@@ -66,21 +66,22 @@
     box-shadow:inset 0 0 0 2px rgba(0,0,0,.55), 0 0 12px rgba(200,170,110,.25);
     display:grid;place-items:center; font-family:var(--display); color:#1a140d; font-size:30px; font-weight:700;
   }
-  .name-block{min-width:0;}
+  .name-block{flex:1 1 0; min-width:0;}   /* grow from a 0 basis: the scan line never forces the total block to wrap */
   .char-name{font-family:var(--display); font-size:35px; letter-spacing:.06em; color:var(--bz-hi); line-height:1.05;
     text-shadow:0 1px 0 #000, 0 0 18px rgba(200,170,110,.18);}
   .char-name .name-link{color:inherit; text-decoration:none; cursor:pointer; transition:color .12s, text-shadow .12s;}
   .char-name .name-link:hover{color:#f3e2b8; text-shadow:0 1px 0 #000, 0 0 16px rgba(200,170,110,.55); text-decoration:underline; text-underline-offset:3px; text-decoration-thickness:1px;}
   .char-sub{font-size:20px; color:var(--mut); letter-spacing:.03em;}
   /* D-0023: live search-status readout (shown during a scan) */
-  .scanline{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-top:7px;
+  /* one stable line: item names ellipsize (least important); progress + eta + bar never shrink or clip */
+  .scanline{display:flex; align-items:center; gap:14px; flex-wrap:nowrap; min-width:0; overflow:hidden; margin-top:7px;
     font-family:var(--mono); font-size:14px; color:var(--mut); letter-spacing:.02em;}
-  .scanline .sl-now{color:var(--bz-hi);}
+  .scanline .sl-now{color:var(--bz-hi); flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .scanline .sl-now .sl-spark{color:var(--bz3);}
-  .scanline .sl-next{color:var(--parch);}
+  .scanline .sl-next{color:var(--parch); flex:0 2 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .scanline .sl-next:empty{display:none;}
-  .scanline .sl-prog{font-variant-numeric:tabular-nums;} .scanline .sl-prog b{color:var(--bz-hi);}
-  .scanline .sl-eta{color:var(--bz3); font-variant-numeric:tabular-nums;}
+  .scanline .sl-prog{flex:0 0 auto; white-space:nowrap; font-variant-numeric:tabular-nums;} .scanline .sl-prog b{color:var(--bz-hi);}
+  .scanline .sl-eta{flex:0 0 auto; white-space:nowrap; color:var(--bz3); font-variant-numeric:tabular-nums;}
   .scanline .sl-eta:empty{display:none;}
   .scanline .sl-bar{flex:0 0 120px; height:4px; border-radius:2px; background:var(--inner);
     box-shadow:inset 0 0 0 1px rgba(0,0,0,.6);}
@@ -93,7 +94,6 @@
   .stone-btn.pob-btn .pob-ico{flex:0 0 auto; opacity:.85;}
   .stone-btn.pob-btn.copied{color:#0c1f0d; background:linear-gradient(180deg,#5fbf63,#2f7d33); border-color:#7fe084;}
   .stone-btn.pob-btn.copied .pob-ico{opacity:1;}
-  .banner-spacer{flex:1 1 30px;}
   .rate-line{
     font-family:var(--mono); font-size:18px; color:var(--parch); white-space:nowrap;
     display:flex; align-items:center; gap:6px; padding:6px 12px;
@@ -1197,7 +1197,6 @@
           <span class="sl-bar"><span class="sl-fill" id="slFill"></span></span>
         </div>
       </div>
-      <div class="banner-spacer"></div>
       <div class="banner-right">
         <div class="bantot" id="bantot" hidden>
           <div class="bt-seg" id="btSeg" role="group" aria-label="price tier">
