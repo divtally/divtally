@@ -276,6 +276,32 @@ def phase_a():
         check("clusterjewel: default query grant filter is presence-only (no min)",
               _cf is not None and "value" not in _cf, str(_cf))
 
+    # ---- Watcher's Eye: generic max Life/Mana/ES default to NOT-NEEDED (registry default_off) ----
+    # Owner 2026-07-29: only the "while affected by <Aura>" combo drives Watcher's Eye price; the
+    # generic max Life/Mana/ES base roll defaults to not-needed (priority "exclude") yet stays
+    # searchable/selectable. The client maps priority "exclude" -> the not-needed tier.
+    _we = _Item(name="Watcher's Eye", base_type="Prismatic Jewel", type_line="Prismatic Jewel",
+                frame_type=3, rarity="Unique", category="unique", group="jewel", slot="Jewel",
+                explicit_mods=["6% increased maximum Energy Shield",
+                               "5% increased maximum Life",
+                               "6% increased maximum Mana",
+                               "+7% Chance to Block Attack Damage while affected by Determination",
+                               "51% increased Cold Damage while affected by Hatred"],
+                mod_src=["explicit"] * 5, raw={"inventoryId": "Jewel"})
+    _weopts = _p.affix_options(_we)
+    def _wefind(txt):
+        return next((a for a in _weopts["affixes"] if txt in (a.get("text") or "")), None)
+    for _t in ("increased maximum Energy Shield", "increased maximum Life", "increased maximum Mana"):
+        _a = _wefind(_t)
+        check(f"watcherseye: '{_t}' present", _a is not None)
+        if _a:
+            check(f"watcherseye: '{_t}' default-off (priority=exclude)",
+                  _a.get("priority") == "exclude", str(_a.get("priority")))
+            check(f"watcherseye: '{_t}' still searchable (user can re-select)", _a.get("searchable") is True)
+    _aura = _wefind("while affected by Hatred")
+    check("watcherseye: aura mod is NOT default-off",
+          _aura is None or _aura.get("priority") != "exclude", str(_aura and _aura.get("priority")))
+
     econ = poeninja.PoeNinjaEconomy("TestLeague")
     econ._uniques = {
         "mageblood": [{"name": "Mageblood", "baseType": "Heavy Belt", "variant": "5 Flasks",

@@ -383,6 +383,9 @@ def build_variant(item, entry: dict, mapper) -> VariantResult:
         locked_by_idx=locked_by_idx, filters=filters, owned_count=owned_count,
         ninja_rule=_rule, cap=(entry.get("confidence_policy") or {}).get("cap"),
         defining_rule=rule, name=entry.get("name", ""),
+        # registry `default_off`: substrings of non-defining mods the picker should default to
+        # not-needed (still searchable/selectable) -- e.g. Watcher's Eye generic max Life/Mana/ES.
+        default_off=[str(p).lower() for p in (entry.get("default_off") or [])],
     )
 
 

@@ -1276,6 +1276,12 @@
           }
         }
       ],
+      "default_off": [
+        "increased maximum Life",
+        "increased maximum Mana",
+        "increased maximum Energy Shield"
+      ],
+      "_default_off_note": "owner 2026-07-29: the generic max Life/Mana/ES base roll is not price-driving; the picker defaults these to not-needed (still user-selectable). Only the 'while affected by <Aura>' defining combo drives price.",
       "ninja_variant_rule": {
         "strategy": "floor-only",
         "axis": "floor",

@@ -450,5 +450,27 @@ console.log("· cluster-jewel resistance grant — de-folded, presence-only (Bli
   ok(statIds(q).includes("explicit.stat_2709692542"), "the individual cold-res grant filter is present (matches the market listings)");
 }
 
+console.log("· owner default_off (Watcher's Eye max Life/Mana/ES) — off by default, still selectable");
+{
+  // priority "exclude" = registry default_off: the picker defaults it to not-needed (unticked) but
+  // keeps it searchable, so the user can opt it back in. The price-defining aura mod stays required.
+  const WE = {
+    affixes: [
+      { kind: "stat", text: "5% increased maximum Life", stat_id: "explicit.stat_maxlife", value: 5, default_min: 5, default_max: null, searchable: true, resist: false, negated: false, priority: "exclude" },
+      { kind: "stat", text: "51% increased Cold Damage while affected by Hatred", stat_id: "explicit.stat_auracold", value: 51, default_min: 51, default_max: null, searchable: true, resist: false, negated: false, priority: "required", defining: true },
+    ],
+    pseudo: [],
+  };
+  const oq = { status: { option: "online" }, type: "Prismatic Jewel" };
+  const dp = bpc.rareDefaultPicks(WE);
+  eq(dp.affix[0].tier, "notneeded", "default_off mod defaults to the not-needed tier");
+  ok(dp.affix[0].ticked === false, "default_off mod defaults UNticked (off by default)");
+  const q = bpc.buildRareQuery(WE, oq, dp);
+  ok(!filterFor(q, "explicit.stat_maxlife"), "default query omits the default_off (max Life) mod");
+  ok(filterFor(q, "explicit.stat_auracold"), "the price-defining aura mod is still searched");
+  const p2 = bpc.rareDefaultPicks(WE); p2.affix[0].ticked = true;   // user opts it back in
+  ok(filterFor(bpc.buildRareQuery(WE, oq, p2), "explicit.stat_maxlife"), "re-selecting the mod includes it (still user-selectable)");
+}
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

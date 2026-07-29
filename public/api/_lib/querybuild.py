@@ -446,6 +446,7 @@ class PublicPricer:
         # so the picker highlights them instead of blanket-skipping every unique mod.
         var = self._variant_for(item) if is_unique else None
         locked = (var.get("locked_by_idx") if var else None) or {}
+        var_off = (var.get("default_off") if var else None) or []   # registry default_off substrings (lowercased)
         affixes = []
         for i, line in enumerate(item.explicit_mods):
             is_def = i in locked
@@ -492,6 +493,12 @@ class PublicPricer:
                 # picker prefills min=the build's own roll, and a higher-rolled item (e.g. +5% cold
                 # vs the +2% market floor) would exclude every cheaper listing -> 0 matches.
                 row["default_min"] = row["default_max"] = None
+            # registry `default_off` (e.g. Watcher's Eye generic max Life/Mana/ES): a non-defining
+            # searchable base roll that is NOT price-driving -> default the picker tier to not-needed.
+            # It stays searchable + shown, so the user can opt it back in -- an owner-curated default,
+            # not a silent auto-exclude of a user's own choice (D-0015 still holds for the USER).
+            if not is_def and ok and var_off and any(p in label.lower() for p in var_off):
+                row["priority"] = "exclude"
             if is_def:
                 self._apply_defining(row, locked[i])
             affixes.append(row)

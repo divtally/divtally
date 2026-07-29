@@ -1157,6 +1157,7 @@
   function affixDefaultTicked(a) {
     if (!a) return false;
     if (a.kind === "equip") return a.key != null;
+    if (a && a.priority === "exclude") return false;   // owner default_off: off by default (still selectable)
     return !!(a.searchable && a.stat_id);
   }
   // D-0016 item 3 — map the API's affix `priority` (contract §3: required·nice·notimp·skip) onto
@@ -1172,6 +1173,9 @@
     var pr = a && a.priority;
     if (pr === "required") return "required";
     if (pr === "nice" || pr === "notimp") return "nice";
+    // `exclude` = owner-curated default_off (registry `default_off`, e.g. Watcher's Eye generic max
+    // Life/Mana/ES): default to NOT-NEEDED but still searchable + shown, so the user can opt it back in.
+    if (pr === "exclude") return "notneeded";
     if (pr === "skip") return (a && a.stat_id) ? "nice" : "notneeded";
     return "required";
   }
