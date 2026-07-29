@@ -205,6 +205,32 @@ is a technical transparency disclosure, not marketing; strip on owner request. P
 identity: repo-local user = DivTally <divtally@gmail.com>, full history rewritten to it
 pre-publish (personal email never ships in public metadata).
 
+## D-0026 - Clarify the 0-listings scan message (owner-noticed, 2026-07-29)
+The extension nobuyout path showed "listings exist but none had a buyout price" + chip "no buyout
+among 0 listings" even when the search matched ZERO listings (owner read the debug "search 200" as
+"200 found" and was confused). `search 200` is the HTTP STATUS, not a count. Now total==0 ->
+"no listings matched this search" / chip "no listings matched"; total>0 keeps the buyout wording
+(core.js ~939 + index.html chipHTML ~2499). Asset `?v=` 20260729a->b (core.js changed; landing
+re-verified clean render). Harnesses 131/110/27/55 green.
+
+## D-0025 - Cluster-jewel 0-result pricing: de-fold "also grant" resistances (owner "Blight Joy", 2026-07-29)
+Bug: a rare Large Cluster Jewel ("Blight Joy") priced as 0 listings while the same item's manual
+open-search returned 2 @ 4 div. Root cause: `_is_res_affix` (querybuild.py) text-matched the cluster
+suffix "Added Small Passive Skills also grant: +N% to Cold Resistance" (explicit.stat_2709692542) as a
+resistance, so the parser folded it into a synthesised `pseudo.pseudo_total_elemental_resistance >= N`
+filter. GGG's pseudo totals sum only DIRECT character resistances - cluster per-passive GRANTS never
+feed them - so the client picker query matched 0 cluster jewels, always. (Autoscan/backend query was
+already correct - it never folds and searches presence-only - so the 0 appeared via the PICKER's
+folded re-search, which the owner used.) Adversarially verified via a 4-lens workflow (query-path,
+fold-correctness, min-sufficiency, fix-safety + enumeration of all 26 "also grant"+resist stats = all
+cluster/radius/graft, ZERO gear). FIX (querybuild.py, backend-only; client reads the payload `resist`
+flag, no core.js change): (1) `_is_res_affix` returns False for "also grant" -> not folded, stays an
+individual searchable stat; (2) affix build nulls default_min/max on cluster "also grant" magnitude
+mods -> searched by PRESENCE not the build's own roll, so a higher-rolled item (+5% cold) no longer
+excludes cheaper listings (+2%) - mirrors the backend default query. Regression locks: _verify.py +10
+(de-fold, no-pseudo, presence-only default, gear-resistance control still folds), test_picker.mjs +3
+(client emits bare {id}, no pseudo). Python/API-only deploy (vercel); no `?v=` bump. All harnesses green.
+
 ## D-0024 - "Forged Metal" design shipped to production (owner-approved, 2026-07-28)
 Owner picked the Forged Metal component treatment on the CURRENT layout (kept paper-doll grid +
 item images + all functionality; changed: metal-plate panels, brass-key buttons that press,
