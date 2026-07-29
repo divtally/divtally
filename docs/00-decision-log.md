@@ -205,6 +205,29 @@ is a technical transparency disclosure, not marketing; strip on owner request. P
 identity: repo-local user = DivTally <divtally@gmail.com>, full history rewritten to it
 pre-publish (personal email never ships in public metadata).
 
+## D-0028 - Watcher's Eye: generic max Life/Mana/ES default to not-needed (owner, 2026-07-29)
+Owner: for Watcher's Eye, "we don't care about the life mana energy shield mods" - exclude them from
+the search by default, still allow user selection. Only the "while affected by <Aura>" defining combo
+drives Watcher's Eye price; the generic "X% increased maximum Life/Mana/Energy Shield" base roll is
+not price-driving (the registry entry already noted exactly this). Registry-driven, extensible:
+variant_uniques.json Watcher's Eye entry gains a `default_off` substring list -> VariantResult.default_off
+-> querybuild sets priority "exclude" on matching NON-defining searchable mods -> client _siteTierOf
+maps "exclude" -> not-needed tier + affixDefaultTicked returns false (off by default). The mod stays
+SEARCHABLE + SHOWN, so the user can opt it back in - an owner-curated default, NOT a silent auto-exclude
+of a user's own choice (D-0015 still holds for the USER). core.js changed -> ?v= 20260729b->c. Tests:
+_verify.py +10 (L/M/ES -> priority exclude, still searchable; aura mod NOT off), test_picker.mjs +5
+(exclude -> notneeded/unticked, query omits it, re-select includes it). API+site deploy.
+
+## D-0027 - Banner reflow: scan line no longer pushes the total block to a new line (owner, 2026-07-29)
+Owner screenshot: as the D-0023 scan-status line changed length (long with "next: <item>", short
+without), the total/controls block jumped from top-right to a stacked column BELOW the char header.
+Cause: `.name-block` had flex-basis auto (= its max-content), so a long scan line made the block wide
+enough that the right block wrapped to the next flex line. Fix (index.html inline CSS + one markup div,
+NO core.js -> no ?v= bump): `.name-block{flex:1 1 0}` (grow from 0 basis -> never forces a wrap);
+scan line flex-nowrap + overflow-hidden with the item names ellipsizing (flex 0 1 / 0 2) while progress,
+eta and the bar never shrink; removed the redundant `.banner-spacer`. Headless-verified at 1266/1024/760px:
+total block stays top-right, scan line stays one line, progress bar not clipped.
+
 ## D-0026 - Clarify the 0-listings scan message (owner-noticed, 2026-07-29)
 The extension nobuyout path showed "listings exist but none had a buyout price" + chip "no buyout
 among 0 listings" even when the search matched ZERO listings (owner read the debug "search 200" as
