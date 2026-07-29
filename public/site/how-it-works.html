@@ -50,7 +50,7 @@
   .ep{font-family:var(--mono); font-size:13px; color:var(--bz-hi); overflow-wrap:break-word; word-break:normal;}
   @media (max-width:640px){
     /* narrow: URLs shatter char-by-char under overflow-wrap:anywhere -> shrink + let them scroll cleanly */
-    .ep{font-size:11px; white-space:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch;}
+    .ep{font-size:11px; overflow-wrap:anywhere;}   /* wrap the full URL (verifiable) rather than clip it */
     code{overflow-wrap:break-word; word-break:break-word;}
     table{display:block; overflow-x:auto;}
   }
@@ -101,7 +101,7 @@
   <p>Two kinds of items, two different sources:</p>
   <ul>
     <li><b>Gems, currency, and named uniques</b> are priced from the <b>poe.ninja economy</b> (a public, cache-friendly dataset). These show up as real numbers the moment a build loads.</li>
-    <li><b>Rares</b> (and magic items, and uniques poe.ninja doesn't list) can't be priced that way &mdash; every rare is unique. For each one you get a ready-made trade search and price it yourself, one of four ways:</li>
+    <li><b>Rares</b> (plus magic items and any uniques poe.ninja doesn't list) can't be priced that way &mdash; every rare is unique. For each one you get a ready-made trade search and price it yourself, one of four ways:</li>
   </ul>
   <ul class="src-list">
     <li><span class="rung">Shared</span><div><b>The community cache.</b> If another visitor (or a volunteer's daily seeding run) already priced this exact item recently, its price is filled in for you automatically. Short-lived (24&nbsp;hours) and always exact-match. You can turn this off below.</div></li>
@@ -115,7 +115,7 @@
   </div>
 
   <h2>The exact endpoints</h2>
-  <p>These are every server DivTally contacts. You can verify them in your browser's Network tab.</p>
+  <p>Here is every server DivTally contacts &mdash; the two DivTally-owned hosts in the table are our API (on Vercel) and our shared price cache (a Cloudflare Worker). You can verify them all in your browser's Network tab.</p>
   <div class="panel">
     <table>
       <thead><tr><th>When</th><th>Request</th><th>Whose server</th></tr></thead>
