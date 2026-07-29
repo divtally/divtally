@@ -936,10 +936,12 @@
             return;
           }
           if (res.amount == null) {
+            var _tot = res.total || 0;   // 0 = nothing matched the search; >0 = matched but no buyout price
             foldFail(key, { confidence: "none", method: "extension", source: "trade",
-              note: "listings exist but none had a buyout price" + debugSuffix(dbg),
-              total_found: res.total || 0, debug: dbg },
-              "nobuyout", { total: res.total || 0, fetched: dbg ? dbg.fetched : null, nulls: dbg ? dbg.nulls : null });
+              note: (_tot > 0 ? "listings exist but none had a buyout price"
+                              : "no listings matched this search") + debugSuffix(dbg),
+              total_found: _tot, debug: dbg },
+              "nobuyout", { total: _tot, fetched: dbg ? dbg.fetched : null, nulls: dbg ? dbg.nulls : null });
             return;
           }
           // D-0016 item 4: build real {min,median,high} from ALL fetched listings (ext v1.2.0

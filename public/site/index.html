@@ -10,7 +10,7 @@
 <title>DivTally · Path of Exile build price checker</title>
 <!-- Fonts are self-hosted (assets/fonts/) so the browser contacts NO third party for them
      (B-001 trust promise / how-it-works "every server this site contacts"). -->
-<link rel="stylesheet" href="/assets/fonts.css?v=20260729a">
+<link rel="stylesheet" href="/assets/fonts.css?v=20260729b">
 <style>
   :root{
     --base:#100c08; --panel:#1a140d; --panel2:#221a10; --inner:#0d0a06;
@@ -1373,8 +1373,8 @@
 <div id="pickwrap"><div class="pick" id="pick"></div></div>
 
 <script src="/config.js"></script>
-<script src="/assets/sample.js?v=20260729a"></script>
-<script src="/assets/core.js?v=20260729a"></script>
+<script src="/assets/sample.js?v=20260729b"></script>
+<script src="/assets/core.js?v=20260729b"></script>
 <script>
 "use strict";
 const $=s=>document.querySelector(s), E=bpc.esc;
@@ -2497,6 +2497,7 @@ function chipHTML(st){
                       return `<span class="mr-scanchip wait">rate limit${sec!=null?(' — '+sec+'s'):''}</span>`; }
     case 'done':      return `<span class="mr-scanchip done">✓ priced</span>`;
     case 'nobuyout':{ const n=d.total!=null?d.total:0, dbg=nobuyoutDbg(d);
+                      if(n===0) return `<span class="mr-scanchip warn" title="${E(dbg||'no match')}">⚠ no listings matched${dbg?(' · '+E(dbg)):''}</span>`;
                       return `<span class="mr-scanchip warn" title="${E(dbg||'no buyout')}">⚠ no buyout among ${n} listing${n===1?'':'s'}${dbg?(' · '+E(dbg)):''}</span>`; }
     case 'error':{    const hs=d.status!=null?(' (HTTP '+d.status+')'):''; const msg=(d.message||'error')+hs;
                       return `<span class="mr-scanchip err" title="${E(msg)}">✕ ${E(truncate(msg,64))}</span>`; }
