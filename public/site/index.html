@@ -72,6 +72,21 @@
   .char-name .name-link{color:inherit; text-decoration:none; cursor:pointer; transition:color .12s, text-shadow .12s;}
   .char-name .name-link:hover{color:#f3e2b8; text-shadow:0 1px 0 #000, 0 0 16px rgba(200,170,110,.55); text-decoration:underline; text-underline-offset:3px; text-decoration-thickness:1px;}
   .char-sub{font-size:20px; color:var(--mut); letter-spacing:.03em;}
+  /* D-0023: live search-status readout (shown during a scan) */
+  .scanline{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-top:7px;
+    font-family:var(--mono); font-size:14px; color:var(--mut); letter-spacing:.02em;}
+  .scanline .sl-now{color:var(--bz-hi);}
+  .scanline .sl-now .sl-spark{color:var(--bz3);}
+  .scanline .sl-next{color:var(--parch);}
+  .scanline .sl-next:empty{display:none;}
+  .scanline .sl-prog{font-variant-numeric:tabular-nums;} .scanline .sl-prog b{color:var(--bz-hi);}
+  .scanline .sl-eta{color:var(--bz3); font-variant-numeric:tabular-nums;}
+  .scanline .sl-eta:empty{display:none;}
+  .scanline .sl-bar{flex:0 0 120px; height:4px; border-radius:2px; background:var(--inner);
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.6);}
+  .scanline .sl-fill{display:block; height:100%; border-radius:2px; width:0;
+    background:linear-gradient(90deg,var(--bz-deep,#8a6f3e),var(--bz3)); box-shadow:0 0 8px rgba(200,170,110,.5);
+    transition:width .4s ease;}
   .char-sub b{color:var(--fg); font-weight:600;}
   /* PoB import button (copies the code to clipboard; lives in the banner) */
   .stone-btn.pob-btn{display:inline-flex; align-items:center; gap:6px; padding:5px 12px; font-size:18px; font-family:var(--serif); text-transform:lowercase; letter-spacing:.02em;}
@@ -148,6 +163,10 @@
   .panel-head .grp-toggle:hover{color:var(--fg); border-color:var(--bz2);}
   /* D-0021: gold-when-on / black-when-off toggle buttons (weapon swap, magic flasks, stash sections) */
   .panel-head .ph-btns{display:flex; align-items:center; gap:7px; flex-wrap:wrap;}
+  /* Equipment header: title + toggle buttons on ONE row, the cost-legend on the row below */
+  .panel-head.eq-head{flex-direction:column; align-items:stretch; gap:7px;}
+  .eq-head .eh-row{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;}
+  .eq-head .legend{margin:0;}
   .hbtn{font-family:var(--serif); text-transform:none; letter-spacing:0; font-size:18px; cursor:pointer;
     border:1px solid var(--bz1); border-radius:4px; padding:2px 11px; background:var(--inner); color:var(--mut);
     transition:background .12s, color .12s, border-color .12s;}
@@ -1170,6 +1189,13 @@
         <div class="char-name" id="bName">—</div>
         <div class="char-sub" id="bSub"></div>
         <div class="saved-note" id="savedNote"></div>
+        <div class="scanline" id="scanLine" hidden aria-live="polite">
+          <span class="sl-now"><span class="sl-spark">&#9889;</span> <span id="slNow">—</span></span>
+          <span class="sl-next" id="slNext"></span>
+          <span class="sl-prog"><b id="slDone">0</b>/<span id="slTotal">0</span> priced · <span id="slLeft">0</span> left</span>
+          <span class="sl-eta" id="slEta"></span>
+          <span class="sl-bar"><span class="sl-fill" id="slFill"></span></span>
+        </div>
       </div>
       <div class="banner-spacer"></div>
       <div class="banner-right">
@@ -1215,18 +1241,19 @@
     <div class="doll-wrap">
       <div class="frame">
         <div class="inner">
-          <div class="panel-head">
-            <span class="ph-l"><span>Equipment</span>
-              <span class="legend" id="legend">
-                <span class="lg-item"><span class="lg-cost notfound">not found</span> = no listings</span>
-                <span class="lg-item"><span class="lg-cost fewresults">#</span> = &lt;5 listings</span>
-              </span></span>
-            <span class="ph-btns">
-              <button type="button" class="hbtn" id="swapInc" title="Weapon-swap items (second weapon set) are excluded by default — most builds don't use them. Gold = included in scans, pricing and totals.">weapon swap</button>
-              <button type="button" class="hbtn" id="magicFlaskInc" title="Non-unique (magic) flasks are excluded by default — they're cheap. Gold = included in scans, pricing and totals.">magic flasks</button>
-              <span class="grp-toggle" data-grp="equipment">toggle all</span>
+          <div class="panel-head eq-head">
+            <div class="eh-row">
+              <span>Equipment</span>
+              <span class="ph-btns">
+                <button type="button" class="hbtn" id="swapInc" title="Weapon-swap items (second weapon set) are excluded by default — most builds don't use them. Gold = included in scans, pricing and totals.">weapon swap</button>
+                <button type="button" class="hbtn" id="magicFlaskInc" title="Non-unique (magic) flasks are excluded by default — they're cheap. Gold = included in scans, pricing and totals.">magic flasks</button>
+                <span class="grp-toggle" data-grp="equipment">toggle all</span>
+              </span>
+            </div>
+            <span class="legend" id="legend">
+              <span class="lg-item"><span class="lg-cost notfound">not found</span> = no listings</span>
+              <span class="lg-item"><span class="lg-cost fewresults">#</span> = &lt;5 listings</span>
             </span>
-          </div>
           <div class="doll" id="doll"></div>
         </div>
       </div>
@@ -1579,7 +1606,7 @@ function buildBoard(){
     const g=groups.find(x=>x.group===gk); if(!g) return;
     const sec=document.createElement('div'); sec.className='stash-section';
     const h=document.createElement('h4');
-    h.innerHTML=`${E(title)} <span class="grp-toggle" data-grp="${gk}">toggle</span>`;
+    h.innerHTML=E(title);   /* per-section toggle removed — the stash-header flasks/jewels/gems buttons do this */
     sec.appendChild(h);
     if(gk==='gem'){                       // gems render as an active-skill list, not slots
       const wrap=document.createElement('div'); wrap.className='skills'; wrap.id='skills';
@@ -1593,7 +1620,7 @@ function buildBoard(){
   });
   if(extraFlasks.length){                 // overflow flasks that didn't fit the doll
     const sec=document.createElement('div'); sec.className='stash-section';
-    const h=document.createElement('h4'); h.innerHTML='Flasks <span class="grp-toggle" data-grp="flask">toggle</span>';
+    const h=document.createElement('h4'); h.innerHTML='Flasks';
     sec.appendChild(h);
     const grid=document.createElement('div'); grid.className='grid12';
     extraFlasks.forEach(it=>grid.appendChild(slotEl(it,'')));
@@ -2512,9 +2539,35 @@ function applyScanToBoard(snap){
     }
   });
 }
+/* D-0023: the live search-status readout in the banner (now searching · next · X/N · ETA). */
+function fmtDur(ms){
+  const s=Math.max(0,Math.round(ms/1000));
+  if(s<60) return `~${s}s`;
+  const m=Math.floor(s/60), r=s%60; return r?`~${m}m ${r}s`:`~${m}m`;
+}
+function renderScanStatus(snap){
+  const el=$('#scanLine'); if(!el) return;
+  if(!snap.active){ el.hidden=true; return; }
+  el.hidden=false;
+  const total=snap.total||0, done=snap.done||0, left=Math.max(0,total-done);
+  const curName=snap.current?(snap.names[snap.current]||snap.current):'';
+  // next in line = first unresolved item after the current one in send order
+  let next='';
+  const order=snap.order||[]; const ci=snap.current?order.indexOf(snap.current):-1;
+  for(let i=ci+1;i<order.length;i++){ const st=snap.status[order[i]]; if(st && !st.resolved){ next=snap.names[order[i]]||order[i]; break; } }
+  $('#slNow').textContent = curName ? truncate(curName,30) : (left?'preparing…':'done');
+  $('#slNext').textContent = next ? ('next: '+truncate(next,26)) : '';
+  $('#slDone').textContent = done; $('#slTotal').textContent = total; $('#slLeft').textContent = left;
+  // ETA = remaining × observed avg per priced item (elapsed/done); needs >=1 done
+  const eta=$('#slEta');
+  if(done>0 && left>0 && snap.totalMs>0){ eta.textContent = fmtDur(left*(snap.totalMs/done))+' left'; }
+  else { eta.textContent = left>0 ? 'estimating…' : ''; }
+  $('#slFill').style.width = (total?Math.round(done/total*100):0)+'%';
+}
 function renderScan(snap){
   snap = snap || bpc.scanStatus();
   renderAutoscanBar(snap);
+  renderScanStatus(snap);
   applyScanToRows(snap);
   applyScanToBoard(snap);
   // a 1s ticker keeps the rate-limit countdown + "N ahead" fresh while a scan runs
