@@ -379,6 +379,23 @@ def phase_a():
     check("corruption: non-corrupted unique search excludes corrupted (option=false)",
           _corrupt_opt(_p._unique_query(_uq_nc)) == "false", str(_corrupt_opt(_p._unique_query(_uq_nc))))
 
+    # ---- D-0038: the initial search uses ~90% of a roll (comparable-item floor); negatives untouched ----
+    check("searchfloor: 100 -> min 90", qb._affix_defaults(100, False) == (90, None), str(qb._affix_defaults(100, False)))
+    check("searchfloor: 40 -> min 36 (90%)", qb._affix_defaults(40, False) == (36, None), str(qb._affix_defaults(40, False)))
+    check("searchfloor: negated roll keeps MAX = raw value, no min", qb._affix_defaults(-30, True) == (None, -30), str(qb._affix_defaults(-30, True)))
+    check("searchfloor: negative value keeps MAX = raw value, no min", qb._affix_defaults(-25, False) == (None, -25), str(qb._affix_defaults(-25, False)))
+    check("searchfloor: None roll -> (None, None)", qb._affix_defaults(None, False) == (None, None), str(qb._affix_defaults(None, False)))
+    # end-to-end: the autoscan bounds a positive roll at ~90% (was presence-only)
+    _lr = _Item(name="", base_type="Coral Ring", type_line="Coral Ring", frame_type=2, rarity="Rare",
+                category="rare", group="equipment", slot="Ring",
+                explicit_mods=["+100 to maximum Life", "+40% to Fire Resistance"],
+                mod_src=["explicit", "explicit"], raw={"inventoryId": "Ring"}, corrupted=False)
+    _lf = [f for g in _p._rare_default_filters(_lr)[0] for f in g["filters"]]
+    check("searchfloor: autoscan bounds 100 Life at min 90",
+          any((f.get("value") or {}).get("min") == 90 for f in _lf), str(_lf))
+    check("searchfloor: every positive autoscan affix carries a min (no longer presence-only)",
+          bool(_lf) and all((f.get("value") or {}).get("min") is not None for f in _lf), str(_lf))
+
     econ = poeninja.PoeNinjaEconomy("TestLeague")
     econ._uniques = {
         "mageblood": [{"name": "Mageblood", "baseType": "Heavy Belt", "variant": "5 Flasks",

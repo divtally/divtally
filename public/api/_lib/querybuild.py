@@ -178,17 +178,28 @@ def res_contributions(mods: List[str]) -> dict:
             "elemental": fire_t + cold_t + light_t}
 
 
+def _search_floor(value):
+    """Owner: the initial search should look for ~90% of a roll, not the exact roll (a 100-Life item
+    should search min>=90 so comparable items match, not just >=100). 90% floored to a whole number
+    (inclusive). ONLY for positive rolls -- the caller leaves negative/negated rolls alone."""
+    try:
+        return int(value * 0.9)
+    except (TypeError, ValueError):
+        return value
+
+
 def _affix_defaults(value, negated: bool) -> Tuple[Optional[float], Optional[float]]:
     """The picker's prefilled (min, max) for one affix -- mirrors bpc/web.py affixRow():
-    a normal roll prefills MIN = the item's value; a negated ('reduced') roll carries a
-    NEGATIVE value on the opposite-polarity stat and prefills MAX instead (better = more
-    negative, so a min filter would be a near no-op). Returns (default_min, default_max),
-    at most one of which is set. The picker consumes these directly; the raw `value` (the
-    item's roll, signed) is still carried alongside."""
+    a normal roll prefills MIN = ~90% of the item's value (D-0038: a comparable-item floor, not the
+    exact roll); a negated ('reduced') roll carries a NEGATIVE value on the opposite-polarity stat
+    and prefills MAX = the raw value instead (better = more negative, so a min filter would be a
+    near no-op -- left UNTOUCHED so negatives don't break). Returns (default_min, default_max), at
+    most one of which is set. The picker consumes these directly; the raw `value` (the item's roll,
+    signed) is still carried alongside."""
     if value is None:
         return None, None
     neg = bool(negated) or (isinstance(value, (int, float)) and value < 0)
-    return (None, value) if neg else (value, None)
+    return (None, value) if neg else (_search_floor(value), None)
 
 
 def _res_fold_members(affixes: List[dict]) -> Tuple[List[dict], List[dict]]:
@@ -538,7 +549,7 @@ class PublicPricer:
             tot = round(c["elemental"])
             pseudo.append({"kind": "stat", "text": "+#% total Elemental Resistance",
                            "stat_id": _PSEUDO_ELEM_RES, "value": tot,
-                           "default_min": tot, "default_max": None,
+                           "default_min": _search_floor(tot), "default_max": None,  # D-0038: ~90% floor
                            "searchable": True, "resist": True, "negated": False,
                            "group": "pseudo", "folds": elem_members, "prefer": not is_unique,
                            "defining": False,
@@ -547,7 +558,7 @@ class PublicPricer:
             tot = round(c["chaos"])
             pseudo.append({"kind": "stat", "text": "+#% total to Chaos Resistance",
                            "stat_id": _PSEUDO_CHAOS_RES, "value": tot,
-                           "default_min": tot, "default_max": None,
+                           "default_min": _search_floor(tot), "default_max": None,  # D-0038: ~90% floor
                            "searchable": True, "resist": True, "negated": False,
                            "group": "pseudo", "folds": chaos_members, "prefer": not is_unique,
                            "defining": False,
@@ -619,7 +630,10 @@ class PublicPricer:
             if o.get("option") is not None:
                 f["value"] = {"option": o["option"]}   # F1: option stat -> {id:base, value:{option}}
             elif o.get("negated") and o.get("value") is not None:
-                f["value"] = {"max": int(o["value"])}
+                f["value"] = {"max": int(o["value"])}   # negated/reduced: bound the MAX (roll or better) — untouched
+            elif o.get("default_min") is not None:
+                f["value"] = {"min": int(o["default_min"])}   # D-0038: positive roll -> search at ~90% (the affix's floor).
+                #   default_min is None for presence-only affixes (option/"also grant" cluster grants) -> stays presence.
             return f
         stat_filters = [_statf(o) for o in stat_opts]
         equip_filters = {o["key"]: {"min": int(o["value"] * 0.85)} for o in equip_opts}

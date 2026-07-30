@@ -696,3 +696,20 @@ poe.ninja on exact name+level+quality+corruption; out of scope). Tests: _verify 
 test_picker +1 (re-search preserves corrupted=false). API changed + core.js changed -> ?v= bump.
 
 ## D-0035..0037 deploy - core.js changed (rowStatus + buildRareQuery misc_filters) -> ?v= 20260729d -> 20260729e.
+
+## D-0038 - The initial search uses ~90% of a roll, not the exact roll (owner, 2026-07-29)
+Owner: "when searching for items we need to initially search based on ~90% of a given value -- a
+100-Life item's min should be 90, not 100." Before, a positive stat affix searched by PRESENCE in the
+autoscan (any value -> a garbage low-roll floor) while the picker prefilled the EXACT roll (-> often
+0 matches); both extremes mis-price. Now `_affix_defaults` prefills default_min = int(value * 0.9) for
+a POSITIVE roll (a comparable-item floor), and `_statf` emits that as the autoscan's value.min (was
+presence-only). Pseudo resistance totals get the same 90% floor via `_search_floor`. NEGATED / negative
+rolls are UNTOUCHED (owner: "not sure how it works with negatives, don't break it") -- they keep
+default_max = the raw value (reduced/negative is bounded by MAX; a min would be a near no-op). Presence-
+only affixes (option stats, cluster "also grant" grants) have default_min=None and STAY presence.
+Defences keep their existing 85% floor (equip_filters, unchanged -- flagged to owner). Client needs no
+change: affixPrefill reads the backend default_min verbatim, so the picker prefill + re-search inherit
+90%. NOTE: this makes the autoscan value-aware, so an over-rolled multi-mod rare can now 0-match ->
+"not found" -> the D-0036 "try reducing affixes" flow + the D-0034 nice-to-have loosening handle it.
+Tests: _verify +7 (100->90, 40->36, negated/negative keep MAX, None-safe, autoscan bounds at 90%).
+API-only (querybuild.py) -> no core.js, no ?v= bump.
