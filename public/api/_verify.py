@@ -356,6 +356,29 @@ def phase_a():
     check("heisttrinket: no conversion mod -> curation is inert (nothing forced off)",
           all(o["priority"] != "exclude" for o in _tk2o), str([o["priority"] for o in _tk2o]))
 
+    # ---- corruption default: the search matches the build item's OWN corruption state (owner) ----
+    def _corrupt_opt(q):
+        return ((((q or {}).get("filters") or {}).get("misc_filters") or {}).get("filters", {})
+                .get("corrupted", {}).get("option"))
+    _rr_nc = _Item(name="", base_type="Coral Ring", type_line="Coral Ring", frame_type=2, rarity="Rare",
+                   category="rare", group="equipment", slot="Ring", explicit_mods=["+45 to maximum Life"],
+                   mod_src=["explicit"], raw={"inventoryId": "Ring"}, corrupted=False)
+    _rr_c = _Item(name="", base_type="Coral Ring", type_line="Coral Ring", frame_type=2, rarity="Rare",
+                  category="rare", group="equipment", slot="Ring", explicit_mods=["+45 to maximum Life"],
+                  mod_src=["explicit"], raw={"inventoryId": "Ring"}, corrupted=True)
+    check("corruption: non-corrupted rare search excludes corrupted (option=false)",
+          _corrupt_opt(_p._rare_query(_rr_nc, {"type": "Coral Ring"}, [], {})) == "false",
+          str(_corrupt_opt(_p._rare_query(_rr_nc, {"type": "Coral Ring"}, [], {}))))
+    check("corruption: corrupted rare search matches corrupted (option=true)",
+          _corrupt_opt(_p._rare_query(_rr_c, {"type": "Coral Ring"}, [], {})) == "true",
+          str(_corrupt_opt(_p._rare_query(_rr_c, {"type": "Coral Ring"}, [], {}))))
+    # the amulet from the owner's screenshot: a non-corrupted unique whose search returned corrupted comps
+    _uq_nc = _Item(name="Whispers of Infinity", base_type="Seaglass Amulet", type_line="Seaglass Amulet",
+                   frame_type=3, rarity="Unique", category="unique", group="equipment", slot="Amulet",
+                   explicit_mods=[], mod_src=[], raw={"inventoryId": "Amulet"}, corrupted=False)
+    check("corruption: non-corrupted unique search excludes corrupted (option=false)",
+          _corrupt_opt(_p._unique_query(_uq_nc)) == "false", str(_corrupt_opt(_p._unique_query(_uq_nc))))
+
     econ = poeninja.PoeNinjaEconomy("TestLeague")
     econ._uniques = {
         "mageblood": [{"name": "Mageblood", "baseType": "Heavy Belt", "variant": "5 Flasks",

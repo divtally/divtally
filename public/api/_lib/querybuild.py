@@ -579,6 +579,14 @@ class PublicPricer:
             })
         return {"affixes": affixes, "pseudo": pseudo}
 
+    def _corruption_misc(self, item: Item) -> dict:
+        """Default the search to the item's OWN corruption state (owner: "if an item is not
+        corrupted in the build, flag it not-corrupted by default on the initial search"). A
+        non-corrupted build item excludes corrupted listings -- their vaal implicit / corrupted
+        mods differ and form a separate, often pricier market that pollutes the estimate; a
+        corrupted build item matches corrupted listings. Returns a `misc_filters.filters` fragment."""
+        return {"corrupted": {"option": "true" if bool(getattr(item, "corrupted", False)) else "false"}}
+
     def _rare_query(self, item: Item, scope: dict, stat_groups: List[dict],
                     equip_filters: dict) -> dict:
         query = dict(scope)
@@ -588,8 +596,10 @@ class PublicPricer:
         if equip_filters:
             filt["armour_filters"] = {"filters": equip_filters}
         filt.update(self._links_filter(item))
-        if filt:
-            query["filters"] = filt
+        mf = dict(filt.get("misc_filters", {}).get("filters", {}))
+        mf.update(self._corruption_misc(item))
+        filt["misc_filters"] = {"filters": mf}
+        query["filters"] = filt
         return query
 
     def _rare_default_filters(self, item: Item) -> Tuple[List[dict], dict, int]:
@@ -660,9 +670,9 @@ class PublicPricer:
         query = {"status": self._status(), "name": _base_unique_name(item.name),
                  "type": item.base_type,
                  "stats": [{"type": "and", "filters": vfilters}]}
-        links = self._links_filter(item)
-        if links:
-            query["filters"] = dict(links)
+        filt = dict(self._links_filter(item))
+        filt["misc_filters"] = {"filters": self._corruption_misc(item)}   # match the copy's corruption state
+        query["filters"] = filt
         return query
 
     def _rare_query_default(self, item: Item) -> Optional[dict]:

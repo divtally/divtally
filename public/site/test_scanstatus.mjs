@@ -174,6 +174,7 @@ async function scenarioNew() {
   await boot(inst);
   ok(bpc.state.bridge.active === true, "bridge activates from pong");
   eq(bpc.manualRows().filter((r) => !r.priced).length, 4, "4 unpriced rares to scan");
+  eq(bpc.rowStatus(bpc.manualRows()[0]).kind, "unpriced", "a fresh unscanned rare = unpriced (before any scan)");
 
   await bpc.autoscan();
   await ticks(3);
@@ -220,6 +221,19 @@ async function scenarioNew() {
   // --- included totals reflect the two successes only ---
   ok(bpc.state.enabled["1"] && bpc.state.enabled["3"], "priced rows auto-included");
   ok(!bpc.state.enabled["2"] && !bpc.state.enabled["4"], "failed rows not included");
+
+  // --- per-row lifecycle status (drives the per-item status pill) ---
+  { const byK = {}; bpc.manualRows().forEach((r) => (byK[r.key] = r));
+    eq(bpc.rowStatus(byK["1"]).kind, "found",    "row 1 status = found (priced on the market)");
+    eq(bpc.rowStatus(byK["2"]).kind, "nobuyout", "row 2 status = nobuyout (listings exist, no buyout)");
+    eq(bpc.rowStatus(byK["3"]).kind, "found",    "row 3 status = found (priced after the wait)");
+    eq(bpc.rowStatus(byK["4"]).kind, "error",    "row 4 status = error (search errored)");
+    eq(bpc.rowStatus(byK["2"]).total, 8, "nobuyout status carries the listing count for the pill");
+    ok(bpc.rowStatus(byK["1"]).resolved && !bpc.rowStatus(byK["1"]).live, "a found row is resolved + not live");
+    // pasting a price on the errored row flips its status to 'priced' (you)
+    bpc.applyWhisper("4", "5 div");
+    eq(bpc.rowStatus(bpc.manualRows().find((r) => r.key === "4")).kind, "priced", "pasting a price -> status = priced (you)");
+  }
 }
 
 async function scenarioOld() {
@@ -322,6 +336,14 @@ async function scenarioVariantPlaceholder() {
   await ticks(3);
   eq(bpc.state.priced["13"].chaos.median, 300, "cache-priced variant unique keeps its 300c on a failed re-scan (not a ninja placeholder)");
   ok(bpc.state.enabled["13"], "cache-priced row stays included after a failed re-scan");
+
+  // --- per-row status: a 0-match resolves to "not found" (total 0), a real price to "found" ---
+  { const byK = {}; bpc.manualRows().forEach((r) => (byK[r.key] = r));
+    eq(bpc.rowStatus(byK["10"]).kind, "notfound", "Watcher's Eye 0-match -> status = not found (total 0)");
+    eq(bpc.rowStatus(byK["12"]).kind, "notfound", "genuine 0-match rare -> status = not found");
+    eq(bpc.rowStatus(byK["11"]).kind, "found",    "the exact-search hit -> status = found");
+    eq(bpc.rowStatus(byK["13"]).kind, "found",    "cache-priced row -> status = found even after a failed re-scan (source cache)");
+  }
 }
 
 // ---- a core.js instance wired to a controllable fetch + AbortController (R4-4 build timeout,

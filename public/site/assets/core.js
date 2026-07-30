@@ -847,6 +847,44 @@
     return { totalMs: totalMs, active: scan.active, total: order.length, done: done, current: current,
              order: order, names: Object.assign({}, scan.names), status: status };
   }
+  // ---- per-row lifecycle status (drives the UI's per-item status pill) -----------------
+  // Classify ONE manualRows() row by where it sits in the search lifecycle, reading the resolved
+  // price + the (persisted) scan-session stage so it is correct at rest, DURING a scan, and after.
+  // Returns { kind, resolved, live, ... }. LIVE in-progress stages (queued/scanning/searching/
+  // fetching/waiting) are reported as-is ONLY while a scan is active; at rest a row is one of the
+  // terminal/resting kinds. UI maps `kind` -> label + colour:
+  //   found    - priced from a live market search or the community cache (a real price)
+  //   priced   - priced by you (a pasted whisper / typed price)
+  //   notfound - the search ran but nothing matched (0 listings)
+  //   nobuyout - listings exist but none had a buyout price
+  //   error    - the search itself errored
+  //   queued|scanning|searching|fetching|waiting - live, mid-scan
+  //   unpriced - not priced yet and not part of a running scan (ready to scan / paste)
+  function rowStatus(r) {
+    r = r || {};
+    var k = String(r.key);
+    var s = scan.status[k] || null;
+    var stage = s ? s.stage : null;
+    var p = r.price || {};
+    // a live, unresolved stage wins while a scan is actually running
+    if (scan.active && stage && !SCAN_TERMINAL[stage])
+      return { kind: stage, resolved: false, live: true, ahead: (s && s.ahead) || 0, waitUntil: (s && s.waitUntil) || null, detail: (s && s.detail) || null };
+    // priced -> a real outcome (found on the market, or priced by you)
+    if (r.priced) return { kind: (p.source === "manual" ? "priced" : "found"), resolved: true, live: false, source: p.source || null };
+    // resolved as a failure. Read the PERSISTED price object first (source/total_found survive a
+    // later SUBSET re-scan that resets scan.status), falling back to the live scan stage. foldFail
+    // stamps source "trade" on every searched-but-unpriced row and a total_found on the no-match /
+    // no-buyout cases; only the search-error patch never records a count -> that distinguishes it.
+    var searched = p.source === "trade" || p.method === "extension" || stage === "error" || stage === "nobuyout";
+    if (searched) {
+      if (p.total_found == null) return { kind: "error", resolved: true, live: false, detail: (s && s.detail) || null };
+      var tot = Number(p.total_found);
+      return { kind: (tot > 0 ? "nobuyout" : "notfound"), resolved: true, live: false, total: tot };
+    }
+    // not scanned yet: queued while a scan is running over it, else just unpriced (ready)
+    if (scan.active && s) return { kind: "queued", resolved: false, live: true, ahead: (s && s.ahead) || 0 };
+    return { kind: "unpriced", resolved: false, live: false };
+  }
   function scanEmit() { emit("scanstatus", scanSnapshot()); }
   function scanBegin(rows) {
     scanReset(); scan.active = true; scan.startedAt = Date.now();
@@ -1295,6 +1333,7 @@
     });
     if (Object.keys(armour).length) filt.armour_filters = { filters: armour };
     if (oq.filters && oq.filters.socket_filters) filt.socket_filters = oq.filters.socket_filters;  // links verbatim
+    if (oq.filters && oq.filters.misc_filters) filt.misc_filters = oq.filters.misc_filters;         // corruption default etc. — verbatim from the backend query, never dropped on a picker re-search
     if (Object.keys(filt).length) q.filters = filt;
     return q;
   }
@@ -1495,7 +1534,7 @@
     setPurchased: setPurchased, isPurchased: isPurchased,
     // public pricing
     parseWhisper: parseWhisper, applyWhisper: applyWhisper, clearManual: clearManual, manualRows: manualRows,
-    autoscan: autoscan, priceViaExtension: priceViaExtension, scanStatus: scanSnapshot,
+    autoscan: autoscan, priceViaExtension: priceViaExtension, scanStatus: scanSnapshot, rowStatus: rowStatus,
     // per-rare affix picker (D-0015): pure query builder + the extension/URL price paths
     buildRareQuery: buildRareQuery, rareDefaultPicks: rareDefaultPicks, affixPrefill: affixPrefill,
     // D-0016: priority-tier -> groups (item 3), category<->base scope (item 2), rare distribution (item 4)

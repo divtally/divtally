@@ -647,3 +647,40 @@ the row min inputs, dLeft/dRight = 0 at desktop 900 + mobile 500) and a REAL-APP
 a demo cluster jewel: default value == max(1, nice−1), spinner in min col, "of N" in max col).
 Tests: test_picker +5 (default #nice−1 with 3 nice -> 2, user can raise back to all, single-nice
 floors at 1; updated the two old "N=all" assertions). core.js changed -> ?v= 20260729c -> 20260729d.
+
+## D-0035 - Per-item lifecycle status pill on every rare row (owner "show where each item is", 2026-07-29)
+Owner wanted the "RARES TO PRICE" list to show WHERE each item is in the search lifecycle, incl the
+terminal states (completed-found / completed-not-found). Added `bpc.rowStatus(r)` (core.js, pure):
+classifies a manualRows row into found / priced (you) / notfound / nobuyout / error / unpriced, or a
+LIVE stage (queued/scanning/searching/fetching/waiting) while a scan runs. Robustness: the terminal
+FAIL kind is derived from the PERSISTED price object (source "trade" + total_found: 0 -> notfound,
+>0 -> nobuyout, absent -> error) NOT just scan.status, because scanBegin() resets scan.status on a
+later single re-price -> a completed item would otherwise regress to "unpriced". UI: a status pill
+(index.html restPill/statusPillHTML) is the leading element of every row (`[data-chip]`), a live chip
+while scanning (chipHTML, unchanged) else the resting status; colours: found=green, priced=gold,
+nobuyout=amber, error=red, unpriced=dim. applyScanToRows rewritten to paint the pill in all states.
+Tests: test_scanstatus +12 (every terminal kind end-to-end incl a cache-priced row that survives a
+failed re-scan as "found", + a manual paste flipping to "priced"). core.js changed -> ?v= bump (below).
+
+## D-0036 - "not found" -> "try reducing affixes" + a legible background (owner, 2026-07-29)
+Owner: relabel the 0-match state to actionable advice and give it a background so it reads over item
+art. A 0-match is almost always an over-constrained rare, so the fix IS to loosen affixes (D-0015
+picker). Renamed in all three surfaces: the board slot tag (updateSlot), the board legend, and the
+new row status pill. The board tag is now an actionable banner (dark backing + red border, anchored
+to the slot BOTTOM so it clears the slot-type label + item name and sits over the art); the legend
+swatch + the row pill (.miss) get the same dark red-bordered background. Verified over item art +
+in the row list via Playwright.
+
+## D-0037 - Default the search to the item's own corruption state (owner, 2026-07-29)
+Owner: "if an item is not corrupted in the build, flag it not-corrupted by default on the initial
+search." A poe.ninja-named unique (Whispers of Infinity) opened a trade search full of CORRUPTED
+copies (different vaal implicit / rolls -> a separate, pricier market that pollutes the estimate).
+Fix: `_corruption_misc(item)` adds `misc_filters.corrupted = {option: "false"|"true"}` matching the
+item's own `corrupted` flag, applied in `_rare_query` (rare + magic) and `_unique_query`. Client:
+buildRareQuery now copies `misc_filters` verbatim from origQuery (it already copied type_filters /
+socket_filters), so a picker re-search never DROPS the corruption default. Gems unchanged (priced by
+poe.ninja on exact name+level+quality+corruption; out of scope). Tests: _verify +3 (non-corrupt rare
+-> false, corrupt rare -> true, non-corrupt unique -> false; verified on real refdata too),
+test_picker +1 (re-search preserves corrupted=false). API changed + core.js changed -> ?v= bump.
+
+## D-0035..0037 deploy - core.js changed (rowStatus + buildRareQuery misc_filters) -> ?v= 20260729d -> 20260729e.

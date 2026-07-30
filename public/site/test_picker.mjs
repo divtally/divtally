@@ -255,6 +255,17 @@ console.log("· D-0016 item 3 — tier assignment -> groups (required=AND, nice=
   eq(cG.value, { min: 1 }, "count group carries group-level value.min = 1 (2 nice − 1, D-0034)");
 }
 
+console.log("· corruption default flows through the picker re-search (preserved from origQuery)");
+{
+  // a non-corrupted item's backend query carries misc_filters.corrupted=false; a picker re-search
+  // must NOT drop it (else the search re-admits the corrupted, differently-rolled market).
+  const oq = { type: "Coral Ring", status: { option: "online" }, stats: [],
+               filters: { misc_filters: { filters: { corrupted: { option: "false" } } } } };
+  const q = bpc.buildRareQuery(TRARE, oq, bpc.rareDefaultPicks(TRARE));
+  eq(q.filters.misc_filters, { filters: { corrupted: { option: "false" } } },
+     "buildRareQuery keeps the backend's corrupted=false misc filter through a re-search");
+}
+
 console.log("· D-0016 item 3 — count 'match at least N' spinner loosens/clamps");
 {
   const base = bpc.rareDefaultPicks(TRARE); base.countMin = 1;   // user drops N from 2 to 1

@@ -147,7 +147,7 @@
   .legend .lg-item{display:inline-flex; align-items:center; gap:6px;}
   /* swatch = a mini slot border: keep these the SAME 2px solid style + colour as .slot borders */
   .legend .lg-cost{font-family:var(--mono); font-weight:700; letter-spacing:.02em;}
-  .legend .lg-cost.notfound{color:#d6463a;}
+  .legend .lg-cost.notfound{color:#ffb0a7; background:rgba(16,7,5,.86); border:1px solid rgba(214,70,58,.5); border-radius:4px; padding:1px 6px;}
   .legend .lg-cost.fewresults{color:#e08a2b;}
 
   .panel-head{
@@ -380,7 +380,12 @@
   .slot.skipped{opacity:.5; border-style:dotted;}
   /* search-result border cue — same slot border STYLE as everything else, just recoloured
      (clean colour at rest + a matching glow on hover, like the rarity borders). */
-  .slot.notfound .pricetag{color:#d6463a; font-size:11px; letter-spacing:.03em;}   /* D-0026: 0 matches -> small red cost text */
+  /* D-0026: 0 matches -> an actionable "try reducing affixes" banner. Dark backing + red border so
+     it stays legible over busy item art (owner: "give it a background"). Anchored to the BOTTOM so it
+     clears the slot-type label + item name at the top and sits over the art. */
+  .slot.notfound .pricetag{color:#ffb0a7; font-size:10px; font-weight:600; letter-spacing:.02em;
+    left:6px; right:6px; top:auto; bottom:6px; justify-content:center; text-align:center; white-space:normal; line-height:1.14;
+    background:rgba(16,7,5,.88); border:1px solid rgba(214,70,58,.5); border-radius:4px; padding:3px 5px;}
   .slot.fewresults .pricetag{color:#e08a2b;}    /* D-0026: <5 listings -> orange cost number */
   /* purchased state is shown by the green cart alone (no slot ring) */
   /* empty placeholder slot (no item assigned) */
@@ -950,6 +955,9 @@
   .mr-scanchip.warn{color:var(--warn); border-color:rgba(224,138,43,.45); overflow:hidden; text-overflow:ellipsis;}
   .mr-scanchip.err{color:var(--bad); border-color:rgba(208,107,94,.45); overflow:hidden; text-overflow:ellipsis;}
   .mr-scanchip.done{color:var(--ok); border-color:rgba(105,200,135,.4);}
+  .mr-scanchip.you{color:var(--bz-hi); border-color:var(--bz2);}    /* priced by you — gold */
+  .mr-scanchip.miss{color:#ffb0a7; border-color:rgba(214,70,58,.5); background:rgba(40,16,12,.7);}  /* 0 matches -> actionable "try reducing affixes" */
+  .mr-scanchip.idle{color:var(--mut); border-color:transparent; background:transparent; opacity:.7;}  /* not priced yet — quiet */
   .mr-scanchip.run::before, .mr-scanchip.wait::before{
     content:""; width:9px; height:9px; border-radius:50%; flex:0 0 auto; opacity:.9;
     border:2px solid currentColor; border-right-color:transparent; animation:scanSpin .8s linear infinite;}
@@ -1289,7 +1297,7 @@
               </span>
             </div>
             <span class="legend" id="legend">
-              <span class="lg-item"><span class="lg-cost notfound">not found</span> = no listings</span>
+              <span class="lg-item"><span class="lg-cost notfound">try reducing affixes</span> = no listings</span>
               <span class="lg-item"><span class="lg-cost fewresults">#</span> = &lt;5 listings</span>
             </span>
           </div>
@@ -1412,7 +1420,7 @@
 
 <script src="/config.js"></script>
 <script src="/assets/sample.js?v=20260729c"></script>
-<script src="/assets/core.js?v=20260729d"></script>
+<script src="/assets/core.js?v=20260729e"></script>
 <script>
 "use strict";
 const $=s=>document.querySelector(s), E=bpc.esc;
@@ -1840,7 +1848,7 @@ function updateSlot(k){
     el.classList.toggle('bought', bpc.isPurchased(k));
     // D-0026: a searched item that matched nothing states it IN THE COST as red "not found"
     // text (the .notfound class colours it), no number/currency; other unpriced rows show no cost.
-    if(tag) tag.innerHTML = el.classList.contains('notfound') ? 'not found' : '';
+    if(tag) tag.innerHTML = el.classList.contains('notfound') ? 'try reducing affixes' : '';
   }
 }
 
@@ -2549,17 +2557,41 @@ function chipHTML(st){
     default: return '';
   }
 }
+/* The RESTING lifecycle status pill for a row (bpc.rowStatus kind -> label + colour). Live,
+   mid-scan stages come from chipHTML instead (see statusPillHTML). */
+function restPill(s){
+  switch(s.kind){
+    case 'found':    return `<span class="mr-scanchip done" title="Priced from a live market search or the community cache — a real price.">&#10003; found</span>`;
+    case 'priced':   return `<span class="mr-scanchip you" title="You set this price (a pasted whisper or typed value).">&#10003; priced</span>`;
+    case 'notfound': return `<span class="mr-scanchip miss" title="The search matched 0 listings — the item is likely over-constrained. Open ‘edit affixes’ and set some mods to nice-to-have or not-needed.">try reducing affixes</span>`;
+    case 'nobuyout': return `<span class="mr-scanchip warn" title="Listings exist but none had a buyout price.">&#9888; no buyout${s.total?(' &middot; '+s.total):''}</span>`;
+    case 'error':    return `<span class="mr-scanchip err" title="The search itself errored — try re-price.">&#10007; error</span>`;
+    case 'unpriced': return `<span class="mr-scanchip idle" title="Not priced yet — Autoscan, &#9889; auto, or paste a price.">not priced</span>`;
+    default: return '';
+  }
+}
+/* The one status pill for a row: a LIVE in-progress chip while a scan is running over it, else the
+   resting lifecycle status. So every rare row shows where it is: queued -> searching -> found /
+   not found / no buyout / error (or "not priced" before any scan). */
+function statusPillHTML(r, snap){
+  snap = snap || bpc.scanStatus();
+  const st = snap.status ? snap.status[String(r.key)] : null;
+  if(snap.active && st && !st.resolved) return chipHTML(st);   // live: queued/scanning/searching/fetching/waiting
+  return restPill(bpc.rowStatus(r));
+}
 function applyScanToRows(snap){
   const rowsEl=$('#manualRows'); if(!rowsEl) return;
+  const byKey={}; bpc.manualRows().forEach(r=>byKey[r.key]=r);
   rowsEl.querySelectorAll('.mrow').forEach(row=>{
-    const k=row.dataset.mk, st=snap.status[k], chip=row.querySelector('[data-chip]');
+    const k=row.dataset.mk, r=byKey[k], chip=row.querySelector('[data-chip]');
     row.classList.remove('scanning','scanfail');
-    if(chip) chip.innerHTML='';
-    if(!st) return;                                     // this row isn't part of the scan session
-    const p=bpc.state.priced[k];
-    if(p && p.chaos && p.chaos.median!=null) return;    // already priced -> shown as a done row, no chip
-    if(!st.resolved || st.stage==='done'){ row.classList.add('scanning'); if(chip) chip.innerHTML=chipHTML(st); }
-    else { row.classList.add('scanfail'); if(chip) chip.innerHTML=chipHTML(st); }  // nobuyout/error: keep controls + show why
+    if(!r){ if(chip) chip.innerHTML=''; return; }
+    const st=snap.status?snap.status[k]:null;
+    const live=!!(snap.active && st && !st.resolved);
+    if(live){ row.classList.add('scanning'); if(chip) chip.innerHTML=chipHTML(st); return; }
+    const s=bpc.rowStatus(r);
+    if(s.kind==='notfound'||s.kind==='nobuyout'||s.kind==='error') row.classList.add('scanfail');  // keep controls + show why
+    if(chip) chip.innerHTML=restPill(s);
   });
 }
 function renderAutoscanBar(snap){
@@ -2663,7 +2695,7 @@ function manualRowHTML(r){
     const noteRaw = (p.note && p.source!=='none') ? `<div class="mr-err" style="color:var(--parch);font-style:normal">${E(p.note)}</div>` : '';
     right += noteRaw;
   }
-  return `<div class="mrow ${rc} ${r.priced?'done':''}" data-mk="${E(k)}">${ico}<div class="mr-name">${E(it.name)}${vtag}${slot}</div><div class="mr-right"><span data-chip></span>${right}</div></div>`;
+  return `<div class="mrow ${rc} ${r.priced?'done':''}" data-mk="${E(k)}">${ico}<div class="mr-name">${E(it.name)}${vtag}${slot}</div><div class="mr-right"><span data-chip>${statusPillHTML(r)}</span>${right}</div></div>`;
 }
 function renderManual(rows){
   rows = rows || bpc.manualRows();
