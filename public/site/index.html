@@ -1297,7 +1297,7 @@
               </span>
             </div>
             <span class="legend" id="legend">
-              <span class="lg-item"><span class="lg-cost notfound">try reducing affixes</span> = no listings</span>
+              <span class="lg-item"><span class="lg-cost notfound">not found</span> = try reducing affixes</span>
               <span class="lg-item"><span class="lg-cost fewresults">#</span> = &lt;5 listings</span>
             </span>
           </div>
@@ -1848,7 +1848,7 @@ function updateSlot(k){
     el.classList.toggle('bought', bpc.isPurchased(k));
     // D-0026: a searched item that matched nothing states it IN THE COST as red "not found"
     // text (the .notfound class colours it), no number/currency; other unpriced rows show no cost.
-    if(tag) tag.innerHTML = el.classList.contains('notfound') ? 'try reducing affixes' : '';
+    if(tag) tag.innerHTML = el.classList.contains('notfound') ? 'not found' : '';
   }
 }
 
@@ -2563,7 +2563,7 @@ function restPill(s){
   switch(s.kind){
     case 'found':    return `<span class="mr-scanchip done" title="Priced from a live market search or the community cache — a real price.">&#10003; found</span>`;
     case 'priced':   return `<span class="mr-scanchip you" title="You set this price (a pasted whisper or typed value).">&#10003; priced</span>`;
-    case 'notfound': return `<span class="mr-scanchip miss" title="The search matched 0 listings — the item is likely over-constrained. Open ‘edit affixes’ and set some mods to nice-to-have or not-needed.">try reducing affixes</span>`;
+    case 'notfound': return `<span class="mr-scanchip miss" title="No listings matched — the item is likely over-constrained. Try reducing affixes: open ‘edit affixes’ and set some mods to nice-to-have or not-needed.">not found</span>`;
     case 'nobuyout': return `<span class="mr-scanchip warn" title="Listings exist but none had a buyout price.">&#9888; no buyout${s.total?(' &middot; '+s.total):''}</span>`;
     case 'error':    return `<span class="mr-scanchip err" title="The search itself errored — try re-price.">&#10007; error</span>`;
     case 'unpriced': return `<span class="mr-scanchip idle" title="Not priced yet — Autoscan, &#9889; auto, or paste a price.">not priced</span>`;

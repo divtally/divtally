@@ -662,14 +662,17 @@ nobuyout=amber, error=red, unpriced=dim. applyScanToRows rewritten to paint the 
 Tests: test_scanstatus +12 (every terminal kind end-to-end incl a cache-priced row that survives a
 failed re-scan as "found", + a manual paste flipping to "priced"). core.js changed -> ?v= bump (below).
 
-## D-0036 - "not found" -> "try reducing affixes" + a legible background (owner, 2026-07-29)
-Owner: relabel the 0-match state to actionable advice and give it a background so it reads over item
-art. A 0-match is almost always an over-constrained rare, so the fix IS to loosen affixes (D-0015
-picker). Renamed in all three surfaces: the board slot tag (updateSlot), the board legend, and the
-new row status pill. The board tag is now an actionable banner (dark backing + red border, anchored
-to the slot BOTTOM so it clears the slot-type label + item name and sits over the art); the legend
-swatch + the row pill (.miss) get the same dark red-bordered background. Verified over item art +
-in the row list via Playwright.
+## D-0036 - 0-match: keep the "not found" indicator, add a legible background + "try reducing affixes" advice (owner, 2026-07-29)
+Owner: the red 0-match INDICATOR stays "not found" (on the item, the legend swatch, and the row
+pill); the legend's right-hand side becomes the ACTIONABLE advice — `not found = try reducing
+affixes` (a 0-match is almost always an over-constrained rare; the fix is to loosen affixes via the
+D-0015 picker). Also give the indicator a background so it reads over item art: the board slot tag is
+now a dark red-bordered banner anchored to the slot BOTTOM (clears the slot-type label + item name,
+sits over the art); the legend swatch + the row pill (.miss) get the same dark red-bordered
+background; the pill's tooltip carries the "try reducing affixes / edit affixes" advice. (First cut
+mistakenly renamed the indicator itself to "try reducing affixes"; owner clarified the indicator
+stays "not found" and the advice belongs on the other side of the legend's "=".) Verified over item
+art + in the row list via Playwright.
 
 ## D-0037 - Default the search to the item's own corruption state (owner, 2026-07-29)
 Owner: "if an item is not corrupted in the build, flag it not-corrupted by default on the initial
