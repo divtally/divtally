@@ -233,6 +233,11 @@
     border:1px solid var(--bz1); border-radius:3px; padding:1px 5px; white-space:nowrap; opacity:.85;}
   .sk-price{font-family:var(--mono); font-size:19px; color:var(--val); white-space:nowrap;}
   .sk-price .bpc-cur{height:18px; vertical-align:-3px;}
+  /* gems price by poe.ninja (name/level/quality/corruption); no price line = "not found", same red
+     marker as equipment so it reads consistently across items, jewels and gems. */
+  .sk-notfound{font-family:var(--mono); font-size:13px; font-weight:600; letter-spacing:.02em; color:#ffb0a7;
+    background:rgba(14,6,4,.9); border:1px solid rgba(214,70,58,.55); border-radius:4px; padding:1px 6px; white-space:nowrap;}
+  .sup-price .sk-notfound{font-size:11px; padding:0 5px;}
   .sk-body{display:none; padding:2px 12px 10px 44px; border-top:1px solid var(--line);}
   .skill.open .sk-body{display:block;}
   .sk-cut{font-family:var(--mono); font-size:15px; color:var(--mut); margin:8px 0 7px;}
@@ -380,12 +385,11 @@
   .slot.skipped{opacity:.5; border-style:dotted;}
   /* search-result border cue — same slot border STYLE as everything else, just recoloured
      (clean colour at rest + a matching glow on hover, like the rarity borders). */
-  /* D-0026: 0 matches -> an actionable "try reducing affixes" banner. Dark backing + red border so
-     it stays legible over busy item art (owner: "give it a background"). Anchored to the BOTTOM so it
-     clears the slot-type label + item name at the top and sits over the art. */
-  .slot.notfound .pricetag{color:#ffb0a7; font-size:10px; font-weight:600; letter-spacing:.02em;
-    left:6px; right:6px; top:auto; bottom:6px; justify-content:center; text-align:center; white-space:normal; line-height:1.14;
-    background:rgba(16,7,5,.88); border:1px solid rgba(214,70,58,.5); border-radius:4px; padding:3px 5px;}
+  /* D-0026: 0 matches -> a "not found" tag where the price would sit (top-right, base position — a
+     safe spot on every slot, clear of the item name). Dark backing + red border so it stays legible
+     over item art (owner: "give it a background"). */
+  .slot.notfound .pricetag{color:#ffb0a7; font-size:11px; font-weight:600; letter-spacing:.02em; max-width:calc(100% - 12px);
+    background:rgba(14,6,4,.9); border:1px solid rgba(214,70,58,.55); border-radius:4px; padding:2px 6px;}
   .slot.fewresults .pricetag{color:#e08a2b;}    /* D-0026: <5 listings -> orange cost number */
   /* purchased state is shown by the green cart alone (no slot ring) */
   /* empty placeholder slot (no item assigned) */
@@ -1715,7 +1719,7 @@ function skillRowHTML(it){
         ${tu?`<a class="sk-name" href="${E(tu)}" target="_blank" rel="noopener" title="search this skill on trade (Lv ${lvl})">${E(it.name)}</a>`:`<span class="sk-name">${E(it.name)}</span>`}
         ${it.granted?'<span class="sk-granted" title="item-provided skill — comes free with the host item, so excluded by default">granted</span>':''}
         <span class="sk-meta">Lv ${lvl}${sock?` · ${sock} sup`:''}</span>
-        <span class="sk-price">${total!=null?bpc.priceHTML(total):'<span class="bpc-dash">—</span>'}</span>
+        <span class="sk-price">${total!=null?bpc.priceHTML(total):(it.granted?'<span class="bpc-dash">—</span>':'<span class="sk-notfound" title="no poe.ninja price for this gem (name / level / quality / corruption)">not found</span>')}</span>
       </div>
       <div class="sk-body">
         <div class="sk-cut">priced from the public gem economy: active skill + every support gem${tu?` &middot; <a href="${E(tu)}" target="_blank" rel="noopener">view on trade &#8599;</a>`:''} <span class="sk-hint">(each gem by name / level / quality / corruption)</span></div>
@@ -1739,7 +1743,7 @@ function supportsHTML(it,p){
     // granted nested gem: excluded (chaos is null) -> struck 'granted' marker instead of a price
     const tail = g.granted
       ? '<span class="sup-free" title="item-granted — not counted in the total">granted</span>'
-      : `<span class="sup-price">${(g.chaos!=null)?bpc.priceHTML(g.chaos):'<span class="bpc-dash">—</span>'}</span>`;
+      : `<span class="sup-price">${(g.chaos!=null)?bpc.priceHTML(g.chaos):'<span class="sk-notfound" title="no poe.ninja price for this support gem">not found</span>'}</span>`;
     return `<li class="sup${g.granted?' granted':''}">${ic}<span class="sup-nm">${nm}</span> ${lv}${corr}${act}${tail}</li>`;
   }).join('');
 }

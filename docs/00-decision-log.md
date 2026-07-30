@@ -673,6 +673,15 @@ background; the pill's tooltip carries the "try reducing affixes / edit affixes"
 mistakenly renamed the indicator itself to "try reducing affixes"; owner clarified the indicator
 stays "not found" and the advice belongs on the other side of the legend's "=".) Verified over item
 art + in the row list via Playwright.
+FOLLOW-UP (same day): the first cut anchored the board tag to the slot BOTTOM, which collided with the
+item NAME on real icon-bearing slots -> the marker read as "lost" on items + jewels (the render that
+approved it used icon-less demo items whose names sit high). Reverted to the base TOP-RIGHT position
+(where the price shows -- safe on every slot, clear of the name), keeping the dark red-bordered
+background. Also EXTENDED the marker to GEMS (they render in the skills section, not as .slot, so they
+never had one): an unpriced gem / support now shows the same red "not found" chip instead of a bare
+"—" (a gem prices by poe.ninja name/level/quality/corruption; no line = not found). GRANTED skills
+are free/excluded so they keep the neutral dash, not "not found". Verified on the real demo layout
+(icon-bearing slots) via Playwright: equipment + jewels + gems all show "not found".
 
 ## D-0037 - Default the search to the item's own corruption state (owner, 2026-07-29)
 Owner: "if an item is not corrupted in the build, flag it not-corrupted by default on the initial
